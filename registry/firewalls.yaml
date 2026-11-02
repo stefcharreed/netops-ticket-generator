@@ -1,0 +1,1391 @@
+# Normalized from the source registry YAMLs (not included in this repo) by scripts/import_registry.py. Edit with care; keep fields as documented in registry/README.md.
+- id: ASA:104001
+  vendor: Cisco
+  header_style: asa
+  severity: 1
+  message: '%ASA-1-104001: ({choice_1}) Switching to ACTIVE - {reason}.'
+  placeholders:
+    choice_1: Primary|Secondary
+    reason: .*?
+  example: '<161>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-1-104001: (Secondary) Switching to ACTIVE - Other unit wants me Active. Primary unit switch reason: Set by the config command.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-101001-to-199021.html
+  verified: true
+  demoted_reason: null
+- id: ASA:104002
+  vendor: Cisco
+  header_style: asa
+  severity: 1
+  message: '%ASA-1-104002: ({choice_1}) Switching to STANDBY - {reason}.'
+  placeholders:
+    choice_1: Primary|Secondary
+    reason: .*?
+  example: '<161>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-1-104002: (Primary) Switching to STANDBY - Other unit wants me Standby.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-101001-to-199021.html
+  verified: true
+  demoted_reason: null
+- id: ASA:105005
+  vendor: Cisco
+  header_style: asa
+  severity: 1
+  message: '%ASA-1-105005: ({choice_1}) Lost Failover communications with mate on interface {interface_name}'
+  placeholders:
+    choice_1: Primary|Secondary
+    interface_name: .*?
+  example: '<161>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-1-105005: (Primary) Lost Failover communications with mate on interface inside'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-101001-to-199021.html
+  verified: true
+  demoted_reason: null
+- id: ASA:105008
+  vendor: Cisco
+  header_style: asa
+  severity: 1
+  message: '%ASA-1-105008: ({choice_1}) Testing Interface {interface_name}'
+  placeholders:
+    choice_1: Primary|Secondary
+    interface_name: .*?
+  example: '<161>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-1-105008: (Primary) Testing Interface inside'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-101001-to-199021.html
+  verified: true
+  demoted_reason: null
+- id: ASA:106001
+  vendor: Cisco
+  header_style: asa
+  severity: 2
+  message: '%ASA-2-106001: Inbound TCP connection denied from {src_ip}/{src_port} to {dst_ip}/{dst_port} flags {tcp_flags} on interface {interface_name}'
+  placeholders:
+    src_ip: .*?
+    src_port: .*?
+    dst_ip: .*?
+    dst_port: .*?
+    tcp_flags: .*?
+    interface_name: .*?
+  example: '<162>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-2-106001: Inbound TCP connection denied from 203.0.113.45/43803 to 198.51.100.10/22 flags SYN  on interface outside'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-101001-to-199021.html
+  verified: true
+  demoted_reason: null
+- id: ASA:106006
+  vendor: Cisco
+  header_style: asa
+  severity: 2
+  message: '%ASA-2-106006: Deny inbound UDP from {src_ip}/{src_port} to {dst_ip}/{dst_port} on interface {interface_name}'
+  placeholders:
+    src_ip: .*?
+    src_port: .*?
+    dst_ip: .*?
+    dst_port: .*?
+    interface_name: .*?
+  example: '<162>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-2-106006: Deny inbound UDP from 203.0.113.66/137 to 10.1.2.42/137 on interface outside'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-101001-to-199021.html
+  verified: true
+  demoted_reason: null
+- id: ASA:106007
+  vendor: Cisco
+  header_style: asa
+  severity: 2
+  message: '%ASA-2-106007: Deny inbound UDP from {src_ip}/{src_port} to {dst_ip}/{dst_port} due to DNS {choice_1}'
+  placeholders:
+    src_ip: .*?
+    src_port: .*?
+    dst_ip: .*?
+    dst_port: .*?
+    choice_1: Query|Response
+  example: '<162>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-2-106007: Deny inbound UDP from 203.0.113.66/12981 to 10.1.2.60/53 due to DNS Query'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-101001-to-199021.html
+  verified: true
+  demoted_reason: null
+- id: ASA:106014
+  vendor: Cisco
+  header_style: asa
+  severity: 3
+  message: '%ASA-3-106014: Deny inbound icmp src {interface}:{src_ip} dst {interface_2}:{dst_ip} (type {type}, code {code})'
+  placeholders:
+    interface: .*?
+    src_ip: .*?
+    interface_2: .*?
+    dst_ip: .*?
+    type: .*?
+    code: .*?
+  example: '<163>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-3-106014: Deny inbound icmp src outside:203.0.113.9 dst outside:198.51.100.10 (type 8, code 0)'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-101001-to-199021.html
+  verified: true
+  demoted_reason: null
+- id: ASA:106015
+  vendor: Cisco
+  header_style: asa
+  severity: 6
+  message: '%ASA-6-106015: Deny TCP (no connection) from {src_ip}/{src_port} to {dst_ip}/{dst_port} flags {tcp_flags} on interface {interface_name}'
+  placeholders:
+    src_ip: .*?
+    src_port: .*?
+    dst_ip: .*?
+    dst_port: .*?
+    tcp_flags: e\.g\. RST|FIN ACK|PSH ACK|FIN PSH ACK|RST ACK
+    interface_name: .*?
+  example: '<166>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-6-106015: Deny TCP (no connection) from 10.20.5.14/53089 to 203.0.113.80/443 flags FIN PSH ACK  on interface inside'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-101001-to-199021.html
+  verified: true
+  demoted_reason: null
+- id: ASA:106021
+  vendor: Cisco
+  header_style: asa
+  severity: 1
+  message: '%ASA-1-106021: Deny {protocol} reverse path check from {src_ip} to {dst_ip} on interface {interface_name}'
+  placeholders:
+    protocol: TCP|UDP|ICMP|protocol number
+    src_ip: .*?
+    dst_ip: .*?
+    interface_name: .*?
+  example: '<161>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-1-106021: Deny TCP reverse path check from 192.0.2.77 to 10.20.5.14 on interface outside'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-101001-to-199021.html
+  verified: true
+  demoted_reason: null
+- id: ASA:106023
+  vendor: Cisco
+  header_style: asa
+  severity: 4
+  message: '%ASA-4-106023: Deny {protocol} src {interface}:{src_ip}/{src_port}[[({idfw_user})]] dst {interface_2}:{dst_ip}/{dst_port}[[({idfw_user_2})]][[ (type {t}, code {c})]] by access-group "{acl_name}" [{hash1}, {hash2}]'
+  placeholders:
+    protocol: .*?
+    interface: .*?
+    src_ip: .*?
+    src_port: .*?
+    idfw_user: .*?
+    interface_2: .*?
+    dst_ip: .*?
+    dst_port: .*?
+    idfw_user_2: .*?
+    t: .*?
+    c: .*?
+    acl_name: .*?
+    hash1: .*?
+    hash2: .*?
+  example: '<164>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-4-106023: Deny tcp src outside:203.0.113.45/52311 dst inside:10.20.5.14/443 by access-group "OUTSIDE-IN" [0x0, 0x0]'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-101001-to-199021.html
+  verified: true
+  demoted_reason: null
+- id: ASA:106100
+  vendor: Cisco
+  header_style: asa
+  severity: 6
+  message: '%ASA-6-106100: access-list {acl_ID} {choice_1} {protocol} {interface}/{src_ip}({src_port})[[({idfw_user})]] -> {interface_2}/{dst_ip}({dst_port})[[({idfw_user_2})]] hit-cnt {n} {choice_2} [{hash1}, {hash2}]'
+  placeholders:
+    acl_ID: .*?
+    choice_1: permitted|denied|est\-allowed
+    protocol: .*?
+    interface: .*?
+    src_ip: .*?
+    src_port: .*?
+    idfw_user: .*?
+    interface_2: .*?
+    dst_ip: .*?
+    dst_port: .*?
+    idfw_user_2: .*?
+    n: .*?
+    choice_2: first hit|N\-second interval
+    hash1: .*?
+    hash2: .*?
+  example: '<166>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-6-106100: access-list OUTSIDE-IN denied tcp outside/203.0.113.45(52311) -> inside/10.20.5.14(443) hit-cnt 1 first hit [0x38ff326b, 0x00000000]'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-101001-to-199021.html
+  verified: true
+  demoted_reason: null
+- id: ASA:110002
+  vendor: Cisco
+  header_style: asa
+  severity: 6
+  message: '%ASA-6-110002: Failed to locate egress interface for {protocol} from {src_interface}:{src_ip}/{src_port} to {dst_ip}/{dst_port}'
+  placeholders:
+    protocol: .*?
+    src_interface: .*?
+    src_ip: .*?
+    src_port: .*?
+    dst_ip: .*?
+    dst_port: .*?
+  example: '<166>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-6-110002: Failed to locate egress interface for TCP from inside:10.20.5.14/51544 to 198.51.100.200/443'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-101001-to-199021.html
+  verified: true
+  demoted_reason: null
+- id: ASA:111008
+  vendor: Cisco
+  header_style: asa
+  severity: 5
+  message: '%ASA-5-111008: User ''{user}'' executed the ''{command}'' command.'
+  placeholders:
+    user: .*?
+    command: .*?
+  example: '<165>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-5-111008: User ''netadmin'' executed the ''access-list OUTSIDE-IN line 1 extended deny tcp any any eq 23'' command.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-101001-to-199021.html
+  verified: true
+  demoted_reason: null
+- id: ASA:111010
+  vendor: Cisco
+  header_style: asa
+  severity: 5
+  message: '%ASA-5-111010: User ''{username}'', running ''{application}'' from IP {ip}, executed ''{cmd}'''
+  placeholders:
+    username: .*?
+    application: .*?
+    ip: .*?
+    cmd: .*?
+  example: '<165>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-5-111010: User ''netadmin'', running ''CLI'' from IP 10.0.0.87, executed ''write memory'''
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-101001-to-199021.html
+  verified: true
+  demoted_reason: null
+- id: ASA:113004
+  vendor: Cisco
+  header_style: asa
+  severity: 6
+  message: '%ASA-6-113004: AAA user {choice_1} Successful : server = {server_ip} : user = {user}'
+  placeholders:
+    choice_1: authentication|authorization|accounting
+    server_ip: .*?
+    user: .*?
+  example: '<166>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-6-113004: AAA user authentication Successful : server = 10.0.0.8 : user = jdoe'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-101001-to-199021.html
+  verified: true
+  demoted_reason: null
+- id: ASA:113005
+  vendor: Cisco
+  header_style: asa
+  severity: 6
+  message: '%ASA-6-113005: AAA user {choice_1} Rejected : reason = {reason} : server = {server_ip} : user = {user} : user IP = {user_ip}'
+  placeholders:
+    choice_1: authentication|authorization
+    reason: .*?
+    server_ip: .*?
+    user: .*?
+    user_ip: .*?
+  example: '<166>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-6-113005: AAA user authentication Rejected : reason = AAA failure : server = 10.0.0.8 : user = ***** : user IP = 203.0.113.20'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-101001-to-199021.html
+  verified: true
+  demoted_reason: null
+- id: ASA:113015
+  vendor: Cisco
+  header_style: asa
+  severity: 6
+  message: '%ASA-6-113015: AAA user authentication Rejected : reason = {reason} : local database : user = {user} : user IP = {user_ip}'
+  placeholders:
+    reason: .*?
+    user: .*?
+    user_ip: .*?
+  example: '<166>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-6-113015: AAA user authentication Rejected : reason = Invalid password : local database : user = ***** : user IP = 203.0.113.20'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-101001-to-199021.html
+  verified: true
+  demoted_reason: null
+- id: ASA:302013
+  vendor: Cisco
+  header_style: asa
+  severity: 6
+  message: '%ASA-6-302013: Built {choice_1} TCP connection {conn_id} for {interface}:{real_ip}/{real_port} ({mapped_ip}/{mapped_port})[[({idfw_user})]] to {interface_2}:{real_ip_2}/{real_port_2} ({mapped_ip_2}/{mapped_port_2})[[({idfw_user_2})]]'
+  placeholders:
+    choice_1: inbound|outbound
+    conn_id: .*?
+    interface: .*?
+    real_ip: .*?
+    real_port: .*?
+    mapped_ip: .*?
+    mapped_port: .*?
+    idfw_user: .*?
+    interface_2: .*?
+    real_ip_2: .*?
+    real_port_2: .*?
+    mapped_ip_2: .*?
+    mapped_port_2: .*?
+    idfw_user_2: .*?
+  example: '<166>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-6-302013: Built outbound TCP connection 1588662 for outside:203.0.113.80/443 (203.0.113.80/443) to inside:10.20.5.14/51544 (198.51.100.10/31877)'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-302003-to-342008.html
+  verified: true
+  demoted_reason: null
+- id: ASA:302014
+  vendor: Cisco
+  header_style: asa
+  severity: 6
+  message: '%ASA-6-302014: Teardown TCP connection {conn_id} for {interface}:{ip}/{port}[[({idfw_user})]] to {interface_2}:{ip_2}/{port_2}[[({idfw_user_2})]] duration {h_mm_ss} bytes {bytes} {reason}[[ from {initiator_interface}]][[ ({user})]]'
+  placeholders:
+    conn_id: .*?
+    interface: .*?
+    ip: .*?
+    port: .*?
+    idfw_user: .*?
+    interface_2: .*?
+    ip_2: .*?
+    port_2: .*?
+    idfw_user_2: .*?
+    h_mm_ss: .*?
+    bytes: .*?
+    reason: TCP FINs|TCP Reset\-I|TCP Reset\-O|TCP Reset\-APPLIANCE|SYN Timeout|SYN Control|Conn\-timeout|FIN Timeout|Flow closed by inspection|Flow terminated by IPS|Flow reset by IPS|Flow terminated by TCP Intercept|Flow timed out|Flow timed out with reset|Flow is a loopback|Free the flow created as result of packet injection|Invalid SYN|IPS fail\-close|No interfaces associated with zone|No valid adjacency|Pinhole Timeout|Route change|TCP bad retransmission|TCP Invalid SYN|TCP segment partial overlap|TCP unexpected window size variation|Tunnel has been torn down|Unauth Deny|Unknown|VPN reclassify failed|Xlate Clear|Deny Terminate|Failover primary closed|Probe maximum retries of retransmission exceeded|Probe maximum retransmission time elapsed|Probe received RST|Probe received FIN|Probe completed
+    initiator_interface: .*?
+    user: .*?
+  example: '<166>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-6-302014: Teardown TCP connection 1588662 for outside:203.0.113.80/443 to inside:10.20.5.14/51544 duration 0:00:18 bytes 7734 TCP FINs from inside'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-302003-to-342008.html
+  verified: true
+  demoted_reason: null
+- id: ASA:302015
+  vendor: Cisco
+  header_style: asa
+  severity: 6
+  message: '%ASA-6-302015: Built {choice_1} UDP connection {conn_id} for {interface}:{real_ip}/{real_port} ({mapped_ip}/{mapped_port})[[({idfw_user})]] to {interface_2}:{real_ip_2}/{real_port_2} ({mapped_ip_2}/{mapped_port_2})[[({idfw_user_2})]]'
+  placeholders:
+    choice_1: inbound|outbound
+    conn_id: .*?
+    interface: .*?
+    real_ip: .*?
+    real_port: .*?
+    mapped_ip: .*?
+    mapped_port: .*?
+    idfw_user: .*?
+    interface_2: .*?
+    real_ip_2: .*?
+    real_port_2: .*?
+    mapped_ip_2: .*?
+    mapped_port_2: .*?
+    idfw_user_2: .*?
+  example: '<166>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-6-302015: Built outbound UDP connection 1743372 for outside:198.51.100.53/53 (198.51.100.53/53) to inside:10.20.5.14/58821 (198.51.100.10/58821)'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-302003-to-342008.html
+  verified: true
+  demoted_reason: null
+- id: ASA:302016
+  vendor: Cisco
+  header_style: asa
+  severity: 6
+  message: '%ASA-6-302016: Teardown UDP connection {conn_id} for {interface}:{ip}/{port}[[({idfw_user})]] to {interface_2}:{ip_2}/{port_2}[[({idfw_user_2})]] duration {h_mm_ss} bytes {bytes}[[ ({user})]]'
+  placeholders:
+    conn_id: .*?
+    interface: .*?
+    ip: .*?
+    port: .*?
+    idfw_user: .*?
+    interface_2: .*?
+    ip_2: .*?
+    port_2: .*?
+    idfw_user_2: .*?
+    h_mm_ss: .*?
+    bytes: .*?
+    user: .*?
+  example: '<166>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-6-302016: Teardown UDP connection 1743372 for outside:198.51.100.53/53 to inside:10.20.5.14/58821 duration 0:02:01 bytes 148'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-302003-to-342008.html
+  verified: true
+  demoted_reason: null
+- id: ASA:302020
+  vendor: Cisco
+  header_style: asa
+  severity: 6
+  message: '%ASA-6-302020: Built {choice_1} ICMP connection for faddr {faddr}/{icmp_id} gaddr {gaddr}/{id} laddr {laddr}/{id_2} type {type} code {code}'
+  placeholders:
+    choice_1: inbound|outbound
+    faddr: .*?
+    icmp_id: .*?
+    gaddr: .*?
+    id: .*?
+    laddr: .*?
+    id_2: .*?
+    type: .*?
+    code: .*?
+  example: '<166>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-6-302020: Built outbound ICMP connection for faddr 203.0.113.20/0 gaddr 198.51.100.10/28416 laddr 10.20.5.14/28416 type 8 code 0'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-302003-to-342008.html
+  verified: true
+  demoted_reason: null
+- id: ASA:302021
+  vendor: Cisco
+  header_style: asa
+  severity: 6
+  message: '%ASA-6-302021: Teardown ICMP connection for faddr {faddr}/{id} gaddr {gaddr}/{id_2} laddr {laddr}/{id_3} type {type} code {code}'
+  placeholders:
+    faddr: .*?
+    id: .*?
+    gaddr: .*?
+    id_2: .*?
+    laddr: .*?
+    id_3: .*?
+    type: .*?
+    code: .*?
+  example: '<166>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-6-302021: Teardown ICMP connection for faddr 203.0.113.20/0 gaddr 198.51.100.10/28416 laddr 10.20.5.14/28416 type 8 code 0'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-302003-to-342008.html
+  verified: true
+  demoted_reason: null
+- id: ASA:305005
+  vendor: Cisco
+  header_style: asa
+  severity: 3
+  message: '%ASA-3-305005: No translation group found for {protocol} src {interface}:{src_ip}/{src_port} dst {interface_2}:{dst_ip}/{dst_port}'
+  placeholders:
+    protocol: .*?
+    interface: .*?
+    src_ip: .*?
+    src_port: .*?
+    interface_2: .*?
+    dst_ip: .*?
+    dst_port: .*?
+  example: '<163>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-3-305005: No translation group found for tcp src inside:10.20.9.14/51544 dst outside:203.0.113.80/443'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-302003-to-342008.html
+  verified: true
+  demoted_reason: null
+- id: ASA:305006
+  vendor: Cisco
+  header_style: asa
+  severity: 3
+  message: '%ASA-3-305006: {choice_1} translation creation failed for {protocol} src {interface}:{src_ip}/{src_port} dst {interface_2}:{dst_ip}/{dst_port}'
+  placeholders:
+    choice_1: outbound static|identity|portmap|regular
+    protocol: .*?
+    interface: .*?
+    src_ip: .*?
+    src_port: .*?
+    interface_2: .*?
+    dst_ip: .*?
+    dst_port: .*?
+  example: '<163>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-3-305006: regular translation creation failed for icmp src inside:10.20.5.14 dst outside:203.0.113.20 (type 3, code 3)'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-302003-to-342008.html
+  verified: false
+  demoted_reason: example does not match its own pattern
+- id: ASA:305011
+  vendor: Cisco
+  header_style: asa
+  severity: 6
+  message: '%ASA-6-305011: Built {choice_1} {choice_2} translation from {interface}:{real_ip}/{real_port}[[({idfw_user})]] to {interface_2}:{mapped_ip}/{mapped_port}'
+  placeholders:
+    choice_1: dynamic|static
+    choice_2: TCP|UDP|ICMP
+    interface: .*?
+    real_ip: .*?
+    real_port: .*?
+    idfw_user: .*?
+    interface_2: .*?
+    mapped_ip: .*?
+    mapped_port: .*?
+  example: '<166>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-6-305011: Built dynamic TCP translation from inside:10.20.5.14/51544 to outside:198.51.100.10/31877'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-302003-to-342008.html
+  verified: true
+  demoted_reason: null
+- id: ASA:305012
+  vendor: Cisco
+  header_style: asa
+  severity: 6
+  message: '%ASA-6-305012: Teardown {choice_1} {choice_2} translation from {interface}:{real_ip}/{real_port} to {interface_2}:{mapped_ip}/{mapped_port} duration {h_mm_ss}'
+  placeholders:
+    choice_1: dynamic|static
+    choice_2: TCP|UDP|ICMP
+    interface: .*?
+    real_ip: .*?
+    real_port: .*?
+    interface_2: .*?
+    mapped_ip: .*?
+    mapped_port: .*?
+    h_mm_ss: .*?
+  example: '<166>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-6-305012: Teardown dynamic TCP translation from inside:10.20.5.14/51544 to outside:198.51.100.10/31877 duration 0:00:30'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-302003-to-342008.html
+  verified: true
+  demoted_reason: null
+- id: ASA:305013
+  vendor: Cisco
+  header_style: asa
+  severity: 5
+  message: '%ASA-5-305013: Asymmetric NAT rules matched for forward and reverse flows; Connection for {protocol} src {interface}:{src_ip}/{src_port} dst {interface_2}:{dst_ip}/{dst_port} denied due to NAT reverse path failure'
+  placeholders:
+    protocol: .*?
+    interface: .*?
+    src_ip: .*?
+    src_port: .*?
+    interface_2: .*?
+    dst_ip: .*?
+    dst_port: .*?
+  example: '<165>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-5-305013: Asymmetric NAT rules matched for forward and reverse flows; Connection for tcp src outside:203.0.113.45/52311 dst dmz:172.16.10.20/443 denied due to NAT reverse path failure'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-302003-to-342008.html
+  verified: true
+  demoted_reason: null
+- id: ASA:313001
+  vendor: Cisco
+  header_style: asa
+  severity: 3
+  message: '%ASA-3-313001: Denied ICMP type={type}, code={code} from {ip} on interface {interface_name}'
+  placeholders:
+    type: .*?
+    code: .*?
+    ip: .*?
+    interface_name: .*?
+  example: '<163>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-3-313001: Denied ICMP type=8, code=0 from 203.0.113.9 on interface outside'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-302003-to-342008.html
+  verified: true
+  demoted_reason: null
+- id: ASA:313004
+  vendor: Cisco
+  header_style: asa
+  severity: 4
+  message: '%ASA-4-313004: Denied ICMP type={icmp_type}, from laddr {src_ip} on interface {interface_name} to {dst_ip}: no matching session'
+  placeholders:
+    icmp_type: .*?
+    src_ip: .*?
+    interface_name: .*?
+    dst_ip: .*?
+  example: '<164>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-4-313004: Denied ICMP type=0, from laddr 203.0.113.20 on interface outside to 198.51.100.10: no matching session'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-302003-to-342008.html
+  verified: true
+  demoted_reason: null
+- id: ASA:313005
+  vendor: Cisco
+  header_style: asa
+  severity: 4
+  message: '%ASA-4-313005: No matching connection for ICMP error message: icmp src {interface}:{ip} dst {interface_2}:{ip_2} (type {t}, code {c}) on {interface_name} interface.  Original IP payload: {proto} src {ip_3}/{port} dst {ip_4}/{port_2}.'
+  placeholders:
+    interface: .*?
+    ip: .*?
+    interface_2: .*?
+    ip_2: .*?
+    t: .*?
+    c: .*?
+    interface_name: .*?
+    proto: .*?
+    ip_3: .*?
+    port: .*?
+    ip_4: .*?
+    port_2: .*?
+  example: '<164>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-4-313005: No matching connection for ICMP error message: icmp src outside:203.0.113.1 dst inside:10.20.5.14 (type 3, code 3) on outside interface.  Original IP payload: udp src 10.20.5.14/53 dst 203.0.113.1/10872.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-302003-to-342008.html
+  verified: true
+  demoted_reason: null
+- id: ASA:322001
+  vendor: Cisco
+  header_style: asa
+  severity: 3
+  message: '%ASA-3-322001: Deny MAC address {mac}, possible spoof attempt on interface {interface}'
+  placeholders:
+    mac: .*?
+    interface: .*?
+  example: '<163>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-3-322001: Deny MAC address 0000.5e00.5301, possible spoof attempt on interface inside'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-302003-to-342008.html
+  verified: true
+  demoted_reason: null
+- id: ASA:322002
+  vendor: Cisco
+  header_style: asa
+  severity: 3
+  message: '%ASA-3-322002: ARP inspection check failed for arp {choice_1} received from host {mac} on interface {interface}. This host is advertising MAC Address {mac1} for IP Address {ip}, which is {choice_2} bound to MAC Address {mac2}'
+  placeholders:
+    choice_1: request|response
+    mac: .*?
+    interface: .*?
+    mac1: .*?
+    ip: .*?
+    choice_2: statically|dynamically
+    mac2: .*?
+  example: '<163>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-3-322002: ARP inspection check failed for arp response received from host 0000.5e00.5301 on interface inside. This host is advertising MAC Address 0000.5e00.5301 for IP Address 10.20.5.1, which is statically bound to MAC Address 0000.5e00.5302'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-302003-to-342008.html
+  verified: true
+  demoted_reason: null
+- id: ASA:4000nn
+  vendor: Cisco
+  header_style: asa
+  severity: 4
+  message: '%ASA-4-4000nn: IPS:{sig_id} {sig_name} from {src_ip} to {dst_ip} on interface {interface_name}'
+  placeholders:
+    sig_id: .*?
+    sig_name: .*?
+    src_ip: .*?
+    dst_ip: .*?
+    interface_name: .*?
+  example: '<164>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-4-400010: IPS:2000 ICMP Echo Reply from 203.0.113.9 to 198.51.100.10 on interface outside'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-400000-to-450001.html
+  verified: false
+  demoted_reason: null
+- id: ASA:419001
+  vendor: Cisco
+  header_style: asa
+  severity: 4
+  message: '%ASA-4-419001: Dropping TCP packet from {src_ifc}:{src_ip}/{src_port} to {dest_ifc}:{dst_ip}/{dst_port}, reason: {reason}'
+  placeholders:
+    src_ifc: .*?
+    src_ip: .*?
+    src_port: .*?
+    dest_ifc: .*?
+    dst_ip: .*?
+    dst_port: .*?
+    reason: .*?
+  example: '<164>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-4-419001: Dropping TCP packet from outside:203.0.113.80/443 to inside:10.20.5.14/51544, reason: MSS exceeded, MSS 1380, data 1460'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-400000-to-450001.html
+  verified: false
+  demoted_reason: null
+- id: ASA:419002
+  vendor: Cisco
+  header_style: asa
+  severity: 4
+  message: '%ASA-4-419002: Duplicate TCP SYN from {src_ifc}:{src_ip}/{src_port} to {dst_ifc}:{dst_ip}/{dst_port} with different initial sequence number'
+  placeholders:
+    src_ifc: .*?
+    src_ip: .*?
+    src_port: .*?
+    dst_ifc: .*?
+    dst_ip: .*?
+    dst_port: .*?
+  example: '<164>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-4-419002: Duplicate TCP SYN from inside:10.20.5.14/51544 to outside:203.0.113.80/443 with different initial sequence number'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-400000-to-450001.html
+  verified: true
+  demoted_reason: null
+- id: ASA:434002
+  vendor: Cisco
+  header_style: asa
+  severity: 4
+  message: '%ASA-4-434002: SFR requested to drop {protocol} packet from {src_ifc}:{src_ip}/{src_port} to {dst_ifc}:{dst_ip}/{dst_port}'
+  placeholders:
+    protocol: .*?
+    src_ifc: .*?
+    src_ip: .*?
+    src_port: .*?
+    dst_ifc: .*?
+    dst_ip: .*?
+    dst_port: .*?
+  example: '<164>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-4-434002: SFR requested to drop TCP packet from inside:10.20.5.14/51544 to outside:203.0.113.80/443'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-400000-to-450001.html
+  verified: true
+  demoted_reason: null
+- id: ASA:434004
+  vendor: Cisco
+  header_style: asa
+  severity: 5
+  message: '%ASA-5-434004: SFR requested ASA to bypass further packet redirection and process {protocol} flow from {src_ifc}:{src_ip}/{src_port} to {dst_ifc}:{dst_ip}/{dst_port} locally'
+  placeholders:
+    protocol: .*?
+    src_ifc: .*?
+    src_ip: .*?
+    src_port: .*?
+    dst_ifc: .*?
+    dst_ip: .*?
+    dst_port: .*?
+  example: '<165>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-5-434004: SFR requested ASA to bypass further packet redirection and process TCP flow from inside:10.20.5.14/51544 to outside:203.0.113.80/443 locally'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-400000-to-450001.html
+  verified: true
+  demoted_reason: null
+- id: ASA:500004
+  vendor: Cisco
+  header_style: asa
+  severity: 4
+  message: '%ASA-4-500004: Invalid transport field for protocol={protocol}, from {src_ip}/{src_port} to {dst_ip}/{dst_port}'
+  placeholders:
+    protocol: .*?
+    src_ip: .*?
+    src_port: .*?
+    dst_ip: .*?
+    dst_port: .*?
+  example: '<164>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-4-500004: Invalid transport field for protocol=TCP, from 203.0.113.45/0 to 198.51.100.10/0'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-500000-to-520025.html
+  verified: false
+  demoted_reason: null
+- id: ASA:602303
+  vendor: Cisco
+  header_style: asa
+  severity: 6
+  message: '%ASA-6-602303: IPSEC: An {choice_1} {choice_2} SA (SPI= {spi}) between {ip_a} and {ip_b} (user= {user}) has been created.'
+  placeholders:
+    choice_1: inbound|outbound
+    choice_2: LAN\-to\-LAN|remote access
+    spi: .*?
+    ip_a: .*?
+    ip_b: .*?
+    user: .*?
+  example: '<166>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-6-602303: IPSEC: An outbound LAN-to-LAN SA (SPI= 0xF81283) between 198.51.100.10 and 192.0.2.20 (user= 192.0.2.20) has been created.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-602101-to-622102.html
+  verified: true
+  demoted_reason: null
+- id: ASA:602304
+  vendor: Cisco
+  header_style: asa
+  severity: 6
+  message: '%ASA-6-602304: IPSEC: An {choice_1} {choice_2} SA (SPI= {spi}) between {ip_a} and {ip_b} (user= {user}) has been deleted.'
+  placeholders:
+    choice_1: inbound|outbound
+    choice_2: LAN\-to\-LAN|remote access
+    spi: .*?
+    ip_a: .*?
+    ip_b: .*?
+    user: .*?
+  example: '<166>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-6-602304: IPSEC: An outbound LAN-to-LAN SA (SPI= 0xF81283) between 198.51.100.10 and 192.0.2.20 (user= 192.0.2.20) has been deleted.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-602101-to-622102.html
+  verified: true
+  demoted_reason: null
+- id: ASA:710003
+  vendor: Cisco
+  header_style: asa
+  severity: 3
+  message: '%ASA-3-710003: {choice_1} access denied by ACL from {src_ip}/{src_port} to {interface}:{dst_ip}/{dst_port}'
+  placeholders:
+    choice_1: TCP|UDP
+    src_ip: .*?
+    src_port: .*?
+    interface: .*?
+    dst_ip: .*?
+    dst_port: .*?
+  example: '<163>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-3-710003: TCP access denied by ACL from 203.0.113.45/6370 to outside:198.51.100.10/22'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-701001-to-714011.html
+  verified: true
+  demoted_reason: null
+- id: ASA:713903
+  vendor: Cisco
+  header_style: asa
+  severity: 6
+  message: '%ASA-6-713903:[[ Group = {group}, ]]IP = {peer_ip}, {free_text}'
+  placeholders:
+    group: .*?
+    peer_ip: .*?
+    free_text: .*?
+  example: '<166>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-6-713903: IP = 192.0.2.20, All IPSec SA proposals found unacceptable!'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-701001-to-714011.html
+  verified: false
+  demoted_reason: example does not match its own pattern
+- id: ASA:713119
+  vendor: Cisco
+  header_style: asa
+  severity: 5
+  message: '%ASA-5-713119: Group = {group}, IP = {peer_ip}, PHASE 1 COMPLETED'
+  placeholders:
+    group: .*?
+    peer_ip: .*?
+  example: '<165>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-5-713119: Group = 192.0.2.20, IP = 192.0.2.20, PHASE 1 COMPLETED'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-701001-to-714011.html
+  verified: false
+  demoted_reason: null
+- id: ASA:713120
+  vendor: Cisco
+  header_style: asa
+  severity: 5
+  message: '%ASA-5-713120: Group = {group}, IP = {peer_ip}, PHASE 2 COMPLETED (msgid={msgid})'
+  placeholders:
+    group: .*?
+    peer_ip: .*?
+    msgid: .*?
+  example: '<165>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-5-713120: Group = 192.0.2.20, IP = 192.0.2.20, PHASE 2 COMPLETED (msgid=bbe383e8)'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-701001-to-714011.html
+  verified: true
+  demoted_reason: null
+- id: ASA:733100
+  vendor: Cisco
+  header_style: asa
+  severity: 4
+  message: '%ASA-4-733100: [{object}] drop rate-{n} exceeded. Current burst rate is {b} per second, max configured rate is {mb}; Current average rate is {a} per second, max configured rate is {ma}; Cumulative total count is {total}'
+  placeholders:
+    object: .*?
+    n: .*?
+    b: .*?
+    mb: .*?
+    a: .*?
+    ma: .*?
+    total: .*?
+  example: '<164>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-4-733100: [ Scanning] drop rate-1 exceeded. Current burst rate is 12 per second, max configured rate is 10; Current average rate is 6 per second, max configured rate is 5; Cumulative total count is 3720'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-722001-to-776020.html
+  verified: true
+  demoted_reason: null
+- id: ASA:750002
+  vendor: Cisco
+  header_style: asa
+  severity: 5
+  message: '%ASA-5-750002: Local:{local_ip}:{port} Remote:{remote_ip}:{port_2} Username:{user} Received a IKE_INIT_SA request'
+  placeholders:
+    local_ip: .*?
+    port: .*?
+    remote_ip: .*?
+    port_2: .*?
+    user: .*?
+  example: '<165>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-5-750002: Local:198.51.100.10:500 Remote:192.0.2.20:500 Username:Unknown Received a IKE_INIT_SA request'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-722001-to-776020.html
+  verified: true
+  demoted_reason: null
+- id: ASA:750003
+  vendor: Cisco
+  header_style: asa
+  severity: 4
+  message: '%ASA-4-750003: Local:{local_ip}:{port} Remote:{remote_ip}:{port_2} Username:{user} Negotiation aborted due to ERROR: {error}'
+  placeholders:
+    local_ip: .*?
+    port: .*?
+    remote_ip: .*?
+    port_2: .*?
+    user: .*?
+    error: .*?
+  example: '<164>Oct 21 2026 14:02:10 asa-fw-01 : %ASA-4-750003: Local:198.51.100.10:500 Remote:192.0.2.20:500 Username:Unknown Negotiation aborted due to ERROR: Failed to locate an item in the database'
+  source_url: https://www.cisco.com/c/en/us/td/docs/security/asa/syslog/asa-syslog/syslog-messages-722001-to-776020.html
+  verified: true
+  demoted_reason: null
+- id: FTD:430003
+  vendor: Cisco
+  header_style: asa
+  severity: 1
+  message: '%FTD-1-430003: AccessControlRuleAction: {choice_1}, SrcIP: {ip}, DstIP: {ip_2}, SrcPort: {p}, DstPort: {p_2}, Protocol: {proto}, IngressInterface: {if}, EgressInterface: {if_2}, IngressZone: {z}, EgressZone: {z_2}, ACPolicy: {policy}, AccessControlRuleName: {rule}'
+  placeholders:
+    choice_1: .*?
+    ip: .*?
+    ip_2: .*?
+    p: .*?
+    p_2: .*?
+    proto: .*?
+    if: .*?
+    if_2: .*?
+    z: .*?
+    z_2: .*?
+    policy: .*?
+    rule: .*?
+  example: '2026-10-21T14:02:10Z ftd-01 %FTD-1-430003: AccessControlRuleAction: Allow, SrcIP: 10.20.5.14, DstIP: 198.51.100.53, SrcPort: 57379, DstPort: 53, Protocol: udp, IngressInterface: inside, EgressInterface: outside, IngressZone: in-zone, EgressZone: out-zone, ACPolicy: default, AccessControlRuleName: allow-dns'
+  source_url: https://github.com/elastic/integrations/tree/main/packages/cisco_ftd/data_stream/log/_dev/test/pipeline
+  verified: true
+  demoted_reason: null
+- id: PANOS:TRAFFIC:end
+  vendor: Palo Alto Networks
+  header_style: null
+  severity: null
+  message: 1,{receive_time},{serial},TRAFFIC,end,{cfg_ver},{time_generated},{src},{dst},{natsrc},{natdst},{rule},{srcuser},{dstuser},{app},{vsys},{from},{to},{inbound_if},{outbound_if},{logset},{time_generated_2},{sessionid},1,{sport},{dport},{natsport},{natdport},{flags},{proto},{action},{bytes},{bytes_sent},{bytes_received},{packets},{start},{elapsed},{category},0,{seqno},0x0,{srcloc},{dstloc},0,{pkts_sent},{pkts_received},{session_end_reason},0,0,0,0,,{device_name},from-policy
+  placeholders:
+    receive_time: .*?
+    serial: .*?
+    cfg_ver: .*?
+    time_generated: .*?
+    src: .*?
+    dst: .*?
+    natsrc: .*?
+    natdst: .*?
+    rule: .*?
+    srcuser: .*?
+    dstuser: .*?
+    app: .*?
+    vsys: .*?
+    from: .*?
+    to: .*?
+    inbound_if: .*?
+    outbound_if: .*?
+    logset: .*?
+    time_generated_2: .*?
+    sessionid: .*?
+    sport: .*?
+    dport: .*?
+    natsport: .*?
+    natdport: .*?
+    flags: .*?
+    proto: .*?
+    action: allow|deny|drop|drop ICMP|reset both|reset client|reset server
+    bytes: .*?
+    bytes_sent: .*?
+    bytes_received: .*?
+    packets: .*?
+    start: .*?
+    elapsed: .*?
+    category: .*?
+    seqno: .*?
+    srcloc: .*?
+    dstloc: .*?
+    pkts_sent: .*?
+    pkts_received: .*?
+    session_end_reason: threat|policy\-deny|decrypt\-cert\-validation|decrypt\-unsupport\-param|decrypt\-error|tcp\-rst\-from\-client|tcp\-rst\-from\-server|resources\-unavailable|tcp\-fin|tcp\-reuse|decoder|aged\-out|unknown|n/a
+    device_name: .*?
+  example: Oct 21 14:02:11 pa-fw-01 1,2026/10/21 14:02:10,000000000000,TRAFFIC,end,2561,2026/10/21 14:02:10,10.20.5.14,203.0.113.80,198.51.100.10,203.0.113.80,allow-web-out,,,ssl,vsys1,trust,untrust,ethernet1/2,ethernet1/1,fwd-syslog,2026/10/21 14:02:10,48211,1,51544,443,31877,443,0x400053,tcp,allow,7734,1758,5976,36,2026/10/21 14:01:52,18,computer-and-internet-info,0,7286123782408000001,0x0,10.0.0.0-10.255.255.255,United States,0,16,20,tcp-fin,0,0,0,0,,pa-fw-01,from-policy,,,0,,0,,N/A,0,0,0,0
+  source_url: https://docs.paloaltonetworks.com/pan-os/11-1/pan-os-admin/monitoring/use-syslog-for-monitoring/syslog-field-descriptions/traffic-log-fields
+  verified: true
+  demoted_reason: null
+- id: PANOS:TRAFFIC:drop_policy-deny
+  vendor: Palo Alto Networks
+  header_style: null
+  severity: null
+  message: 1,{receive_time},{serial},TRAFFIC,{choice_1},{cfg_ver},{time_generated},{src},{dst},,,{rule},,,{app},{vsys},{from},{to},{inbound_if},,{logset},{time_generated_2},0,1,{sport},{dport},0,0,{flags},{proto},{choice_2},0,0,0,1,{start},0,any,,{seqno},0x0,{srcloc},{dstloc},,1,0,policy-deny
+  placeholders:
+    receive_time: .*?
+    serial: .*?
+    choice_1: drop|deny
+    cfg_ver: .*?
+    time_generated: .*?
+    src: .*?
+    dst: .*?
+    rule: .*?
+    app: .*?
+    vsys: .*?
+    from: .*?
+    to: .*?
+    inbound_if: .*?
+    logset: .*?
+    time_generated_2: .*?
+    sport: .*?
+    dport: .*?
+    flags: .*?
+    proto: .*?
+    choice_2: .*?
+    start: .*?
+    seqno: .*?
+    srcloc: .*?
+    dstloc: .*?
+  example: Oct 21 14:02:11 pa-fw-01 1,2026/10/21 09:50:23,000000000000,TRAFFIC,drop,2816,2026/10/21 09:50:23,10.20.5.14,203.0.113.111,,,block-bad-host,,,not-applicable,vsys1,trust,untrust,ethernet1/2,,fwd-syslog,2026/10/21 09:50:23,0,1,55004,80,0,0,0x4000,tcp,drop,0,0,0,1,2026/10/21 09:50:19,0,any,,7286123782408766728,0x0,10.0.0.0-10.255.255.255,United States,,1,0,policy-deny,0,0,0,0,,pa-fw-01,from-policy,,,0,,0,,N/A,0,0,0,0
+  source_url: https://docs.paloaltonetworks.com/pan-os/11-1/pan-os-admin/monitoring/use-syslog-for-monitoring/syslog-field-descriptions/traffic-log-fields
+  verified: true
+  demoted_reason: null
+- id: PANOS:THREAT
+  vendor: Palo Alto Networks
+  header_style: null
+  severity: null
+  message: 1,{receive_time},{serial},THREAT,{subtype},{cfg_ver},{time_generated},{src},{dst},{natsrc},{natdst},{rule},{srcuser},{dstuser},{app},{vsys},{from},{to},{inbound_if},{outbound_if},{logset},{time_generated_2},{sessionid},{repeatcnt},{sport},{dport},{natsport},{natdport},{flags},{proto},{action},"{misc}",{threatid},{category},{severity},{direction},{seqno},0x0,{srcloc},{dstloc}
+  placeholders:
+    receive_time: .*?
+    serial: .*?
+    subtype: data|file|flood|packet|scan|spyware|url|ml\-virus|virus|vulnerability|wildfire|wildfire\-virus
+    cfg_ver: .*?
+    time_generated: .*?
+    src: .*?
+    dst: .*?
+    natsrc: .*?
+    natdst: .*?
+    rule: .*?
+    srcuser: .*?
+    dstuser: .*?
+    app: .*?
+    vsys: .*?
+    from: .*?
+    to: .*?
+    inbound_if: .*?
+    outbound_if: .*?
+    logset: .*?
+    time_generated_2: .*?
+    sessionid: .*?
+    repeatcnt: .*?
+    sport: .*?
+    dport: .*?
+    natsport: .*?
+    natdport: .*?
+    flags: .*?
+    proto: .*?
+    action: alert|allow|deny|drop|drop\-all\-packets|reset\-client|reset\-server|reset\-both|block\-url|block\-ip|random\-drop|sinkhole
+    misc: .*?
+    threatid: .*?
+    category: .*?
+    severity: .*?
+    direction: .*?
+    seqno: .*?
+    srcloc: .*?
+    dstloc: .*?
+  example: Oct 21 14:02:11 pa-fw-01 1,2026/10/21 09:40:58,000000000000,THREAT,url,2816,2026/10/21 09:40:58,10.20.5.14,203.0.113.90,198.51.100.10,203.0.113.90,block-adult,,,ssl,vsys1,trust,untrust,ethernet1/2,ethernet1/1,,2026/10/21 09:40:58,763,1,50462,443,15048,443,0x407400,tcp,block-url,"adult.example/",(9999),adult,informational,client-to-server,7286123782408765451,0x0,10.0.0.0-10.255.255.255,United States,,,0,,,0,,,,,,,,0,0,0,0,0,,pa-fw-01
+  source_url: https://docs.paloaltonetworks.com/pan-os/11-1/pan-os-admin/monitoring/use-syslog-for-monitoring/syslog-field-descriptions/threat-log-fields
+  verified: true
+  demoted_reason: null
+- id: PANOS:SYSTEM
+  vendor: Palo Alto Networks
+  header_style: null
+  severity: null
+  message: 1,{receive_time},{serial},SYSTEM,{subtype},{cfg_ver},{time_generated},,{eventid},{object},0,0,{module},{severity},"{description}",{seqno},0x0,0,0,0,0,,{device_name},0,0,{high_res_timestamp}
+  placeholders:
+    receive_time: .*?
+    serial: .*?
+    subtype: crypto|dhcp|dnsproxy|dos|general|global\-protect|ha|hw|nat|ntpd|pbf|port|pppoe|ras|routing|satd|sslmgr|sslvpn|userid|url\-filtering|vpn
+    cfg_ver: .*?
+    time_generated: .*?
+    eventid: .*?
+    object: .*?
+    module: .*?
+    severity: .*?
+    description: .*?
+    seqno: .*?
+    device_name: .*?
+    high_res_timestamp: .*?
+  example: Oct 21 14:02:11 pa-fw-01 1,2026/10/21 09:49:30,000000000000,SYSTEM,vpn,2816,2026/10/21 09:49:31,,ike-config-p2-success,,0,0,general,informational,"IKE daemon configuration load phase-2 succeeded.",7286123782408765846,0x0,0,0,0,0,,pa-fw-01,0,0,2026-10-21T09:49:31.363-07:00
+  source_url: https://docs.paloaltonetworks.com/pan-os/11-1/pan-os-admin/monitoring/use-syslog-for-monitoring/syslog-field-descriptions/system-log-fields
+  verified: true
+  demoted_reason: null
+- id: PANOS:SYSTEM:ike-nego-p1-fail
+  vendor: Palo Alto Networks
+  header_style: null
+  severity: null
+  message: '1,{receive_time},{serial},SYSTEM,vpn,{cfg_ver},{time_generated},,ike-nego-p1-fail,{ike_gateway},0,0,general,high,"IKE phase-1 negotiation is failed as initiator, main mode. Failed SA: {local_ip}[500]-{peer_ip}[500] cookie:{cookie}. Due to timeout.",{seqno},0x0,0,0,0,0,,{device_name},0,0,{high_res_timestamp}'
+  placeholders:
+    receive_time: .*?
+    serial: .*?
+    cfg_ver: .*?
+    time_generated: .*?
+    ike_gateway: .*?
+    local_ip: .*?
+    peer_ip: .*?
+    cookie: .*?
+    seqno: .*?
+    device_name: .*?
+    high_res_timestamp: .*?
+  example: 'Oct 21 14:02:11 pa-fw-01 1,2026/10/21 10:15:02,000000000000,SYSTEM,vpn,2816,2026/10/21 10:15:02,,ike-nego-p1-fail,GW-BRANCH1,0,0,general,high,"IKE phase-1 negotiation is failed as initiator, main mode. Failed SA: 198.51.100.10[500]-192.0.2.20[500] cookie:0000000000000000:0000000000000000. Due to timeout.",7286123782408766001,0x0,0,0,0,0,,pa-fw-01,0,0,2026-10-21T10:15:02.114-07:00'
+  source_url: https://docs.paloaltonetworks.com/pan-os/11-1/pan-os-admin/monitoring/use-syslog-for-monitoring/syslog-field-descriptions/system-log-fields
+  verified: false
+  demoted_reason: null
+- id: PANOS:SYSTEM:ha-state-change
+  vendor: Palo Alto Networks
+  header_style: null
+  severity: null
+  message: '1,{receive_time},{serial},SYSTEM,ha,{cfg_ver},{time_generated},,state-change,,0,0,general,critical,"HA Group {n}: Moved from state {choice_1} to state {state}"'
+  placeholders:
+    receive_time: .*?
+    serial: .*?
+    cfg_ver: .*?
+    time_generated: .*?
+    n: .*?
+    choice_1: Passive|Active|Initial|Non\-Functional|Suspended
+    state: .*?
+  example: 'Oct 21 14:02:11 pa-fw-01 1,2026/10/21 11:00:05,000000000000,SYSTEM,ha,2816,2026/10/21 11:00:05,,state-change,,0,0,general,critical,"HA Group 1: Moved from state Passive to state Active",7286123782408766100,0x0,0,0,0,0,,pa-fw-02,0,0,2026-10-21T11:00:05.020-07:00'
+  source_url: https://docs.paloaltonetworks.com/pan-os/11-1/pan-os-admin/monitoring/use-syslog-for-monitoring/syslog-field-descriptions/system-log-fields
+  verified: false
+  demoted_reason: null
+- id: PANOS:SYSTEM:routing-bgp-peer-down
+  vendor: Palo Alto Networks
+  header_style: null
+  severity: null
+  message: 1,{receive_time},{serial},SYSTEM,routing,{cfg_ver},{time_generated},,{eventid},{virtual_router},0,0,general,{severity},"{description}"
+  placeholders:
+    receive_time: .*?
+    serial: .*?
+    cfg_ver: .*?
+    time_generated: .*?
+    eventid: .*?
+    virtual_router: .*?
+    severity: .*?
+    description: .*?
+  example: null
+  source_url: https://docs.paloaltonetworks.com/pan-os/11-1/pan-os-admin/monitoring/use-syslog-for-monitoring/syslog-field-descriptions/system-log-fields
+  verified: false
+  demoted_reason: null
+- id: PANOS:CONFIG
+  vendor: Palo Alto Networks
+  header_style: null
+  severity: null
+  message: 1,{receive_time},{serial},CONFIG,0,{cfg_ver},{time_generated},{host},{vsys},{cmd},{admin},{client},{result},{path},{before},"{after}",{seqno},0x0,0,0,0,0,,{device_name},0,
+  placeholders:
+    receive_time: .*?
+    serial: .*?
+    cfg_ver: .*?
+    time_generated: .*?
+    host: .*?
+    vsys: .*?
+    cmd: add|clone|commit|delete|edit|move|rename|set
+    admin: .*?
+    client: Web|CLI
+    result: Submitted|Succeeded|Failed|Unauthorized
+    path: .*?
+    before: .*?
+    after: .*?
+    seqno: .*?
+    device_name: .*?
+  example: Oct 21 14:02:11 pa-fw-01 1,2026/10/21 08:52:10,000000000000,CONFIG,0,2816,2026/10/21 08:52:10,10.0.0.87,,set,netadmin,Web,Succeeded, vsys  vsys1 rulebase security rules  block-bad-host,,"block-bad-host { to [ untrust ]; from [ trust ]; source [ any ]; destination [ 203.0.113.111 ]; application [ any ]; service [ any ]; action drop; }",7286123782408765488,0x0,0,0,0,0,,pa-fw-01,0,
+  source_url: https://docs.paloaltonetworks.com/pan-os/11-1/pan-os-admin/monitoring/use-syslog-for-monitoring/syslog-field-descriptions/config-log-fields
+  verified: true
+  demoted_reason: null
+- id: PANOS:GLOBALPROTECT
+  vendor: Palo Alto Networks
+  header_style: null
+  severity: null
+  message: 1,{receive_time},{serial},GLOBALPROTECT,0,{cfg_ver},{time_generated},{vsys},{eventid},{stage},{auth_method},{tunnel_type},{srcuser},{srcregion},{machinename},{public_ip},{public_ipv6},{private_ip},{private_ipv6},{hostid},{serialnumber},{client_ver},{client_os},"{client_os_ver}",{repeatcnt},{reason},{error},"{description}",{status},{location},{login_duration},{connect_method},{error_code},{portal},{seqno},0x0
+  placeholders:
+    receive_time: .*?
+    serial: .*?
+    cfg_ver: .*?
+    time_generated: .*?
+    vsys: .*?
+    eventid: .*?
+    stage: .*?
+    auth_method: .*?
+    tunnel_type: .*?
+    srcuser: .*?
+    srcregion: .*?
+    machinename: .*?
+    public_ip: .*?
+    public_ipv6: .*?
+    private_ip: .*?
+    private_ipv6: .*?
+    hostid: .*?
+    serialnumber: .*?
+    client_ver: .*?
+    client_os: .*?
+    client_os_ver: .*?
+    repeatcnt: .*?
+    reason: .*?
+    error: .*?
+    description: .*?
+    status: .*?
+    location: .*?
+    login_duration: .*?
+    connect_method: .*?
+    error_code: .*?
+    portal: .*?
+    seqno: .*?
+  example: Oct 21 14:02:11 pa-fw-01 1,2026/10/21 11:29:49,000000000000,GLOBALPROTECT,0,2305,2026/10/21 11:29:49,vsys1,gateway-config-release,configuration,,,corp\jdoe,US,LAPTOP-0042,203.0.113.57,0.0.0.0,10.20.13.217,0.0.0.0,00000000-0000-0000-0000-000000000000,0000000,6.2.1,Microsoft Windows,"Windows 11 Pro , 64-bit",1,,,"",success,,0,,0,GP-Gateway,6919501582016786,0x0
+  source_url: https://docs.paloaltonetworks.com/pan-os/11-1/pan-os-admin/monitoring/use-syslog-for-monitoring/syslog-field-descriptions/globalprotect-log-fields
+  verified: true
+  demoted_reason: null
+- id: FGT:0000000013:accept/close
+  vendor: Fortinet
+  header_style: null
+  severity: null
+  message: date={date} time={time} [devname="{devname}" devid="{devid}"] eventtime={eventtime_ns} tz="{tz}" logid="0000000013" type="traffic" subtype="forward" level="notice" vd="{vd}" srcip={src} srcport={sport} srcintf="{if}" srcintfrole="{role}" dstip={dst} dstport={dport} dstintf="{if_2}" dstintfrole="{role_2}" sessionid={sid} proto={proto} action="{action}" policyid={policyid} policytype="policy" service="{svc}" trandisp="{choice_1}" transip={natip} transport={natport} duration={s} sentbyte={n} rcvdbyte={n_2} sentpkt={n_3} rcvdpkt={n_4}
+  placeholders:
+    date: .*?
+    time: .*?
+    devname: .*?
+    devid: .*?
+    eventtime_ns: .*?
+    tz: .*?
+    vd: .*?
+    src: .*?
+    sport: .*?
+    if: .*?
+    role: .*?
+    dst: .*?
+    dport: .*?
+    if_2: .*?
+    role_2: .*?
+    sid: .*?
+    proto: .*?
+    action: deny|accept|start|dns|ip\-conn|close|timeout|client\-rst|server\-rst
+    policyid: .*?
+    svc: .*?
+    choice_1: snat|dnat|noop
+    natip: .*?
+    natport: .*?
+    s: .*?
+    n: .*?
+    n_2: .*?
+    n_3: .*?
+    n_4: .*?
+  example: <189>date=2026-10-21 time=14:02:10 devname="fgt-edge-01" devid="FG100F0000000000" eventtime=1792612930123456789 tz="-0600" logid="0000000013" type="traffic" subtype="forward" level="notice" vd="root" srcip=10.20.5.14 srcport=51544 srcintf="port2" srcintfrole="lan" dstip=203.0.113.80 dstport=443 dstintf="port1" dstintfrole="wan" sessionid=105048 proto=6 action="close" policyid=1 policytype="policy" service="HTTPS" dstcountry="Reserved" srccountry="Reserved" trandisp="snat" transip=198.51.100.10 transport=51544 duration=116 sentbyte=1188 rcvdbyte=1224 sentpkt=17 rcvdpkt=16
+  source_url: https://docs.fortinet.com/document/fortigate/7.4.0/fortios-log-message-reference/13/13-log-id-traffic-end-forward
+  verified: false
+  demoted_reason: example does not match its own pattern
+- id: FGT:0000000013:deny-implicit
+  vendor: Fortinet
+  header_style: null
+  severity: null
+  message: date={date} time={time} ... logid="0000000013" type="traffic" subtype="forward" level="notice" vd="{vd}" srcip={src} ... action="deny" policyid=0 policytype="policy" service="{svc}" ... sentbyte=0 rcvdbyte=0 sentpkt=0
+  placeholders:
+    date: .*?
+    time: .*?
+    vd: .*?
+    src: .*?
+    svc: .*?
+  example: <189>date=2026-10-21 time=14:02:10 devname="fgt-edge-01" devid="FG100F0000000000" eventtime=1792612930123456789 tz="-0600" logid="0000000013" type="traffic" subtype="forward" level="notice" vd="root" srcip=203.0.113.45 srcport=52311 srcintf="port1" srcintfrole="wan" dstip=198.51.100.10 dstport=3389 dstintf="root" dstintfrole="undefined" sessionid=0 proto=6 action="deny" policyid=0 policytype="policy" service="RDP" dstcountry="Reserved" srccountry="Reserved" trandisp="noop" duration=0 sentbyte=0 rcvdbyte=0 sentpkt=0 appcat="unscanned" crscore=30 craction=131072 crlevel="high"
+  source_url: https://docs.fortinet.com/document/fortigate/7.4.0/fortios-log-message-reference/13/13-log-id-traffic-end-forward
+  verified: false
+  demoted_reason: null
+- id: FGT:0101037124
+  vendor: Fortinet
+  header_style: null
+  severity: null
+  message: date={date} time={time} ... logid="0101037124" type="event" subtype="vpn" level="error" vd="{vd}" logdesc="IPsec phase 1 error" msg="IPsec phase 1 error" action="negotiate" remip={peer} locip={local} remport=500 locport=500 outintf="{if}" cookies="{icookie}/{rcookie}" user="N/A" group="N/A" xauthuser="N/A" xauthgroup="N/A" assignip=N/A vpntunnel="{tunnel}" status="negotiate_error" init="{choice_1}" mode="{choice_2}" dir="{choice_3}" stage={choice_4} role="{choice_5}" result="ERROR"
+  placeholders:
+    date: .*?
+    time: .*?
+    vd: .*?
+    peer: .*?
+    local: .*?
+    if: .*?
+    icookie: .*?
+    rcookie: .*?
+    tunnel: .*?
+    choice_1: local|remote
+    choice_2: main|aggressive|ikev2
+    choice_3: inbound|outbound
+    choice_4: 1|2
+    choice_5: initiator|responder
+  example: <189>date=2026-10-21 time=14:02:10 devname="fgt-edge-01" devid="FG100F0000000000" eventtime=1792612930123456789 tz="-0600" logid="0101037124" type="event" subtype="vpn" level="error" vd="root" logdesc="IPsec phase 1 error" msg="IPsec phase 1 error" action="negotiate" remip=192.0.2.20 locip=198.51.100.10 remport=500 locport=500 outintf="port1" cookies="0000000000000000/0000000000000000" user="N/A" group="N/A" xauthuser="N/A" xauthgroup="N/A" assignip=N/A vpntunnel="to-branch1" status="negotiate_error" init="local" mode="main" dir="outbound" stage=1 role="initiator" result="ERROR"
+  source_url: https://docs.fortinet.com/document/fortigate/7.4.0/fortios-log-message-reference/37124/37124-mesgid-neg-i-p1-error
+  verified: false
+  demoted_reason: null
+- id: FGT:0101037127
+  vendor: Fortinet
+  header_style: null
+  severity: null
+  message: date={date} time={time} ... logid="0101037127" type="event" subtype="vpn" level="notice" vd="{vd}" logdesc="Progress IPsec phase 1" msg="progress IPsec phase 1" action="negotiate" remip={peer} locip={local} remport=500 locport=500 outintf="{if}" cookies="{icookie}/{rcookie}" user="N/A" group="N/A" xauthuser="N/A" xauthgroup="N/A" assignip=N/A vpntunnel="{tunnel}" status="success" init="local" mode="main" dir="outbound" stage=1 role="initiator" result="OK"
+  placeholders:
+    date: .*?
+    time: .*?
+    vd: .*?
+    peer: .*?
+    local: .*?
+    if: .*?
+    icookie: .*?
+    rcookie: .*?
+    tunnel: .*?
+  example: <189>date=2026-10-21 time=14:02:10 devname="fgt-edge-01" devid="FG100F0000000000" eventtime=1792612930123456789 tz="-0600" logid="0101037127" type="event" subtype="vpn" level="notice" vd="root" logdesc="Progress IPsec phase 1" msg="progress IPsec phase 1" action="negotiate" remip=192.0.2.20 locip=198.51.100.10 remport=500 locport=500 outintf="port1" cookies="0000000000000000/0000000000000000" user="N/A" group="N/A" xauthuser="N/A" xauthgroup="N/A" assignip=N/A vpntunnel="to-branch1" status="success" init="local" mode="main" dir="outbound" stage=1 role="initiator" result="OK"
+  source_url: https://docs.fortinet.com/document/fortigate/7.4.0/fortios-log-message-reference/37127/37127-mesgid-neg-progress-p1-notif
+  verified: false
+  demoted_reason: example does not match its own pattern
+- id: FGT:0101037138
+  vendor: Fortinet
+  header_style: null
+  severity: null
+  message: date={date} time={time} ... logid="0101037138" type="event" subtype="vpn" level="notice" vd="{vd}" logdesc="IPsec connection status changed" msg="IPsec connection status change" action="{choice_1}" remip={peer} locip={local} remport=500 locport=500 outintf="{if}" ... vpntunnel="{tunnel}" tunnelip={ip} tunnelid={n} tunneltype="ipsec" duration={s} sentbyte={n_2} rcvdbyte={n_3} nextstat={n_4}
+  placeholders:
+    date: .*?
+    time: .*?
+    vd: .*?
+    choice_1: tunnel\-up|tunnel\-down
+    peer: .*?
+    local: .*?
+    if: .*?
+    tunnel: .*?
+    ip: .*?
+    n: .*?
+    s: .*?
+    n_2: .*?
+    n_3: .*?
+    n_4: .*?
+  example: <189>date=2026-10-21 time=14:02:10 devname="fgt-edge-01" devid="FG100F0000000000" eventtime=1792612930123456789 tz="-0600" logid="0101037138" type="event" subtype="vpn" level="notice" vd="root" logdesc="IPsec connection status changed" msg="IPsec connection status change" action="tunnel-up" remip=192.0.2.20 locip=198.51.100.10 remport=500 locport=500 outintf="port1" cookies="0000000000000000/0000000000000000" user="N/A" group="N/A" xauthuser="N/A" xauthgroup="N/A" assignip=N/A vpntunnel="to-branch1" tunnelip=N/A tunnelid=1 tunneltype="ipsec" duration=0 sentbyte=0 rcvdbyte=0 nextstat=0
+  source_url: https://docs.fortinet.com/document/fortigate/7.4.0/fortios-log-message-reference/37138/37138-mesgid-conn-updown
+  verified: false
+  demoted_reason: null
+- id: FGT:0100020099
+  vendor: Fortinet
+  header_style: null
+  severity: null
+  message: date={date} time={time} ... logid="0100020099" type="event" subtype="system" level="warning" vd="{vd}" logdesc="Interface status changed" action="interface-stat-change" status="{choice_1}" msg="{text}"
+  placeholders:
+    date: .*?
+    time: .*?
+    vd: .*?
+    choice_1: up|down
+    text: .*?
+  example: <189>date=2026-10-21 time=14:02:10 devname="fgt-edge-01" devid="FG100F0000000000" eventtime=1792612930123456789 tz="-0600" logid="0100020099" type="event" subtype="system" level="warning" vd="root" logdesc="Interface status changed" action="interface-stat-change" status="DOWN" msg="Interface port3 is brought down"
+  source_url: https://docs.fortinet.com/document/fortigate/7.4.0/fortios-log-message-reference/20099/20099-log-id-intf-sta-chg
+  verified: false
+  demoted_reason: null
+- id: FGT:0100020090
+  vendor: Fortinet
+  header_style: null
+  severity: null
+  message: date={date} time={time} ... logid="0100020090" type="event" subtype="system" level="notice" vd="{vd}" logdesc="Interface link status changed" status="{choice_1}" msg="{text}" intf="{if}"
+  placeholders:
+    date: .*?
+    time: .*?
+    vd: .*?
+    choice_1: up|down
+    text: .*?
+    if: .*?
+  example: '<189>date=2026-10-21 time=14:02:10 devname="fgt-edge-01" devid="FG100F0000000000" eventtime=1792612930123456789 tz="-0600" logid="0100020090" type="event" subtype="system" level="notice" vd="root" logdesc="Interface link status changed" status="down" msg="Link monitor: Interface port3 was turned down" intf="port3"'
+  source_url: https://docs.fortinet.com/document/fortigate/7.4.0/fortios-log-message-reference/20090/20090-log-id-intf-link-sta-chg
+  verified: false
+  demoted_reason: null
+- id: FGT:0108035016
+  vendor: Fortinet
+  header_style: null
+  severity: null
+  message: date={date} time={time} ... logid="0108035016" type="event" subtype="ha" level="notice" vd="{vd}" logdesc="HA failover success" msg="{text}"
+  placeholders:
+    date: .*?
+    time: .*?
+    vd: .*?
+    text: .*?
+  example: <189>date=2026-10-21 time=14:02:10 devname="fgt-edge-01" devid="FG100F0000000000" eventtime=1792612930123456789 tz="-0600" logid="0108035016" type="event" subtype="ha" level="notice" vd="root" logdesc="HA failover success" msg="HA failover success"
+  source_url: https://docs.fortinet.com/document/fortigate/7.4.0/fortios-log-message-reference/35016/35016-log-id-ha-failover-success
+  verified: false
+  demoted_reason: null
+- id: FGT:0108037892
+  vendor: Fortinet
+  header_style: null
+  severity: null
+  message: date={date} time={time} ... logid="0108037892" type="event" subtype="ha" level="notice" vd="{vd}" logdesc="Virtual cluster member state moved" msg="Virtual cluster's member state moved" ha_role="{choice_1}" vcluster={n} vcluster_state="{choice_2}" vcluster_member={n_2} hostname="{host}" sn="{serial}"
+  placeholders:
+    date: .*?
+    time: .*?
+    vd: .*?
+    choice_1: master|slave|primary|secondary
+    n: .*?
+    choice_2: work|standby
+    n_2: .*?
+    host: .*?
+    serial: .*?
+  example: <189>date=2026-10-21 time=14:02:10 devname="fgt-edge-01" devid="FG100F0000000000" eventtime=1792612930123456789 tz="-0600" logid="0108037892" type="event" subtype="ha" level="notice" vd="root" logdesc="Virtual cluster member state moved" msg="Virtual cluster's member state moved" ha_role="master" vcluster=1 vcluster_state="work" vcluster_member=0 hostname="fgt-edge-01" sn="FG100F0000000000"
+  source_url: https://github.com/elastic/integrations/tree/main/packages/fortinet_fortigate/data_stream/log/_dev/test/pipeline
+  verified: false
+  demoted_reason: example does not match its own pattern
+- id: FGT:debug-flow:received
+  vendor: Fortinet
+  header_style: null
+  severity: null
+  message: id=20085 trace_id={n} func={func} line={n_2} msg="vd-{vdom} received a packet(proto={p}, {src}:{sport}->{dst}:{dport}) from {intf}."
+  placeholders:
+    n: .*?
+    func: .*?
+    n_2: .*?
+    vdom: .*?
+    p: .*?
+    src: .*?
+    sport: .*?
+    dst: .*?
+    dport: .*?
+    intf: .*?
+  example: id=20085 trace_id=209 func=resolve_ip_tuple_fast line=2700 msg="vd-root received a packet(proto=6, 10.20.5.14:51544->203.0.113.80:443) from port2."
+  source_url: https://docs.fortinet.com/document/fortigate/7.4.0/administration-guide/54688/debugging-the-packet-flow
+  verified: true
+  demoted_reason: null
+- id: FGT:debug-flow:new-session
+  vendor: Fortinet
+  header_style: null
+  severity: null
+  message: id=20085 trace_id={n} func={func} line={n_2} msg="allocate a new session-{hex8}"
+  placeholders:
+    n: .*?
+    func: .*?
+    n_2: .*?
+    hex8: .*?
+  example: id=20085 trace_id=209 func=resolve_ip_tuple line=2799 msg="allocate a new session-00000e90"
+  source_url: https://docs.fortinet.com/document/fortigate/7.4.0/administration-guide/54688/debugging-the-packet-flow
+  verified: true
+  demoted_reason: null
+- id: FGT:debug-flow:route
+  vendor: Fortinet
+  header_style: null
+  severity: null
+  message: 'id=20085 trace_id={n} func={func} line={n_2} msg="find a route: gw-{gw} via {intf}"'
+  placeholders:
+    n: .*?
+    func: .*?
+    n_2: .*?
+    gw: .*?
+    intf: .*?
+  example: 'id=20085 trace_id=209 func=vf_ip4_route_input line=1543 msg="find a route: gw-198.51.100.1 via port1"'
+  source_url: https://docs.fortinet.com/document/fortigate/7.4.0/administration-guide/54688/debugging-the-packet-flow
+  verified: true
+  demoted_reason: null
+- id: FGT:debug-flow:policy-allow
+  vendor: Fortinet
+  header_style: null
+  severity: null
+  message: 'id=20085 trace_id={n} func={func} line={n_2} msg="Allowed by Policy-{id}: {choice_1}"'
+  placeholders:
+    n: .*?
+    func: .*?
+    n_2: .*?
+    id: .*?
+    choice_1: .*?
+  example: 'id=20085 trace_id=209 func=fw_forward_handler line=317 msg="Allowed by Policy-3: SNAT"'
+  source_url: https://docs.fortinet.com/document/fortigate/7.4.0/administration-guide/54688/debugging-the-packet-flow
+  verified: true
+  demoted_reason: null
+- id: FGT:debug-flow:policy-deny
+  vendor: Fortinet
+  header_style: null
+  severity: null
+  message: id=20085 trace_id={n} func={func} line={n_2} msg="Denied by forward policy check (policy 0)"
+  placeholders:
+    n: .*?
+    func: .*?
+    n_2: .*?
+  example: null
+  source_url: https://docs.fortinet.com/document/fortigate/7.4.0/administration-guide/54688/debugging-the-packet-flow
+  verified: false
+  demoted_reason: null
+- id: FGT:debug-flow:rpf
+  vendor: Fortinet
+  header_style: null
+  severity: null
+  message: id=20085 trace_id={n} func={func} line={n_2} msg="reverse path check fail, drop"
+  placeholders:
+    n: .*?
+    func: .*?
+    n_2: .*?
+  example: null
+  source_url: https://docs.fortinet.com/document/fortigate/7.4.0/administration-guide/54688/debugging-the-packet-flow
+  verified: false
+  demoted_reason: null
+- id: FGT:debug-flow:no-session
+  vendor: Fortinet
+  header_style: null
+  severity: null
+  message: id=20085 trace_id={n} func={func} line={n_2} msg="no session matched"
+  placeholders:
+    n: .*?
+    func: .*?
+    n_2: .*?
+  example: null
+  source_url: https://docs.fortinet.com/document/fortigate/7.4.0/administration-guide/54688/debugging-the-packet-flow
+  verified: false
+  demoted_reason: null

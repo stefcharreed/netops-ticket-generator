@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:netops-ticket-generator:scenario:1",
+  "title": "Network incident scenario (labeled incident record)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "meta", "topology", "events", "telemetry", "config_diffs", "answer"],
+  "$defs": {
+    "utc": {"type": "string", "description": "ISO-8601 with Z or offset; naive times are rejected by validator T1"},
+    "ref": {"type": "string", "pattern": "^(e|tm|cd)\\d+$"}
+  },
+  "properties": {
+    "schema_version": {"const": 1},
+    "ticket": {
+      "type": "object", "additionalProperties": false,
+      "required": ["persona", "text", "misdirection"],
+      "properties": {
+        "persona": {"enum": ["end_user"]},
+        "text": {"type": "string", "minLength": 1},
+        "misdirection": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["kind", "claim", "true_because"],
+            "properties": {
+              "kind": {"enum": ["misattribution", "scope", "coincidence", "omission", "stale"]},
+              "claim": {"type": "string", "minLength": 1},
+              "true_because": {"type": "string", "minLength": 1}
+            }
+          }
+        }
+      }
+    },
+    "meta": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "style", "window", "difficulty", "allow_unverified", "brief"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^pkt-[0-9a-f]{6}$"},
+        "style": {"enum": ["multi-source"]},
+        "window": {
+          "type": "object", "additionalProperties": false, "required": ["start", "end"],
+          "properties": {"start": {"$ref": "#/$defs/utc"}, "end": {"$ref": "#/$defs/utc"}}
+        },
+        "difficulty": {
+          "type": "object", "additionalProperties": false,
+          "properties": {
+            "min_noise": {"type": "integer", "minimum": 0, "default": 3},
+            "show_diff_notes": {"type": "boolean", "default": false},
+            "shuffle_rows": {"type": "integer", "minimum": 0, "default": 0}
+          }
+        },
+        "allow_unverified": {"type": "boolean"},
+        "brief": {"type": "string", "minLength": 1}
+      }
+    },
+    "topology": {
+      "type": "object", "additionalProperties": false, "required": ["devices", "links", "entities"],
+      "properties": {
+        "devices": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["hostname", "role", "header_style", "mgmt_ip", "tz_offset_min", "clock"],
+            "properties": {
+              "hostname": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9-]*$"},
+              "role": {"type": "string"},
+              "header_style": {"enum": ["ios", "nxos", "asa", "bsd", "meraki"]},
+              "mgmt_ip": {"type": "string"},
+              "tz_offset_min": {"type": "integer", "minimum": -720, "maximum": 840},
+              "clock": {"enum": ["ntp", "unsynced"]},
+              "skew_s": {"type": "integer"}
+            },
+            "if": {"properties": {"clock": {"const": "unsynced"}}},
+            "then": {"required": ["skew_s"]}
+          }
+        },
+        "links": {
+          "type": "array",
+          "items": {"type": "array", "items": {"type": "string"}, "minItems": 2, "maxItems": 2}
+        },
+        "entities": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object", "additionalProperties": false,
+            "properties": {"mac": {"type": "string"}, "ip": {"type": "string"}}
+          }
+        }
+      }
+    },
+    "events": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "t", "device", "format_id", "fields", "label", "caused_by", "signal"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^e\\d+$"},
+          "t": {"$ref": "#/$defs/utc"},
+          "device": {"type": "string"},
+          "format_id": {"type": "string"},
+          "fields": {"type": "object", "additionalProperties": {"type": "string"}},
+          "label": {"enum": ["root_cause", "symptom", "unrelated", "noise"]},
+          "caused_by": {"oneOf": [{"$ref": "#/$defs/ref"}, {"type": "null"}]},
+          "signal": {
+            "oneOf": [
+              {"type": "null"},
+              {
+                "type": "object", "additionalProperties": false, "required": ["series", "op", "value"],
+                "properties": {
+                  "series": {"type": "string", "pattern": "^tm\\d+$"},
+                  "op": {"enum": [">=", "<="]},
+                  "value": {"type": "number"}
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "telemetry": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "device", "metric", "kind", "unit", "interval_s", "points"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^tm\\d+$"},
+          "device": {"type": "string"},
+          "metric": {"type": "string"},
+          "kind": {"enum": ["gauge", "rate", "delta"]},
+          "unit": {"type": "string"},
+          "interval_s": {"type": "integer", "minimum": 1},
+          "points": {
+            "type": "array", "minItems": 2,
+            "items": {"type": "array", "prefixItems": [{"$ref": "#/$defs/utc"}, {"type": "number"}],
+                      "minItems": 2, "maxItems": 2}
+          }
+        }
+      }
+    },
+    "config_diffs": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "device", "t_change", "before", "after", "note"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^cd\\d+$"},
+          "device": {"type": "string"},
+          "t_change": {"$ref": "#/$defs/utc"},
+          "before": {"type": "string"},
+          "after": {"type": "string"},
+          "note": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "answer": {
+      "type": "object", "additionalProperties": false,
+      "required": ["root_cause_id", "chain", "fix", "root_cause_terms", "rubric"],
+      "properties": {
+        "root_cause_id": {"$ref": "#/$defs/ref"},
+        "chain": {"type": "array", "items": {"$ref": "#/$defs/ref"}, "minItems": 1},
+        "fix": {"type": "string", "minLength": 1},
+        "root_cause_terms": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "rubric": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["id", "weight", "criterion", "evidence_refs"],
+            "properties": {
+              "id": {"type": "string"},
+              "weight": {"type": "integer", "minimum": 1},
+              "criterion": {"type": "string", "minLength": 1},
+              "evidence_refs": {"type": "array", "items": {"$ref": "#/$defs/ref"}, "minItems": 1}
+            }
+          }
+        }
+      }
+    }
+  }
+}

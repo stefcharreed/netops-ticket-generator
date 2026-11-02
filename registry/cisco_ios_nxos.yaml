@@ -1,0 +1,1241 @@
+# Normalized from the source registry YAMLs (not included in this repo) by scripts/import_registry.py. Edit with care; keep fields as documented in registry/README.md.
+- id: IOS:LINK-3-UPDOWN
+  vendor: Cisco
+  header_style: ios
+  severity: 3
+  message: '%LINK-3-UPDOWN: Interface {interface}, changed state to {state}'
+  placeholders:
+    interface: .*?
+    state: up|down
+  example: 'Oct 21 14:03:11.482 MDT: %LINK-3-UPDOWN: Interface GigabitEthernet1/0/12, changed state to down'
+  source_url: https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst9300/software/release/17-17/configuration_guide/sys_mgmt/b_1717_sys_mgmt_9300_cg/configuring_system_message_logs.html
+  verified: true
+  demoted_reason: null
+- id: IOS:LINEPROTO-5-UPDOWN
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%LINEPROTO-5-UPDOWN: Line protocol on Interface {interface}, changed state to {state}'
+  placeholders:
+    interface: .*?
+    state: up|down
+  example: 'Oct 21 14:03:12.483 MDT: %LINEPROTO-5-UPDOWN: Line protocol on Interface GigabitEthernet1/0/12, changed state to down'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:LINK-5-CHANGED
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%LINK-5-CHANGED: Interface {interface}, changed state to {state}'
+  placeholders:
+    interface: .*?
+    state: .*?
+  example: 'Oct 21 14:05:40.117 MDT: %LINK-5-CHANGED: Interface GigabitEthernet1/0/12, changed state to administratively down'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:LINK-4-ERROR
+  vendor: Cisco
+  header_style: ios
+  severity: 4
+  message: ''
+  placeholders: {}
+  example: null
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: false
+  demoted_reason: null
+- id: IOS:CDP-4-DUPLEX_MISMATCH
+  vendor: Cisco
+  header_style: ios
+  severity: 4
+  message: '%CDP-4-DUPLEX_MISMATCH: duplex mismatch discovered on {local_interface} ({local_duplex}), with {neighbor_host} {neighbor_interface} ({neighbor_duplex}).'
+  placeholders:
+    local_interface: .*?
+    local_duplex: .*?
+    neighbor_host: .*?
+    neighbor_interface: .*?
+    neighbor_duplex: full duplex|half duplex
+  example: 'Oct 21 14:10:02.551 MDT: %CDP-4-DUPLEX_MISMATCH: duplex mismatch discovered on GigabitEthernet1/0/7 (not full duplex), with ACC-SW2 GigabitEthernet1/0/24 (full duplex).'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:CDP-4-NATIVE_VLAN_MISMATCH
+  vendor: Cisco
+  header_style: ios
+  severity: 4
+  message: '%CDP-4-NATIVE_VLAN_MISMATCH: Native VLAN mismatch discovered on {local_interface} ({local_vlan}), with {neighbor_host} {neighbor_interface} ({neighbor_vlan}).'
+  placeholders:
+    local_interface: .*?
+    local_vlan: .*?
+    neighbor_host: .*?
+    neighbor_interface: .*?
+    neighbor_vlan: .*?
+  example: 'Oct 21 14:11:30.004 MDT: %CDP-4-NATIVE_VLAN_MISMATCH: Native VLAN mismatch discovered on GigabitEthernet1/0/48 (99), with DIST-SW1 TenGigabitEthernet1/1/1 (1).'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:ETHCNTR-3-LOOP_BACK_DETECTED
+  vendor: Cisco
+  header_style: ios
+  severity: 3
+  message: '%ETHCNTR-3-LOOP_BACK_DETECTED: Keepalive packet loop-back detected on {interface}.'
+  placeholders:
+    interface: .*?
+  example: 'Oct 21 14:20:45.900 MDT: %ETHCNTR-3-LOOP_BACK_DETECTED: Keepalive packet loop-back detected on GigabitEthernet1/0/9.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:PM-4-ERR_DISABLE
+  vendor: Cisco
+  header_style: ios
+  severity: 4
+  message: '%PM-4-ERR_DISABLE: {cause} error detected on {interface}, putting {interface_2} in err-disable state'
+  placeholders:
+    cause: .*?
+    interface: .*?
+    interface_2: .*?
+  example: 'Oct 21 14:21:02.117 MDT: %PM-4-ERR_DISABLE: bpduguard error detected on Gi1/0/5, putting Gi1/0/5 in err-disable state'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:PM-4-ERR_RECOVER
+  vendor: Cisco
+  header_style: ios
+  severity: 4
+  message: '%PM-4-ERR_RECOVER: Attempting to recover from {cause} err-disable state on {interface}'
+  placeholders:
+    cause: .*?
+    interface: .*?
+  example: 'Oct 21 14:26:02.120 MDT: %PM-4-ERR_RECOVER: Attempting to recover from bpduguard err-disable state on Gi1/0/5'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:PORT_SECURITY-2-PSECURE_VIOLATION
+  vendor: Cisco
+  header_style: ios
+  severity: 2
+  message: '%PORT_SECURITY-2-PSECURE_VIOLATION: Security violation occurred, caused by MAC address {mac} on port {interface}.'
+  placeholders:
+    mac: .*?
+    interface: .*?
+  example: 'Oct 21 14:30:15.338 MDT: %PORT_SECURITY-2-PSECURE_VIOLATION: Security violation occurred, caused by MAC address 0000.5e00.5317 on port GigabitEthernet1/0/14.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:STORM_CONTROL-3-FILTERED
+  vendor: Cisco
+  header_style: ios
+  severity: 3
+  message: '%STORM_CONTROL-3-FILTERED: A {traffic_type} storm detected on {interface}. A packet filter action has been applied on the interface.'
+  placeholders:
+    traffic_type: .*?
+    interface: .*?
+  example: 'Oct 21 14:40:01.002 MDT: %STORM_CONTROL-3-FILTERED: A Broadcast storm detected on Gi1/0/22. A packet filter action has been applied on the interface.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:STORM_CONTROL-3-SHUTDOWN
+  vendor: Cisco
+  header_style: ios
+  severity: 3
+  message: '%STORM_CONTROL-3-SHUTDOWN: A packet storm was detected on {interface}. The interface has been disabled.'
+  placeholders:
+    interface: .*?
+  example: 'Oct 21 14:40:01.010 MDT: %STORM_CONTROL-3-SHUTDOWN: A packet storm was detected on Gi1/0/22. The interface has been disabled.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:SW_MATM-4-MACFLAP_NOTIF
+  vendor: Cisco
+  header_style: ios
+  severity: 4
+  message: '%SW_MATM-4-MACFLAP_NOTIF: Host {mac} in vlan {vlan} is flapping between port {port1} and port {port2}'
+  placeholders:
+    mac: .*?
+    vlan: .*?
+    port1: .*?
+    port2: .*?
+  example: 'Oct 21 14:39:58.771 MDT: %SW_MATM-4-MACFLAP_NOTIF: Host 0000.5e00.5321 in vlan 20 is flapping between port Gi1/0/1 and port Te1/1/1'
+  source_url: https://www.cisco.com/c/en/us/support/docs/switches/catalyst-9300-series-switches/223094-understand-mac-flapping-notifications.html
+  verified: true
+  demoted_reason: null
+- id: IOS:SPANTREE-2-BLOCK_BPDUGUARD
+  vendor: Cisco
+  header_style: ios
+  severity: 2
+  message: '%SPANTREE-2-BLOCK_BPDUGUARD: Received BPDU on port {interface} with BPDU Guard enabled. Disabling port.'
+  placeholders:
+    interface: .*?
+  example: 'Oct 21 14:21:02.115 MDT: %SPANTREE-2-BLOCK_BPDUGUARD: Received BPDU on port Gi1/0/5 with BPDU Guard enabled. Disabling port.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:SPANTREE-2-ROOTGUARD_BLOCK
+  vendor: Cisco
+  header_style: ios
+  severity: 2
+  message: '%SPANTREE-2-ROOTGUARD_BLOCK: Root guard blocking port {interface} on {stp_instance}.'
+  placeholders:
+    interface: .*?
+    stp_instance: .*?
+  example: 'Oct 21 15:02:44.200 MDT: %SPANTREE-2-ROOTGUARD_BLOCK: Root guard blocking port GigabitEthernet1/0/48 on VLAN0020.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:SPANTREE-2-ROOTGUARD_UNBLOCK
+  vendor: Cisco
+  header_style: ios
+  severity: 2
+  message: '%SPANTREE-2-ROOTGUARD_UNBLOCK: Root guard unblocking port {interface} on {stp_instance}.'
+  placeholders:
+    interface: .*?
+    stp_instance: .*?
+  example: 'Oct 21 15:05:10.004 MDT: %SPANTREE-2-ROOTGUARD_UNBLOCK: Root guard unblocking port GigabitEthernet1/0/48 on VLAN0020.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:SPANTREE-2-LOOPGUARD_BLOCK
+  vendor: Cisco
+  header_style: ios
+  severity: 2
+  message: '%SPANTREE-2-LOOPGUARD_BLOCK: Loop guard blocking port {interface} on {stp_instance}.'
+  placeholders:
+    interface: .*?
+    stp_instance: .*?
+  example: 'Oct 21 15:10:31.777 MDT: %SPANTREE-2-LOOPGUARD_BLOCK: Loop guard blocking port TenGigabitEthernet1/1/2 on VLAN0020.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:SPANTREE-2-RECV_PVID_ERR
+  vendor: Cisco
+  header_style: ios
+  severity: 2
+  message: '%SPANTREE-2-RECV_PVID_ERR: Received BPDU with inconsistent peer vlan id {peer_vlan} on {interface} {stp_instance}.'
+  placeholders:
+    peer_vlan: .*?
+    interface: .*?
+    stp_instance: .*?
+  example: 'Oct 21 14:11:31.010 MDT: %SPANTREE-2-RECV_PVID_ERR: Received BPDU with inconsistent peer vlan id 1 on GigabitEthernet1/0/48 VLAN0099.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:SPANTREE-2-BLOCK_PVID_PEER
+  vendor: Cisco
+  header_style: ios
+  severity: 2
+  message: '%SPANTREE-2-BLOCK_PVID_PEER: Blocking {interface} on {stp_instance}. Inconsistent peer vlan.'
+  placeholders:
+    interface: .*?
+    stp_instance: .*?
+  example: 'Oct 21 14:11:31.012 MDT: %SPANTREE-2-BLOCK_PVID_PEER: Blocking GigabitEthernet1/0/48 on VLAN0001. Inconsistent peer vlan.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:SPANTREE-2-BLOCK_PVID_LOCAL
+  vendor: Cisco
+  header_style: ios
+  severity: 2
+  message: '%SPANTREE-2-BLOCK_PVID_LOCAL: Blocking {interface} on {stp_instance}. Inconsistent local vlan.'
+  placeholders:
+    interface: .*?
+    stp_instance: .*?
+  example: 'Oct 21 14:11:31.013 MDT: %SPANTREE-2-BLOCK_PVID_LOCAL: Blocking GigabitEthernet1/0/48 on VLAN0099. Inconsistent local vlan.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:SPANTREE-2-UNBLOCK_CONSIST_PORT
+  vendor: Cisco
+  header_style: ios
+  severity: 2
+  message: '%SPANTREE-2-UNBLOCK_CONSIST_PORT: Unblocking {interface} on {stp_instance}. Port consistency restored.'
+  placeholders:
+    interface: .*?
+    stp_instance: .*?
+  example: 'Oct 21 14:15:02.300 MDT: %SPANTREE-2-UNBLOCK_CONSIST_PORT: Unblocking GigabitEthernet1/0/48 on VLAN0001. Port consistency restored.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:SPANTREE-5-ROOTCHANGE
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%SPANTREE-5-ROOTCHANGE: Root Changed for {stp_type} {instance}: New Root Port is {interface}. New Root Mac Address is {mac}'
+  placeholders:
+    stp_type: .*?
+    instance: .*?
+    interface: .*?
+    mac: .*?
+  example: 'Oct 21 15:20:07.441 MDT: %SPANTREE-5-ROOTCHANGE: Root Changed for vlan 20: New Root Port is TenGigabitEthernet1/1/1. New Root Mac Address is 0000.5e00.5301'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:SPANTREE-5-TOPOTRAP
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%SPANTREE-5-TOPOTRAP: Topology Change Trap for {stp_type} {instance}'
+  placeholders:
+    stp_type: .*?
+    instance: .*?
+  example: 'Oct 21 15:20:07.450 MDT: %SPANTREE-5-TOPOTRAP: Topology Change Trap for vlan 20'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:SPANTREE-2-TOPOLOGY_CHANGE
+  vendor: Cisco
+  header_style: ios
+  severity: 2
+  message: ''
+  placeholders: {}
+  example: null
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: false
+  demoted_reason: null
+- id: IOS:DHCP_SNOOPING-5-DHCP_SNOOPING_UNTRUSTED_PORT
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%DHCP_SNOOPING-5-DHCP_SNOOPING_UNTRUSTED_PORT: DHCP_SNOOPING drop message on untrusted port, message type: {msg_type}, MAC sa: {mac}'
+  placeholders:
+    msg_type: .*?
+    mac: .*?
+  example: 'Oct 21 15:31:12.009 MDT: %DHCP_SNOOPING-5-DHCP_SNOOPING_UNTRUSTED_PORT: DHCP_SNOOPING drop message on untrusted port, message type: DHCPOFFER, MAC sa: 0000.5e00.5333'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:DHCP_SNOOPING-5-DHCP_SNOOPING_MATCH_MAC_FAIL
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%DHCP_SNOOPING-5-DHCP_SNOOPING_MATCH_MAC_FAIL: DHCP_SNOOPING drop message because the chaddr doesn''t match source mac, message type: {msg_type}, chaddr: {chaddr}, MAC sa: {mac}'
+  placeholders:
+    msg_type: DHCPDISCOVER|DHCPREQUEST
+    chaddr: .*?
+    mac: .*?
+  example: 'Oct 21 15:33:40.551 MDT: %DHCP_SNOOPING-5-DHCP_SNOOPING_MATCH_MAC_FAIL: DHCP_SNOOPING drop message because the chaddr doesn''t match source mac, message type: DHCPDISCOVER, chaddr: 0000.5e00.5340, MAC sa: 0000.5e00.5341'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:DHCP_SNOOPING-4-DHCP_SNOOPING_ERRDISABLE_WARNING
+  vendor: Cisco
+  header_style: ios
+  severity: 4
+  message: '%DHCP_SNOOPING-4-DHCP_SNOOPING_ERRDISABLE_WARNING: DHCP Snooping received {count} DHCP packets on interface {interface}'
+  placeholders:
+    count: .*?
+    interface: .*?
+  example: 'Oct 21 15:35:00.120 MDT: %DHCP_SNOOPING-4-DHCP_SNOOPING_ERRDISABLE_WARNING: DHCP Snooping received 120 DHCP packets on interface Gi1/0/30'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:SW_DAI-4-DHCP_SNOOPING_DENY
+  vendor: Cisco
+  header_style: ios
+  severity: 4
+  message: '%SW_DAI-4-DHCP_SNOOPING_DENY: {count} Invalid ARPs ({direction}) on {interface}, vlan {vlan}.([{sender_mac}/{sender_ip}/{target_mac}/{target_ip}/{time}])'
+  placeholders:
+    count: .*?
+    direction: Req|Res
+    interface: .*?
+    vlan: .*?
+    sender_mac: .*?
+    sender_ip: .*?
+    target_mac: .*?
+    target_ip: .*?
+    time: .*?
+  example: 'Oct 21 15:40:02.330 MDT: %SW_DAI-4-DHCP_SNOOPING_DENY: 1 Invalid ARPs (Req) on Gi1/0/30, vlan 20.([0000.5e00.5350/192.0.2.77/0000.5e00.5351/192.0.2.1/15:40:02 MDT Wed Oct 21 2026])'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:SW_DAI-4-PACKET_RATE_EXCEEDED
+  vendor: Cisco
+  header_style: ios
+  severity: 4
+  message: '%SW_DAI-4-PACKET_RATE_EXCEEDED: {count} packets received in {ms} milliseconds on {interface}.'
+  placeholders:
+    count: .*?
+    ms: .*?
+    interface: .*?
+  example: 'Oct 21 15:41:10.010 MDT: %SW_DAI-4-PACKET_RATE_EXCEEDED: 52 packets received in 1000 milliseconds on Gi1/0/30.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:ILPOWER-5-POWER_GRANTED
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%ILPOWER-5-POWER_GRANTED: Interface {interface}: Power granted'
+  placeholders:
+    interface: .*?
+  example: 'Oct 21 07:58:14.660 MDT: %ILPOWER-5-POWER_GRANTED: Interface Gi1/0/3: Power granted'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:ILPOWER-5-IEEE_DISCONNECT
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%ILPOWER-5-IEEE_DISCONNECT: Interface {interface}: PD removed'
+  placeholders:
+    interface: .*?
+  example: 'Oct 21 08:12:40.101 MDT: %ILPOWER-5-IEEE_DISCONNECT: Interface Gi1/0/3: PD removed'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:ILPOWER-5-ILPOWER_POWER_DENY
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%ILPOWER-5-ILPOWER_POWER_DENY: Interface {interface}: inline power denied. Reason: {reason}'
+  placeholders:
+    interface: .*?
+    reason: .*?
+  example: 'Oct 21 08:15:02.900 MDT: %ILPOWER-5-ILPOWER_POWER_DENY: Interface Gi1/0/40: inline power denied. Reason: insufficient power'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:ILPOWER-3-CONTROLLER_PORT_ERR
+  vendor: Cisco
+  header_style: ios
+  severity: 3
+  message: '%ILPOWER-3-CONTROLLER_PORT_ERR: Controller port error, Interface {interface}: {detail}'
+  placeholders:
+    interface: .*?
+    detail: .*?
+  example: 'Oct 21 08:20:33.415 MDT: %ILPOWER-3-CONTROLLER_PORT_ERR: Controller port error, Interface Gi1/0/12: Power Controller reports power Imax error detected'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:UDLD-4-UDLD_PORT_DISABLED
+  vendor: Cisco
+  header_style: ios
+  severity: 4
+  message: '%UDLD-4-UDLD_PORT_DISABLED: UDLD disabled interface {interface}, {reason} detected'
+  placeholders:
+    interface: .*?
+    reason: .*?
+  example: 'Oct 21 16:02:09.880 MDT: %UDLD-4-UDLD_PORT_DISABLED: UDLD disabled interface Te1/1/2, unidirectional link detected'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:EC-5-CANNOT_BUNDLE2
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%EC-5-CANNOT_BUNDLE2: {interface} is not compatible with {other_interface} and will be suspended ({reason})'
+  placeholders:
+    interface: .*?
+    other_interface: .*?
+    reason: .*?
+  example: 'Oct 21 16:10:41.553 MDT: %EC-5-CANNOT_BUNDLE2: Gi1/0/2 is not compatible with Gi1/0/1 and will be suspended (speed of Gi1/0/2 is 100M, Gi1/0/1 is 1000M)'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: false
+  demoted_reason: null
+- id: IOS:EC-5-BUNDLE
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%EC-5-BUNDLE: Interface {interface} joined port-channel {port_channel}'
+  placeholders:
+    interface: .*?
+    port_channel: .*?
+  example: 'Oct 21 16:12:05.020 MDT: %EC-5-BUNDLE: Interface Gi1/0/2 joined port-channel Port-channel1'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: false
+  demoted_reason: null
+- id: IOS:EC-5-UNBUNDLE
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%EC-5-UNBUNDLE: Interface {interface} left the port-channel {port_channel}'
+  placeholders:
+    interface: .*?
+    port_channel: .*?
+  example: 'Oct 21 16:09:58.774 MDT: %EC-5-UNBUNDLE: Interface Gi1/0/2 left the port-channel Port-channel1'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: false
+  demoted_reason: null
+- id: IOS:OSPF-5-ADJCHG
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%OSPF-5-ADJCHG: Process {pid}, Nbr {router_id} on {interface} from {old_state} to {new_state}, {reason}'
+  placeholders:
+    pid: .*?
+    router_id: .*?
+    interface: .*?
+    old_state: DOWN|ATTEMPT|INIT|2WAY|EXSTART|EXCHANGE|LOADING|FULL
+    new_state: .*?
+    reason: .*?
+  example: 'Oct 21 16:30:44.912 MDT: %OSPF-5-ADJCHG: Process 10, Nbr 192.0.2.2 on GigabitEthernet0/0/1 from FULL to DOWN, Neighbor Down: Dead timer expired'
+  source_url: https://www.cisco.com/c/ja_jp/support/docs/ip/ip-routing/ospf-neighbor-down.html
+  verified: true
+  demoted_reason: null
+- id: IOS:OSPF-4-ERRRCV
+  vendor: Cisco
+  header_style: ios
+  severity: 4
+  message: '%OSPF-4-ERRRCV: Received invalid packet: {reason} from {source_ip}, {interface}'
+  placeholders:
+    reason: .*?
+    source_ip: .*?
+    interface: .*?
+  example: 'Oct 21 16:35:02.006 MDT: %OSPF-4-ERRRCV: Received invalid packet: mismatched area ID, from backbone area must be virtual-link but not found from 192.0.2.6, GigabitEthernet0/0/2'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:OSPF-4-DUP_RTRID_NBR
+  vendor: Cisco
+  header_style: ios
+  severity: 4
+  message: '%OSPF-4-DUP_RTRID_NBR: OSPF detected duplicate router-id {router_id} from {source_ip} on interface {interface}'
+  placeholders:
+    router_id: .*?
+    source_ip: .*?
+    interface: .*?
+  example: 'Oct 21 16:36:20.420 MDT: %OSPF-4-DUP_RTRID_NBR: OSPF detected duplicate router-id 192.0.2.1 from 192.0.2.9 on interface GigabitEthernet0/0/1'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:DUAL-5-NBRCHANGE
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%DUAL-5-NBRCHANGE: EIGRP-IPv4 {asn}: Neighbor {neighbor_ip} ({interface}) is {state}: {reason}'
+  placeholders:
+    asn: .*?
+    neighbor_ip: .*?
+    interface: .*?
+    state: up|down|resync
+    reason: .*?
+  example: 'Oct 21 16:40:13.003 MDT: %DUAL-5-NBRCHANGE: EIGRP-IPv4 100: Neighbor 198.51.100.2 (GigabitEthernet0/0/0) is down: holding time expired'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:BGP-5-ADJCHANGE
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%BGP-5-ADJCHANGE: neighbor {neighbor_ip}{vrf_part} {state}{reason_part}'
+  placeholders:
+    neighbor_ip: .*?
+    vrf_part: .*?
+    state: Up|Down
+    reason_part: .*?
+  example: 'Oct 21 16:50:31.640 MDT: %BGP-5-ADJCHANGE: neighbor 203.0.113.1 Down BGP Notification sent'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:BGP-3-NOTIFICATION
+  vendor: Cisco
+  header_style: ios
+  severity: 3
+  message: '%BGP-3-NOTIFICATION: {direction} neighbor {neighbor_ip} {code}/{subcode} ({description}) {length} bytes {data}'
+  placeholders:
+    direction: sent to|received from
+    neighbor_ip: .*?
+    code: .*?
+    subcode: .*?
+    description: .*?
+    length: .*?
+    data: .*?
+  example: 'Oct 21 16:50:31.638 MDT: %BGP-3-NOTIFICATION: sent to neighbor 203.0.113.1 4/0 (hold time expired) 0 bytes'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: false
+  demoted_reason: example does not match its own pattern
+- id: IOS:BGP-5-NBR_RESET
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%BGP-5-NBR_RESET: Neighbor {neighbor_ip} reset ({reason})'
+  placeholders:
+    neighbor_ip: .*?
+    reason: .*?
+  example: 'Oct 21 16:50:31.639 MDT: %BGP-5-NBR_RESET: Neighbor 203.0.113.1 reset (Hold Timer Expired)'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:HSRP-5-STATECHANGE
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%HSRP-5-STATECHANGE: {interface} Grp {group} state {old_state} -> {new_state}'
+  placeholders:
+    interface: .*?
+    group: .*?
+    old_state: Init|Learn|Listen|Speak|Standby|Active
+    new_state: .*?
+  example: 'Oct 21 17:01:05.212 MDT: %HSRP-5-STATECHANGE: Vlan10 Grp 10 state Standby -> Active'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:TRACK-6-STATE
+  vendor: Cisco
+  header_style: ios
+  severity: 6
+  message: '%TRACK-6-STATE: {object} {type} {param} {old_state} -> {new_state}'
+  placeholders:
+    object: .*?
+    type: .*?
+    param: .*?
+    old_state: Up|Down
+    new_state: Up|Down
+  example: 'Oct 21 17:01:04.990 MDT: %TRACK-6-STATE: 1 ip sla 10 reachability Up -> Down'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:IP-4-DUPADDR
+  vendor: Cisco
+  header_style: ios
+  severity: 4
+  message: '%IP-4-DUPADDR: Duplicate address {ip} on {interface}, sourced by {mac}'
+  placeholders:
+    ip: .*?
+    interface: .*?
+    mac: .*?
+  example: 'Oct 21 17:10:22.001 MDT: %IP-4-DUPADDR: Duplicate address 192.0.2.1 on Vlan20, sourced by 0000.5e00.5360'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:SEC-6-IPACCESSLOGP
+  vendor: Cisco
+  header_style: ios
+  severity: 6
+  message: '%SEC-6-IPACCESSLOGP: list {acl} {action} {protocol} {src_ip}({src_port}){input_part} -> {dst_ip}({dst_port}), {count} {packet_word}'
+  placeholders:
+    acl: .*?
+    action: permitted|denied
+    protocol: tcp|udp
+    src_ip: .*?
+    src_port: .*?
+    input_part: .*?
+    dst_ip: .*?
+    dst_port: .*?
+    count: .*?
+    packet_word: packet|packets
+  example: 'Oct 21 17:20:03.551 MDT: %SEC-6-IPACCESSLOGP: list OUTSIDE-IN denied tcp 198.51.100.23(51514) -> 192.0.2.10(23), 1 packet'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:SEC-6-IPACCESSLOGDP
+  vendor: Cisco
+  header_style: ios
+  severity: 6
+  message: '%SEC-6-IPACCESSLOGDP: list {acl} {action} {protocol} {src_ip}{input_part} -> {dst_ip} ({type}/{code}), {count} {packet_word}'
+  placeholders:
+    acl: .*?
+    action: permitted|denied
+    protocol: .*?
+    src_ip: .*?
+    input_part: .*?
+    dst_ip: .*?
+    type: .*?
+    code: .*?
+    count: .*?
+    packet_word: packet|packets
+  example: 'Oct 21 17:21:44.002 MDT: %SEC-6-IPACCESSLOGDP: list OUTSIDE-IN denied icmp 198.51.100.23 -> 192.0.2.10 (8/0), 1 packet'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:SYS-5-CONFIG_I
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%SYS-5-CONFIG_I: Configured from {source} by {who}'
+  placeholders:
+    source: .*?
+    who: .*?
+  example: 'Oct 21 17:30:15.009 MDT: %SYS-5-CONFIG_I: Configured from console by netops on vty0 (192.0.2.50)'
+  source_url: https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst9300/software/release/17-17/configuration_guide/sys_mgmt/b_1717_sys_mgmt_9300_cg/configuring_system_message_logs.html
+  verified: true
+  demoted_reason: null
+- id: IOS:SYS-5-RESTART
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%SYS-5-RESTART: System restarted --
+
+    {version_banner}'
+  placeholders:
+    version_banner: .*?
+  example: 'Oct 21 02:14:09.000 MDT: %SYS-5-RESTART: System restarted --'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: false
+  demoted_reason: example does not match its own pattern
+- id: IOS:SYS-5-RELOAD
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%SYS-5-RELOAD: Reload requested {detail}'
+  placeholders:
+    detail: .*?
+  example: 'Oct 21 02:09:51.300 MDT: %SYS-5-RELOAD: Reload requested by netops on vty0 (192.0.2.50). Reload Reason: Reload Command.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:SYS-2-MALLOCFAIL
+  vendor: Cisco
+  header_style: ios
+  severity: 2
+  message: '%SYS-2-MALLOCFAIL: Memory allocation of {bytes} bytes failed from {pc}, alignment {align}
+
+    Pool: {pool}  Free: {free}  Cause: {cause}
+
+    Alternate Pool: {alt_pool}  Free: {alt_free}  Cause: {alt_cause}'
+  placeholders:
+    bytes: .*?
+    pc: .*?
+    align: .*?
+    pool: Processor|I/O
+    free: .*?
+    cause: Memory fragmentation|Not enough free memory
+    alt_pool: None|I/O
+    alt_free: .*?
+    alt_cause: .*?
+  example: 'Oct 21 17:45:00.101 MDT: %SYS-2-MALLOCFAIL: Memory allocation of 65536 bytes failed from 0x7F3A1C22, alignment 0'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: false
+  demoted_reason: example does not match its own pattern
+- id: IOS:SYS-3-CPUHOG
+  vendor: Cisco
+  header_style: ios
+  severity: 3
+  message: '%SYS-3-CPUHOG: Task is running for ({ms_running})msecs, more than ({ms_limit})msecs ({a}/{b}),process = {process}.'
+  placeholders:
+    ms_running: .*?
+    ms_limit: .*?
+    a: .*?
+    b: .*?
+    process: .*?
+  example: 'Oct 21 17:50:12.333 MDT: %SYS-3-CPUHOG: Task is running for (2004)msecs, more than (2000)msecs (0/0),process = Spanning Tree.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:SYS-1-CPURISINGTHRESHOLD
+  vendor: Cisco
+  header_style: ios
+  severity: 1
+  message: '%SYS-1-CPURISINGTHRESHOLD: Threshold: {threshold_type} CPU Utilization(Total/Intr): {total}%/{intr}%{top_processes}'
+  placeholders:
+    threshold_type: .*?
+    total: .*?
+    intr: .*?
+    top_processes: .*?
+  example: 'Oct 21 17:50:10.010 MDT: %SYS-1-CPURISINGTHRESHOLD: Threshold: Total CPU Utilization(Total/Intr): 95%/3%, Top 3 processes(Pid/Util): 212/61%, 88/14%, 4/6%'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:SYS-1-CPUFALLINGTHRESHOLD
+  vendor: Cisco
+  header_style: ios
+  severity: 1
+  message: '%SYS-1-CPUFALLINGTHRESHOLD: Threshold: {threshold_type} CPU Utilization(Total/Intr) {total}%/{intr}%.'
+  placeholders:
+    threshold_type: .*?
+    total: .*?
+    intr: .*?
+  example: 'Oct 21 17:55:10.004 MDT: %SYS-1-CPUFALLINGTHRESHOLD: Threshold: Total CPU Utilization(Total/Intr) 22%/1%.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:SYS-5-CPUHALT
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: ''
+  placeholders: {}
+  example: null
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: false
+  demoted_reason: null
+- id: IOS:NTP-4-PEERUNREACH
+  vendor: Cisco
+  header_style: ios
+  severity: 4
+  message: '%NTP-4-PEERUNREACH: Peer {ip} is unreachable'
+  placeholders:
+    ip: .*?
+  example: 'Oct 21 18:00:31.700 MDT: %NTP-4-PEERUNREACH: Peer 192.0.2.123 is unreachable'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:NTP-4-UNSYNC
+  vendor: Cisco
+  header_style: ios
+  severity: 4
+  message: '%NTP-4-UNSYNC: NTP sync is lost'
+  placeholders: {}
+  example: 'Oct 21 18:01:02.004 MDT: %NTP-4-UNSYNC: NTP sync is lost'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:NTP-5-PEERSYNC
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%NTP-5-PEERSYNC: NTP synced to peer {ip}'
+  placeholders:
+    ip: .*?
+  example: 'Oct 21 18:05:44.120 MDT: %NTP-5-PEERSYNC: NTP synced to peer 192.0.2.123'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:NTP-6-PEERREACH
+  vendor: Cisco
+  header_style: ios
+  severity: 6
+  message: '%NTP-6-PEERREACH: Peer {ip} is reachable'
+  placeholders:
+    ip: .*?
+  example: 'Oct 21 18:05:10.002 MDT: %NTP-6-PEERREACH: Peer 192.0.2.123 is reachable'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:SNMP-3-AUTHFAIL
+  vendor: Cisco
+  header_style: ios
+  severity: 3
+  message: '%SNMP-3-AUTHFAIL: Authentication failure for SNMP req from host {ip}'
+  placeholders:
+    ip: .*?
+  example: 'Oct 21 18:10:00.550 MDT: %SNMP-3-AUTHFAIL: Authentication failure for SNMP req from host 198.51.100.40'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:DOT1X-5-FAIL
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%DOT1X-5-FAIL: Authentication failed for client ({mac}) on Interface {interface} AuditSessionID {session_id}'
+  placeholders:
+    mac: .*?
+    interface: .*?
+    session_id: .*?
+  example: 'Oct 21 18:20:05.611 MDT: %DOT1X-5-FAIL: Authentication failed for client (0000.5e00.5380) on Interface Gi1/0/18 AuditSessionID C0000201000000A1B2C3D4E5'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:MAB-5-FAIL
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%MAB-5-FAIL: Authentication failed for client ({mac}) on Interface {interface} AuditSessionID {session_id}'
+  placeholders:
+    mac: .*?
+    interface: .*?
+    session_id: .*?
+  example: 'Oct 21 18:20:35.702 MDT: %MAB-5-FAIL: Authentication failed for client (0000.5e00.5380) on Interface Gi1/0/18 AuditSessionID C0000201000000A1B2C3D4E5'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:AUTHMGR-5-START
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%AUTHMGR-5-START: Starting ''{method}'' for client ({mac}) on Interface {interface} AuditSessionID {session_id}'
+  placeholders:
+    method: dot1x|mab|webauth
+    mac: .*?
+    interface: .*?
+    session_id: .*?
+  example: 'Oct 21 18:20:00.010 MDT: %AUTHMGR-5-START: Starting ''dot1x'' for client (0000.5e00.5380) on Interface Gi1/0/18 AuditSessionID C0000201000000A1B2C3D4E5'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:AUTHMGR-5-SUCCESS
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%AUTHMGR-5-SUCCESS: Authorization succeeded for client ({mac}) on Interface {interface} AuditSessionID {session_id}'
+  placeholders:
+    mac: .*?
+    interface: .*?
+    session_id: .*?
+  example: 'Oct 21 18:21:00.880 MDT: %AUTHMGR-5-SUCCESS: Authorization succeeded for client (0000.5e00.5381) on Interface Gi1/0/19 AuditSessionID C0000201000000A1B2C3D4F6'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:AUTHMGR-5-FAIL
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%AUTHMGR-5-FAIL: Authorization failed or unapplied for client ({mac}) on Interface {interface}'
+  placeholders:
+    mac: .*?
+    interface: .*?
+  example: 'Oct 21 18:20:36.010 MDT: %AUTHMGR-5-FAIL: Authorization failed or unapplied for client (0000.5e00.5380) on Interface Gi1/0/18'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:SESSION_MGR-5-FAIL
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%SESSION_MGR-5-FAIL: Authorization failed or unapplied for client ({mac}) on Interface {interface} AuditSessionID {session_id}'
+  placeholders:
+    mac: .*?
+    interface: .*?
+    session_id: .*?
+  example: 'Oct 21 18:20:36.012 MDT: %SESSION_MGR-5-FAIL: Authorization failed or unapplied for client (0000.5e00.5380) on Interface Gi1/0/18 AuditSessionID C0000201000000A1B2C3D4E5'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:RADIUS-4-RADIUS_DEAD
+  vendor: Cisco
+  header_style: ios
+  severity: 4
+  message: '%RADIUS-4-RADIUS_DEAD: RADIUS server {ip}:{auth_port},{acct_port} is not responding.'
+  placeholders:
+    ip: .*?
+    auth_port: 1812|1645
+    acct_port: 1813|1646
+  example: 'Oct 21 18:19:50.400 MDT: %RADIUS-4-RADIUS_DEAD: RADIUS server 192.0.2.20:1812,1813 is not responding.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: IOS:RADIUS-4-RADIUS_ALIVE
+  vendor: Cisco
+  header_style: ios
+  severity: 4
+  message: '%RADIUS-4-RADIUS_ALIVE: RADIUS server {ip}:{auth_port},{acct_port} is being marked alive.'
+  placeholders:
+    ip: .*?
+    auth_port: 1812|1645
+    acct_port: 1813|1646
+  example: 'Oct 21 18:29:50.401 MDT: %RADIUS-4-RADIUS_ALIVE: RADIUS server 192.0.2.20:1812,1813 is being marked alive.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/17_xe/syslogs/17-9-x/b-system-message-guide-17-9-x.pdf
+  verified: true
+  demoted_reason: null
+- id: NXOS:ETHPORT-5-IF_DOWN_LINK_FAILURE
+  vendor: Cisco
+  header_style: nxos
+  severity: 5
+  message: '%ETHPORT-5-IF_DOWN_LINK_FAILURE: Interface {interface} is down (Link failure)'
+  placeholders:
+    interface: .*?
+  example: '2026 Oct 21 05:27:35 N9K-LEAF1 %ETHPORT-5-IF_DOWN_LINK_FAILURE: Interface Ethernet1/5 is down (Link failure)'
+  source_url: https://www.cisco.com/c/en/us/support/docs/switches/nexus-9000-series-switches/221572-troubleshoot-link-flap-issue-on-nexus-90.html
+  verified: true
+  demoted_reason: null
+- id: NXOS:ETHPORT-5-IF_DOWN_ADMIN_DOWN
+  vendor: Cisco
+  header_style: nxos
+  severity: 5
+  message: '%ETHPORT-5-IF_DOWN_ADMIN_DOWN: Interface {interface} is down (Administratively down)'
+  placeholders:
+    interface: .*?
+  example: '2026 Oct 21 06:00:12 N9K-LEAF1 %ETHPORT-5-IF_DOWN_ADMIN_DOWN: Interface Ethernet1/12 is down (Administratively down)'
+  source_url: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/103x/system-messages/n9k-syslogs-10-3-5-m.pdf
+  verified: true
+  demoted_reason: null
+- id: NXOS:ETHPORT-5-IF_DOWN_INITIALIZING
+  vendor: Cisco
+  header_style: nxos
+  severity: 5
+  message: '%ETHPORT-5-IF_DOWN_INITIALIZING: Interface {interface} is down (Initializing)'
+  placeholders:
+    interface: .*?
+  example: '2026 Oct 21 07:40:07 N9K-LEAF1 %ETHPORT-5-IF_DOWN_INITIALIZING: Interface Ethernet1/8 is down (Initializing)'
+  source_url: https://www.cisco.com/c/en/us/support/docs/switches/nexus-9000-series-switches/221572-troubleshoot-link-flap-issue-on-nexus-90.html
+  verified: true
+  demoted_reason: null
+- id: NXOS:ETHPORT-2-IF_DOWN_ERROR_DISABLED
+  vendor: Cisco
+  header_style: nxos
+  severity: 2
+  message: '%ETHPORT-2-IF_DOWN_ERROR_DISABLED: Interface {interface} is down (Error disabled. Reason:{reason})'
+  placeholders:
+    interface: .*?
+    reason: .*?
+  example: '2026 Oct 21 08:14:51 N9K-LEAF1 %ETHPORT-2-IF_DOWN_ERROR_DISABLED: Interface Ethernet1/20 is down (Error disabled. Reason:BPDUGuard)'
+  source_url: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/103x/system-messages/n9k-syslogs-10-3-5-m.pdf
+  verified: true
+  demoted_reason: null
+- id: NXOS:ETHPORT-5-IF_UP
+  vendor: Cisco
+  header_style: nxos
+  severity: 5
+  message: '%ETHPORT-5-IF_UP: Interface {interface} is up {mode_part}'
+  placeholders:
+    interface: .*?
+    mode_part: .*?
+  example: '2026 Oct 21 05:28:02 N9K-LEAF1 %ETHPORT-5-IF_UP: Interface Ethernet1/5 is up in mode access'
+  source_url: https://www.cisco.com/c/en/us/support/docs/switches/nexus-9000-series-switches/221572-troubleshoot-link-flap-issue-on-nexus-90.html
+  verified: true
+  demoted_reason: null
+- id: NXOS:ETHPORT-5-SPEED
+  vendor: Cisco
+  header_style: nxos
+  severity: 5
+  message: '%ETHPORT-5-SPEED: Interface {interface}, operational speed changed to {speed}'
+  placeholders:
+    interface: .*?
+    speed: .*?
+  example: '2026 Oct 21 05:28:01 N9K-LEAF1 %ETHPORT-5-SPEED: Interface Ethernet1/5, operational speed changed to 10 Gbps'
+  source_url: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/103x/system-messages/n9k-syslogs-10-3-5-m.pdf
+  verified: true
+  demoted_reason: null
+- id: NXOS:ETHPORT-5-IF_DUPLEX
+  vendor: Cisco
+  header_style: nxos
+  severity: 5
+  message: '%ETHPORT-5-IF_DUPLEX: Interface {interface}, operational duplex mode changed to {duplex}'
+  placeholders:
+    interface: .*?
+    duplex: .*?
+  example: '2026 Oct 21 05:28:01 N9K-LEAF1 %ETHPORT-5-IF_DUPLEX: Interface Ethernet1/5, operational duplex mode changed to Full'
+  source_url: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/103x/system-messages/n9k-syslogs-10-3-5-m.pdf
+  verified: true
+  demoted_reason: null
+- id: NXOS:ETH_PORT_CHANNEL-5-PORT_DOWN
+  vendor: Cisco
+  header_style: nxos
+  severity: 5
+  message: '%ETH_PORT_CHANNEL-5-PORT_DOWN: {port_channel}: {interface} is down'
+  placeholders:
+    port_channel: .*?
+    interface: .*?
+  example: '2026 Oct 21 05:27:35 N9K-LEAF1 %ETH_PORT_CHANNEL-5-PORT_DOWN: port-channel100: Ethernet1/5 is down'
+  source_url: https://www.cisco.com/c/en/us/support/docs/switches/nexus-9000-series-switches/221572-troubleshoot-link-flap-issue-on-nexus-90.html
+  verified: true
+  demoted_reason: null
+- id: NXOS:ETH_PORT_CHANNEL-5-PORT_UP
+  vendor: Cisco
+  header_style: nxos
+  severity: 5
+  message: '%ETH_PORT_CHANNEL-5-PORT_UP: {port_channel}: {interface} is up'
+  placeholders:
+    port_channel: .*?
+    interface: .*?
+  example: '2026 Oct 21 05:28:02 N9K-LEAF1 %ETH_PORT_CHANNEL-5-PORT_UP: port-channel100: Ethernet1/5 is up'
+  source_url: https://www.cisco.com/c/en/us/support/docs/switches/nexus-9000-series-switches/221572-troubleshoot-link-flap-issue-on-nexus-90.html
+  verified: true
+  demoted_reason: null
+- id: NXOS:ETH_PORT_CHANNEL-5-PORT_SUSPENDED
+  vendor: Cisco
+  header_style: nxos
+  severity: 5
+  message: '%ETH_PORT_CHANNEL-5-PORT_SUSPENDED: {port_channel}: {interface} is suspended'
+  placeholders:
+    port_channel: .*?
+    interface: .*?
+  example: '2026 Oct 21 09:02:11 N9K-LEAF1 %ETH_PORT_CHANNEL-5-PORT_SUSPENDED: port-channel100: Ethernet1/6 is suspended'
+  source_url: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/103x/system-messages/n9k-syslogs-10-3-5-m.pdf
+  verified: true
+  demoted_reason: null
+- id: NXOS:L2FM-2-L2FM_MAC_FLAP_DISABLE_LEARN
+  vendor: Cisco
+  header_style: nxos
+  severity: 2
+  message: '%L2FM-2-L2FM_MAC_FLAP_DISABLE_LEARN: Disabling learning in vlan {vlan} for {seconds}s due to too many mac moves'
+  placeholders:
+    vlan: .*?
+    seconds: .*?
+  example: '2026 Oct 21 10:15:42 N9K-LEAF1 %L2FM-2-L2FM_MAC_FLAP_DISABLE_LEARN: Disabling learning in vlan 20 for 120s due to too many mac moves'
+  source_url: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/103x/system-messages/n9k-syslogs-10-3-5-m.pdf
+  verified: true
+  demoted_reason: null
+- id: NXOS:L2FM-4-L2FM_MAC_MOVE
+  vendor: Cisco
+  header_style: nxos
+  severity: 4
+  message: '%L2FM-4-L2FM_MAC_MOVE: Mac {mac} in vlan {vlan} has moved from {from_port} to {to_port}'
+  placeholders:
+    mac: .*?
+    vlan: .*?
+    from_port: .*?
+    to_port: .*?
+  example: '2026 Oct 21 10:15:40 N9K-LEAF1 %L2FM-4-L2FM_MAC_MOVE: Mac 0000.5e00.5321 in vlan 20 has moved from Eth1/5 to Eth1/6'
+  source_url: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/103x/system-messages/n9k-syslogs-10-3-5-m.pdf
+  verified: true
+  demoted_reason: null
+- id: NXOS:STP-2-BLOCK_BPDUGUARD
+  vendor: Cisco
+  header_style: nxos
+  severity: 2
+  message: '%STP-2-BLOCK_BPDUGUARD: Received BPDU on port {interface} with BPDU Guard enabled. Disabling port.'
+  placeholders:
+    interface: .*?
+  example: '2026 Oct 21 08:14:51 N9K-LEAF1 %STP-2-BLOCK_BPDUGUARD: Received BPDU on port Ethernet1/20 with BPDU Guard enabled. Disabling port.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/103x/system-messages/n9k-syslogs-10-3-5-m.pdf
+  verified: true
+  demoted_reason: null
+- id: NXOS:STP-2-ROOTGUARD_BLOCK
+  vendor: Cisco
+  header_style: nxos
+  severity: 2
+  message: '%STP-2-ROOTGUARD_BLOCK: Root guard blocking port {interface} on {stp_instance}.'
+  placeholders:
+    interface: .*?
+    stp_instance: .*?
+  example: '2026 Oct 21 08:20:00 N9K-LEAF1 %STP-2-ROOTGUARD_BLOCK: Root guard blocking port Ethernet1/48 on VLAN0020.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/103x/system-messages/n9k-syslogs-10-3-5-m.pdf
+  verified: true
+  demoted_reason: null
+- id: NXOS:STP-6-ROOT
+  vendor: Cisco
+  header_style: nxos
+  severity: 6
+  message: '%STP-6-ROOT: Root bridge for {stp_instance} changed to {bridge_id}'
+  placeholders:
+    stp_instance: .*?
+    bridge_id: .*?
+  example: '2026 Oct 21 08:21:02 N9K-LEAF1 %STP-6-ROOT: Root bridge for VLAN0020 changed to 24596.0000.5e00.5301'
+  source_url: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/103x/system-messages/n9k-syslogs-10-3-5-m.pdf
+  verified: true
+  demoted_reason: null
+- id: NXOS:STP-6-PORT_STATE
+  vendor: Cisco
+  header_style: nxos
+  severity: 6
+  message: '%STP-6-PORT_STATE: Port {interface} instance {stp_instance} moving from {old_state} to {new_state}'
+  placeholders:
+    interface: .*?
+    stp_instance: .*?
+    old_state: .*?
+    new_state: .*?
+  example: '2026 Oct 21 08:21:04 N9K-LEAF1 %STP-6-PORT_STATE: Port Ethernet1/49 instance VLAN0020 moving from learning to forwarding'
+  source_url: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/103x/system-messages/n9k-syslogs-10-3-5-m.pdf
+  verified: true
+  demoted_reason: null
+- id: NXOS:UDLD-4-UDLD_PORT_DISABLED
+  vendor: Cisco
+  header_style: nxos
+  severity: 4
+  message: '%UDLD-4-UDLD_PORT_DISABLED: Interface {interface}, link error detected: {reason}.'
+  placeholders:
+    interface: .*?
+    reason: .*?
+  example: '2026 Oct 21 11:02:33 N9K-LEAF1 %UDLD-4-UDLD_PORT_DISABLED: Interface Ethernet1/49, link error detected: unidirectional.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/103x/system-messages/n9k-syslogs-10-3-5-m.pdf
+  verified: true
+  demoted_reason: null
+- id: NXOS:OSPF-5-NBRSTATE
+  vendor: Cisco
+  header_style: nxos
+  severity: 5
+  message: '%OSPF-5-NBRSTATE: Process {process_tag}, Nbr {neighbor} on {interface} from {old_state} to {new_state}, {event}'
+  placeholders:
+    process_tag: .*?
+    neighbor: .*?
+    interface: .*?
+    old_state: FULL|DOWN|INIT|2WAY|EXSTART|EXCHANGE|LOADING
+    new_state: .*?
+    event: .*?
+  example: '2026 Oct 21 11:05:10 N9K-SPINE1 %OSPF-5-NBRSTATE: Process UNDERLAY, Nbr 192.0.2.11 on Ethernet1/1 from FULL to DOWN, DEADTIME'
+  source_url: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/106x/system-messages/n9k-syslogs-routing-10-6-2-f.pdf
+  verified: true
+  demoted_reason: null
+- id: NXOS:OSPF-5-ADJCHANGE
+  vendor: Cisco
+  header_style: nxos
+  severity: 5
+  message: '%OSPF-5-ADJCHANGE: Nbr {neighbor} on {interface} went {state}'
+  placeholders:
+    neighbor: .*?
+    interface: .*?
+    state: .*?
+  example: '2026 Oct 21 11:05:10 N9K-SPINE1 %OSPF-5-ADJCHANGE: Nbr 192.0.2.11 on Ethernet1/1 went DOWN'
+  source_url: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/106x/system-messages/n9k-syslogs-routing-10-6-2-f.pdf
+  verified: true
+  demoted_reason: null
+- id: NXOS:BGP-5-ADJCHANGE
+  vendor: Cisco
+  header_style: nxos
+  severity: 5
+  message: '%BGP-5-ADJCHANGE: neighbor {neighbor} {vrf_part} {state_part}'
+  placeholders:
+    neighbor: .*?
+    vrf_part: .*?
+    state_part: .*?
+  example: '2026 Oct 21 11:20:44 N9K-BL1 %BGP-5-ADJCHANGE: neighbor 203.0.113.1 vrf default Down - Holdtimer expired error'
+  source_url: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/106x/system-messages/n9k-syslogs-routing-10-6-2-f.pdf
+  verified: true
+  demoted_reason: null
+- id: NXOS:EIGRP-5-NBRCHANGE_DUAL
+  vendor: Cisco
+  header_style: nxos
+  severity: 5
+  message: '%EIGRP-5-NBRCHANGE_DUAL: {eigrp_label} {asn}: Neighbor {neighbor} ({interface}) is {state}: {reason}'
+  placeholders:
+    eigrp_label: .*?
+    asn: .*?
+    neighbor: .*?
+    interface: .*?
+    state: up|down
+    reason: .*?
+  example: '2026 Oct 21 11:30:00 N9K-BL1 %EIGRP-5-NBRCHANGE_DUAL: eigrp-100 100: Neighbor 198.51.100.2 (Ethernet1/2) is down: holding time expired'
+  source_url: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/106x/system-messages/n9k-syslogs-routing-10-6-2-f.pdf
+  verified: true
+  demoted_reason: null
+- id: NXOS:HSRP_ENGINE-5-GRPSTATECHANGE
+  vendor: Cisco
+  header_style: nxos
+  severity: 5
+  message: '%HSRP_ENGINE-5-GRPSTATECHANGE: Interface {interface} {af} Grp {group} state changed from {old_state} to {new_state} reason {reason}'
+  placeholders:
+    interface: .*?
+    af: .*?
+    group: .*?
+    old_state: .*?
+    new_state: .*?
+    reason: .*?
+  example: '2026 Oct 21 12:00:05 N9K-LEAF1 %HSRP_ENGINE-5-GRPSTATECHANGE: Interface Vlan10 IPv4 Grp 10 state changed from Standby to Active reason Active router timer expired'
+  source_url: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/103x/system-messages/n9k-syslogs-10-3-5-m.pdf
+  verified: true
+  demoted_reason: null
+- id: NXOS:VPC-2-PEER_KEEP_ALIVE_RECV_FAIL
+  vendor: Cisco
+  header_style: nxos
+  severity: 2
+  message: '%VPC-2-PEER_KEEP_ALIVE_RECV_FAIL: In domain {domain}, VPC peer keep-alive receive has failed'
+  placeholders:
+    domain: .*?
+  example: '2026 Oct 21 12:10:00 N9K-LEAF1 %VPC-2-PEER_KEEP_ALIVE_RECV_FAIL: In domain 10, VPC peer keep-alive receive has failed'
+  source_url: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/103x/system-messages/n9k-syslogs-10-3-5-m.pdf
+  verified: true
+  demoted_reason: null
+- id: NXOS:VPC-2-PEER_KEEP_ALIVE_SEND_FAIL
+  vendor: Cisco
+  header_style: nxos
+  severity: 2
+  message: '%VPC-2-PEER_KEEP_ALIVE_SEND_FAIL: In domain {domain}, VPC peer keep-alive send has failed'
+  placeholders:
+    domain: .*?
+  example: '2026 Oct 21 12:10:00 N9K-LEAF1 %VPC-2-PEER_KEEP_ALIVE_SEND_FAIL: In domain 10, VPC peer keep-alive send has failed'
+  source_url: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/103x/system-messages/n9k-syslogs-10-3-5-m.pdf
+  verified: true
+  demoted_reason: null
+- id: NXOS:VPC-3-VPC_PEER_LINK_DOWN
+  vendor: Cisco
+  header_style: nxos
+  severity: 3
+  message: '%VPC-3-VPC_PEER_LINK_DOWN: VPC Peer-link is down'
+  placeholders: {}
+  example: '2026 Oct 21 12:12:30 N9K-LEAF2 %VPC-3-VPC_PEER_LINK_DOWN: VPC Peer-link is down'
+  source_url: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/103x/system-messages/n9k-syslogs-10-3-5-m.pdf
+  verified: true
+  demoted_reason: null
+- id: NXOS:VPC-2-VPC_SUSP_ALL_VPC
+  vendor: Cisco
+  header_style: nxos
+  severity: 2
+  message: '%VPC-2-VPC_SUSP_ALL_VPC: Peer-link going down, suspending all vPCs on secondary. If vfc is bound to vPC, then only ethernet vlans of that VPC shall be down.'
+  placeholders: {}
+  example: '2026 Oct 21 12:12:30 N9K-LEAF2 %VPC-2-VPC_SUSP_ALL_VPC: Peer-link going down, suspending all vPCs on secondary. If vfc is bound to vPC, then only ethernet vlans of that VPC shall be down.'
+  source_url: https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/103x/system-messages/n9k-syslogs-10-3-5-m.pdf
+  verified: true
+  demoted_reason: null
+- id: NXOS:VSHD-5-VSHD_SYSLOG_CONFIG_I
+  vendor: Cisco
+  header_style: nxos
+  severity: 5
+  message: '%VSHD-5-VSHD_SYSLOG_CONFIG_I: Configured from vty by {user} on {source}'
+  placeholders:
+    user: .*?
+    source: .*?
+  example: '2026 Oct 21 06:00:10 N9K-LEAF1 %VSHD-5-VSHD_SYSLOG_CONFIG_I: Configured from vty by netops on 192.0.2.50@pts/0'
+  source_url: null
+  verified: false
+  demoted_reason: null

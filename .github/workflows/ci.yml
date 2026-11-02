@@ -1,0 +1,22 @@
+name: ci
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.13"]
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m venv .venv
+      - run: .venv/bin/pip install -e '.[dev]'
+      - run: MPLCONFIGDIR=$RUNNER_TEMP/mpl .venv/bin/python -m pytest -q
+      - run: .venv/bin/pyright
+      - run: git ls-files -z | PYTHONPATH=src xargs -0 .venv/bin/python -m packetgen.sanitize

@@ -1,0 +1,11 @@
+{
+  "persona": "end_user",
+  "text": "Since about noon the shared drive and Teams keep dropping on the 2nd floor. It started right when everyone came back from lunch.",
+  "misdirection": [
+    {
+      "kind": "coincidence",
+      "claim": "It started right when everyone came back from lunch.",
+      "true_because": "Symptoms start at 12:00:12, two seconds after cd1 on ACC-SW2; the lunch return is coincidental."
+    }
+  ]
+}

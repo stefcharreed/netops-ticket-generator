@@ -1,0 +1,79 @@
+# Fault-pattern catalog. Written in our own words; message ids are verified registry entries.
+# Each pattern is a seed, not a script: vary devices, times and noise.
+- id: loop-after-guard-removed
+  topic: stp
+  cert: ENCOR
+  symptom: Users on one floor can't get addresses and the network feels slow.
+  root_cause: An access port's BPDU guard was replaced (bpdufilter / guard removed) and a downstream switch closed a loop.
+  registry_ids: [IOS:SYS-5-CONFIG_I, IOS:SPANTREE-5-TOPOTRAP, IOS:SYS-1-CPURISINGTHRESHOLD, ISCDHCPD:no-free-leases]
+  red_herrings: [an NTP peer unreachable, a user port flapping, normal DHCPDISCOVERs]
+- id: trunk-allowed-vlan-pruned
+  topic: trunk
+  cert: ENCOR
+  symptom: One VLAN's users lose everything off-subnet after a maintenance window; other VLANs fine.
+  root_cause: A `switchport trunk allowed vlan` edit (missing `add`) removed a VLAN from an uplink trunk.
+  registry_ids: [IOS:SYS-5-CONFIG_I, IOS:SPANTREE-5-ROOTCHANGE, ISCDHCPD:DHCPDISCOVER]
+  red_herrings: [a link flap on an unrelated port, CPU noise on the core, an NTP resync]
+- id: asa-acl-shadowed-after-reorder
+  topic: acl
+  cert: ENCOR
+  symptom: After a firewall change window, one application's traffic is denied while everything else works.
+  root_cause: An ACL edit placed a broad deny above the specific permit, so the permit is shadowed and never hits.
+  registry_ids: [ASA:111008, ASA:106023, ASA:302013, ASA:302014]
+  red_herrings: [normal built/teardown pairs for other apps, an unrelated admin login, a link flap elsewhere]
+- id: radius-server-dead-dot1x
+  topic: aaa
+  cert: none
+  symptom: Wired users on several switches fail 802.1X at the start of the day; some get in later.
+  root_cause: The primary RADIUS server stopped answering (marked dead), so authentications time out until failover.
+  registry_ids: [IOS:RADIUS-4-RADIUS_DEAD, IOS:DOT1X-5-FAIL, IOS:MAB-5-FAIL, IOS:RADIUS-4-RADIUS_ALIVE]
+  red_herrings: [one user with a genuinely wrong password, a printer failing MAB as usual, NTP noise]
+- id: ntp-unsynced-log-skew
+  topic: ntp
+  cert: ENCOR
+  symptom: Logs from one switch "don't line up" during an outage review; events appear minutes off.
+  root_cause: The switch lost NTP and drifted; its log timestamps are skewed against every other source.
+  registry_ids: [IOS:NTP-4-PEERUNREACH, IOS:NTP-4-UNSYNC, IOS:LINK-3-UPDOWN, IOS:LINEPROTO-5-UPDOWN]
+  red_herrings: [real link flaps elsewhere, a config save, DHCP traffic]
+- id: ospf-adjacency-mtu-mismatch
+  topic: ospf
+  cert: ENCOR
+  symptom: After a change window, a remote site is unreachable from headquarters, though the WAN link shows up.
+  root_cause: An `ip mtu` change on one side of the link took effect at the next adjacency reset (such as a link bounce), leaving the OSPF neighbors stuck in EXSTART/EXCHANGE and never reaching FULL, so routes to the remote site were lost.
+  registry_ids: [IOS:SYS-5-CONFIG_I, IOS:OSPF-5-ADJCHG, IOS:LINK-3-UPDOWN]
+  red_herrings: [a link flap on an unrelated access port, a config save on another router, an NTP resync]
+- id: eigrp-neighbor-lost-passive
+  topic: eigrp
+  cert: ENARSI
+  symptom: A branch loses reachability to the data center shortly after a routine cleanup.
+  root_cause: The `passive-interface` command was applied to a transit link during cleanup, so the local router dropped the neighbor at once (the interface went passive and stopped forming adjacencies) while the far side lost it only when its hold timer expired.
+  registry_ids: [IOS:SYS-5-CONFIG_I, IOS:DUAL-5-NBRCHANGE, IOS:LINEPROTO-5-UPDOWN]
+  red_herrings: [a user port flapping, CPU noise on a distribution switch, normal DHCP traffic]
+- id: ebgp-session-down-neighbor-ip
+  topic: bgp
+  cert: ENCOR
+  symptom: Internet access is down for the whole site right after an ISP-related change, while internal traffic works.
+  root_cause: The ISP-facing `neighbor` address was mistyped during a change, so the eBGP session dropped and the internet prefixes were withdrawn.
+  registry_ids: [IOS:SYS-5-CONFIG_I, IOS:BGP-5-ADJCHANGE, IOS:BGP-5-NBR_RESET]
+  red_herrings: [an unrelated interface flap, an NTP peer blip, a second config save by another admin]
+- id: hsrp-track-failover-flap
+  topic: fhrp
+  cert: ENCOR
+  symptom: Users report intermittent drops and slow connections every few minutes on one VLAN.
+  root_cause: A flapping tracked uplink combined with `preempt` and no delay makes the HSRP active router flip back and forth repeatedly.
+  registry_ids: [IOS:TRACK-6-STATE, IOS:HSRP-5-STATECHANGE, IOS:LINEPROTO-5-UPDOWN, IOS:SYS-5-CONFIG_I]
+  red_herrings: [a link flap on an unrelated access port, CPU noise on the core, an NTP resync]
+- id: port-security-err-disable
+  topic: port-security
+  cert: none
+  symptom: One desk lost network access this morning; the jack worked yesterday.
+  root_cause: A desk hub or dock added a second MAC address on a `maximum 1` port-security port, so the port was err-disabled.
+  registry_ids: [IOS:PORT_SECURITY-2-PSECURE_VIOLATION, IOS:PM-4-ERR_DISABLE, IOS:LINEPROTO-5-UPDOWN]
+  red_herrings: [another user port flapping at logoff, normal DHCP traffic, a config save]
+- id: native-vlan-mismatch-trunk
+  topic: trunk
+  cert: ENCOR
+  symptom: Traffic on a couple of VLANs is dead across a closet uplink after a trunk edit, while other VLANs keep working.
+  root_cause: The native VLAN was changed on one end of a trunk, so spanning tree put the port in PVID-inconsistent state, blocking both native VLANs (not just one) on that trunk.
+  registry_ids: [IOS:SYS-5-CONFIG_I, IOS:CDP-4-NATIVE_VLAN_MISMATCH, IOS:SPANTREE-2-RECV_PVID_ERR, IOS:SPANTREE-2-BLOCK_PVID_LOCAL]
+  red_herrings: [a link flap on an unrelated port, CPU noise on the core, an NTP resync]

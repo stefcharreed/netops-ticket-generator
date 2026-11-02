@@ -1,0 +1,1372 @@
+# Normalized from the source registry YAMLs (not included in this repo) by scripts/import_registry.py. Edit with care; keep fields as documented in registry/README.md.
+- id: C9800:CLIENT_ORCH_LOG-6-CLIENT_ADDED_TO_RUN_STATE
+  vendor: Cisco
+  header_style: ios
+  severity: 6
+  message: '%CLIENT_ORCH_LOG-6-CLIENT_ADDED_TO_RUN_STATE: Chassis {chassis} R0/0: wncd: Username entry ({username}) joined with ssid ({ssid}) for device with MAC {client_mac_dotted}'
+  placeholders:
+    chassis: 1|2
+    username: .*?
+    ssid: .*?
+    client_mac_dotted: '[0-9a-f]{4}\.[0-9a-f]{4}\.[0-9a-f]{4}'
+  example: '24394: Oct 21 10:53:04.438: %CLIENT_ORCH_LOG-6-CLIENT_ADDED_TO_RUN_STATE: Chassis 1 R0/0: wncd: Username entry (jdoe) joined with ssid (CORP-WLAN) for device with MAC 0000.5e00.5301'
+  source_url: https://community.fortinet.com/fortisiem-216/cisco-wlc-parser-209010
+  verified: false
+  demoted_reason: null
+- id: C9800:CAPWAPAC_SMGR_TRACE_MESSAGE-3-EWLC_GEN_ERR
+  vendor: Cisco
+  header_style: ios
+  severity: 3
+  message: '%CAPWAPAC_SMGR_TRACE_MESSAGE-3-EWLC_GEN_ERR: Chassis {chassis} R0/0: wncd: Error in Session-IP: {ap_ip}[{ap_port}] Mac: {ap_mac_dotted} Maximum retries for sending CAPWAP message reached'
+  placeholders:
+    chassis: .*?
+    ap_ip: .*?
+    ap_port: .*?
+    ap_mac_dotted: .*?
+  example: 'Oct 21 18:51:41.312: %CAPWAPAC_SMGR_TRACE_MESSAGE-3-EWLC_GEN_ERR: Chassis 1 R0/0: wncd: Error in Session-IP: 192.0.2.41[5272] Mac: 0000.5e00.5310 Maximum retries for sending CAPWAP message reached'
+  source_url: https://community.cisco.com/t5/wireless/c9130-axi-e-randomly-disjoining-and-joining/m-p/4670044
+  verified: true
+  demoted_reason: null
+- id: C9800:CAPWAPAC_SMGR_TRACE_MESSAGE-5-AP_JOIN_DISJOIN
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%CAPWAPAC_SMGR_TRACE_MESSAGE-5-AP_JOIN_DISJOIN: Chassis {chassis} R0/0: wncd: AP Event: AP Name: {ap_name}, MAC: {ap_mac_dotted} {event}'
+  placeholders:
+    chassis: .*?
+    ap_name: .*?
+    ap_mac_dotted: .*?
+    event: .*?
+  example: 'Oct 21 18:51:41.420: %CAPWAPAC_SMGR_TRACE_MESSAGE-5-AP_JOIN_DISJOIN: Chassis 1 R0/0: wncd: AP Event: AP Name: AP-FL2-EAST, MAC: 0000.5e00.5310 Disjoined'
+  source_url: https://community.cisco.com/t5/wireless/c9800-cl-aps-disjoined/m-p/5567161
+  verified: false
+  demoted_reason: null
+- id: C9800:DOT1X-5-FAIL
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%DOT1X-5-FAIL: Chassis {chassis} R0/0: wncd: Authentication failed for client ({client_mac_dotted}) with reason ({reason}) on Interface capwap_{tunnel_id} AuditSessionID {audit_id} Username: {username}'
+  placeholders:
+    chassis: .*?
+    client_mac_dotted: .*?
+    reason: .*?
+    tunnel_id: 9[0-9a-f]{7}
+    audit_id: '[0-9A-F]{24}'
+    username: .*?
+  example: 'Oct 21 09:12:07.115: %DOT1X-5-FAIL: Chassis 1 R0/0: wncd: Authentication failed for client (0000.5e00.5301) with reason (AAA Server Down) on Interface capwap_90000004 AuditSessionID 0A0000010000001A2B3C4D5E Username: jdoe'
+  source_url: https://community.cisco.com/t5/wireless/client-failed-eap-authentication-with-following-reason-cred/m-p/4906738
+  verified: false
+  demoted_reason: null
+- id: C9800:SESSION_MGR-5-FAIL
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%SESSION_MGR-5-FAIL: Chassis {chassis} R0/0: wncd: Authorization failed or unapplied for client ({client_mac_dotted}) method ''{method}'' on Interface capwap_{tunnel_id} AuditSessionID {audit_id}. Failure reason: {reason}'
+  placeholders:
+    chassis: .*?
+    client_mac_dotted: .*?
+    method: dot1x|mab|webauth
+    tunnel_id: .*?
+    audit_id: .*?
+    reason: .*?
+  example: 'Oct 21 09:12:07.116: %SESSION_MGR-5-FAIL: Chassis 1 R0/0: wncd: Authorization failed or unapplied for client (0000.5e00.5301) method ''dot1x'' on Interface capwap_90000004 AuditSessionID 0A0000010000001A2B3C4D5E. Failure reason: Authc fail. Authc failure reason: AAA Server Down.'
+  source_url: https://community.cisco.com/t5/wireless/wlc-9800-not-connecting-to-radius-microsoft-nps/m-p/4957318/highlight/true
+  verified: false
+  demoted_reason: null
+- id: C9800:CLIENT_EXCLUSION_SERVER-5-ADD_TO_EXCLUSIONLIST_REASON
+  vendor: Cisco
+  header_style: ios
+  severity: 5
+  message: '%CLIENT_EXCLUSION_SERVER-5-ADD_TO_EXCLUSIONLIST_REASON: Chassis {chassis} R0/0: wncd: Client MAC: {client_mac_dotted} was added to exclusion list associated with AP Name:{ap_name}, BSSID:{bssid_dotted}, reason:{reason}'
+  placeholders:
+    chassis: .*?
+    client_mac_dotted: .*?
+    ap_name: .*?
+    bssid_dotted: .*?
+    reason: Wrong PSK|802\.1X failure|VLAN failure|Service Set ID failure|ACL failure|Web authentication failure|IP theft
+  example: 'Oct 21 09:14:22.009: %CLIENT_EXCLUSION_SERVER-5-ADD_TO_EXCLUSIONLIST_REASON: Chassis 1 R0/0: wncd: Client MAC: 0000.5e00.5302 was added to exclusion list associated with AP Name:AP-FL2-EAST, BSSID:0000.5e00.5320, reason:Wrong PSK'
+  source_url: https://community.cisco.com/t5/wireless/cisco-catalyst-9800-client-exclusion-server-reason-vlan-failure/td-p/4822147
+  verified: false
+  demoted_reason: null
+- id: C9800:APMGR_TRACE_MESSAGE-3-WLC_GEN_ERR
+  vendor: Cisco
+  header_style: ios
+  severity: 3
+  message: '%APMGR_TRACE_MESSAGE-3-WLC_GEN_ERR: Chassis {chassis} R0/0: wncd: {free_text}'
+  placeholders:
+    chassis: .*?
+    free_text: .*?
+  example: 'Oct 21 07:02:11.551: %APMGR_TRACE_MESSAGE-3-WLC_GEN_ERR: Chassis 1 R0/0: wncd: Error in AP Join, AP AP-FL2-EAST, mac:0000.5e00.5310 Failed to validate tag'
+  source_url: ''
+  verified: false
+  demoted_reason: null
+- id: C9800:RRM-dfs-radar
+  vendor: Cisco
+  header_style: ios
+  severity: null
+  message: (unverified) radar detected on {ap_name} channel {channel}; radio moved to channel {new_channel}
+  placeholders:
+    ap_name: .*?
+    channel: .*?
+    new_channel: .*?
+  example: (unverified) radar detected on AP-FL2-EAST channel 100; radio moved to channel 36
+  source_url: https://www.cisco.com/c/es_mx/support/docs/wireless-mobility/80211/213882-radar-detection-in-dynamic-frequency-sel.html
+  verified: false
+  demoted_reason: null
+- id: C9800:delete-reason
+  vendor: Cisco
+  header_style: ios
+  severity: null
+  message: 'show wireless stats client delete reasons -> {reason_text}: {count}   |   trace enum: CO_CLIENT_DELETE_REASON_{enum}'
+  placeholders:
+    reason_text: Idle timeout|Session timeout|DOT11 denied data rates|MIC validation failed|L2\-AUTH connection timeout|IP\-LEARN connection timeout|Mobility peer delete|Due to mobility failure|AP down/disjoin|AP initiated delete for DHCP timeout|AP initiated delete for reassociation timeout
+    count: .*?
+    enum: .*?
+  example: 'IP-LEARN connection timeout                    : 968'
+  source_url: https://blogs.cisco.com/?p=402194
+  verified: false
+  demoted_reason: example does not match its own pattern
+- id: ISE:header
+  vendor: Cisco
+  header_style: bsd
+  severity: null
+  message: '{cat_name} {msg_id} {total_seg} {seg_num} {date} {time_ms} {tz_offset} {seq_num} {msg_code} {msg_sev} {msg_class}: {msg_text}, {attr_pairs}'
+  placeholders:
+    cat_name: .*?
+    msg_id: '[0-9]{10}'
+    total_seg: '[0-9]+'
+    seg_num: '[0-9]+'
+    date: .*?
+    time_ms: .*?
+    tz_offset: '[+-]\d{2}:\d{2}'
+    seq_num: .*?
+    msg_code: .*?
+    msg_sev: NOTICE|INFO|WARN|ERROR|FATAL|DEBUG
+    msg_class: .*?
+    msg_text: .*?
+    attr_pairs: .*?
+  example: '<181>Oct 21 13:10:56 ise-psn01 CISE_Failed_Attempts 0000001161 3 0 2026-10-21 13:10:56.252 +00:00 0045534800 5400 NOTICE Failed-Attempt: Authentication failed, ConfigVersionId=53, Device IP Address=192.0.2.20, UserName=jdoe, NetworkDeviceName=wlc-hq-01, Calling-Station-ID=00-00-5E-00-53-01, FailureReason=24408 User authentication against Active Directory failed since user has entered the wrong password'
+  source_url: https://go2docs.graylog.org/illuminate-current/content_packs/cisco_ise_content_pack.htm
+  verified: true
+  demoted_reason: null
+- id: ISE:5440
+  vendor: Cisco
+  header_style: bsd
+  severity: null
+  message: 'CISE_Failed_Attempts {msg_id} {total_seg} {seg_num} {date} {time_ms} {tz_offset} {seq_num} 5440 NOTICE RADIUS: Endpoint abandoned EAP session and started new, ConfigVersionId={n}, Device IP Address={nad_ip}'
+  placeholders:
+    msg_id: .*?
+    total_seg: .*?
+    seg_num: .*?
+    date: .*?
+    time_ms: .*?
+    tz_offset: .*?
+    seq_num: .*?
+    n: .*?
+    nad_ip: .*?
+  example: '<181>Oct 21 13:10:56 ise-psn01 CISE_Failed_Attempts 0000001162 1 0 2026-10-21 13:10:56.252 +00:00 0045534801 5440 NOTICE RADIUS: Endpoint abandoned EAP session and started new, ConfigVersionId=53, Device IP Address=192.0.2.20, UserName=jdoe, Calling-Station-ID=00-00-5E-00-53-01'
+  source_url: https://go2docs.graylog.org/illuminate-current/content_packs/cisco_ise_content_pack.htm
+  verified: true
+  demoted_reason: null
+- id: ISE:5400
+  vendor: Cisco
+  header_style: bsd
+  severity: null
+  message: 'CISE_Failed_Attempts ... 5400 NOTICE Failed-Attempt: Authentication failed, ..., FailureReason={failure_code} {failure_text}'
+  placeholders:
+    failure_code: .*?
+    failure_text: .*?
+  example: '<181>Oct 21 13:12:03 ise-psn01 CISE_Failed_Attempts 0000001170 2 0 2026-10-21 13:12:03.871 +00:00 0045534810 5400 NOTICE Failed-Attempt: Authentication failed, ConfigVersionId=53, Device IP Address=192.0.2.20, UserName=jdoe, FailureReason=24408 User authentication against Active Directory failed since user has entered the wrong password'
+  source_url: https://community.cisco.com/t5/network-access-control/24403-user-authentication-against-active-directory-failed/m-p/3345925/highlight/true
+  verified: false
+  demoted_reason: example does not match its own pattern
+- id: ISE:24408
+  vendor: Cisco
+  header_style: bsd
+  severity: null
+  message: FailureReason=24408 User authentication against Active Directory failed since user has entered the wrong password
+  placeholders: {}
+  example: FailureReason=24408 User authentication against Active Directory failed since user has entered the wrong password
+  source_url: https://community.cisco.com/t5/network-access-control/cisco-ise-failure-24408-user-authentication-against-active/m-p/4649542
+  verified: true
+  demoted_reason: null
+- id: ISE:22056
+  vendor: Cisco
+  header_style: bsd
+  severity: null
+  message: FailureReason=22056 Subject not found in the applicable identity store(s)
+  placeholders: {}
+  example: FailureReason=22056 Subject not found in the applicable identity store(s)
+  source_url: https://community.cisco.com/t5/network-access-control/hp-device-22056-subject-not-found-in-the-applicable-identity/td-p/3956451
+  verified: true
+  demoted_reason: null
+- id: ISE:12321
+  vendor: Cisco
+  header_style: bsd
+  severity: null
+  message: FailureReason=12321 PEAP failed SSL/TLS handshake because the client rejected the ISE local-certificate
+  placeholders: {}
+  example: FailureReason=12321 PEAP failed SSL/TLS handshake because the client rejected the ISE local-certificate
+  source_url: https://community.cisco.com/t5/network-access-control/12321-peap-failed-ssl-tls-handshake-because-the-client-rejected/m-p/3674842/highlight/true
+  verified: true
+  demoted_reason: null
+- id: ISE:15039
+  vendor: Cisco
+  header_style: bsd
+  severity: null
+  message: FailureReason=15039 Rejected per authorization profile
+  placeholders: {}
+  example: FailureReason=15039 Rejected per authorization profile
+  source_url: https://community.cisco.com/t5/network-access-control/cisco-ise-failure-24408-user-authentication-against-active/m-p/4649542
+  verified: true
+  demoted_reason: null
+- id: ISE:5434
+  vendor: Cisco
+  header_style: bsd
+  severity: null
+  message: 'CISE_Failed_Attempts ... 5434 NOTICE RADIUS: Endpoint conducted several failed authentications of the same scenario'
+  placeholders: {}
+  example: '<181>Oct 21 13:15:40 ise-psn01 CISE_Failed_Attempts 0000001190 1 0 2026-10-21 13:15:40.002 +00:00 0045534830 5434 NOTICE RADIUS: Endpoint conducted several failed authentications of the same scenario, Device IP Address=192.0.2.20, Calling-Station-ID=00-00-5E-00-53-01'
+  source_url: https://community.cisco.com/t5/network-access-control/ise-cert/m-p/2000214/highlight/true
+  verified: false
+  demoted_reason: null
+- id: ISE:5449
+  vendor: Cisco
+  header_style: bsd
+  severity: null
+  message: 'CISE_Failed_Attempts ... 5449 NOTICE RADIUS: Endpoint failed authentication of the same scenario several times and all further requests will be rejected'
+  placeholders: {}
+  example: '<181>Oct 21 13:16:10 ise-psn01 CISE_Failed_Attempts 0000001195 1 0 2026-10-21 13:16:10.402 +00:00 0045534835 5449 NOTICE RADIUS: Endpoint failed authentication of the same scenario several times and all further requests will be rejected, Calling-Station-ID=00-00-5E-00-53-01'
+  source_url: https://www.ibm.com/docs/de/SS42VS_DSM/com.ibm.dsm.doc/c_dsm_guide_cisco_ise_sample_event_msg.html
+  verified: false
+  demoted_reason: null
+- id: ISE:5200
+  vendor: Cisco
+  header_style: bsd
+  severity: null
+  message: 'CISE_Passed_Authentications ... 5200 NOTICE Passed-Authentication: Authentication succeeded'
+  placeholders: {}
+  example: '<181>Oct 21 13:20:00 ise-psn01 CISE_Passed_Authentications 0000001200 4 0 2026-10-21 13:20:00.118 +00:00 0045534900 5200 NOTICE Passed-Authentication: Authentication succeeded, Device IP Address=192.0.2.20, UserName=jdoe, Calling-Station-ID=00-00-5E-00-53-01'
+  source_url: ''
+  verified: false
+  demoted_reason: null
+- id: ISE:5411
+  vendor: Cisco
+  header_style: bsd
+  severity: null
+  message: 'CISE_Failed_Attempts ... 5411 NOTICE RADIUS: Supplicant stopped responding to ISE'
+  placeholders: {}
+  example: '<181>Oct 21 13:21:00 ise-psn01 CISE_Failed_Attempts 0000001210 1 0 2026-10-21 13:21:00.010 +00:00 0045534910 5411 NOTICE RADIUS: Supplicant stopped responding to ISE, Calling-Station-ID=00-00-5E-00-53-01'
+  source_url: ''
+  verified: false
+  demoted_reason: null
+- id: ISE:12514
+  vendor: Cisco
+  header_style: bsd
+  severity: null
+  message: FailureReason=12514 EAP-TLS failed SSL/TLS handshake because of an unknown CA in the client certificates chain
+  placeholders: {}
+  example: FailureReason=12514 EAP-TLS failed SSL/TLS handshake because of an unknown CA in the client certificates chain
+  source_url: ''
+  verified: false
+  demoted_reason: null
+- id: ISE:22040
+  vendor: Cisco
+  header_style: bsd
+  severity: null
+  message: FailureReason=22040 Wrong password or invalid shared secret
+  placeholders: {}
+  example: FailureReason=22040 Wrong password or invalid shared secret
+  source_url: https://community.cisco.com/t5/network-access-control/authentication-failure-code-for-cisco-acs/m-p/3937825
+  verified: false
+  demoted_reason: null
+- id: ISE:11036
+  vendor: Cisco
+  header_style: bsd
+  severity: null
+  message: FailureReason=11036 The Message-Authenticator RADIUS attribute is invalid
+  placeholders: {}
+  example: FailureReason=11036 The Message-Authenticator RADIUS attribute is invalid
+  source_url: ''
+  verified: false
+  demoted_reason: null
+- id: MERAKI:association
+  vendor: Cisco Meraki
+  header_style: meraki
+  severity: null
+  message: events type=association radio='{radio}' vap='{vap}' channel='{channel}' rssi='{rssi}' aid='{aid}'
+  placeholders:
+    radio: .*?
+    vap: .*?
+    channel: .*?
+    rssi: .*?
+    aid: \d{9,10}
+  example: 1792595443.857790533 MR-FL2-EAST events type=association radio='1' vap='0' channel='36' rssi='42' aid='1813578850'
+  source_url: https://documentation.meraki.com/General_Administration/Monitoring_and_Reporting/Syslog_Event_Types_and_Log_Samples
+  verified: true
+  demoted_reason: null
+- id: MERAKI:disassociation
+  vendor: Cisco Meraki
+  header_style: meraki
+  severity: null
+  message: events type=disassociation radio='{radio}' vap='{vap}' channel='{channel}' reason='{reason}' instigator='{instigator}'
+  placeholders:
+    radio: .*?
+    vap: .*?
+    channel: .*?
+    reason: .*?
+    instigator: .*?
+  example: 1792595500.112233445 MR-FL2-EAST events type=disassociation radio='1' vap='0' channel='36' reason='8' instigator='2'
+  source_url: https://documentation.meraki.com/General_Administration/Monitoring_and_Reporting/Syslog_Event_Types_and_Log_Samples
+  verified: true
+  demoted_reason: null
+- id: MERAKI:wpa_auth
+  vendor: Cisco Meraki
+  header_style: meraki
+  severity: null
+  message: events type=wpa_auth radio='{radio}' vap='{vap}' aid='{aid}'
+  placeholders:
+    radio: .*?
+    vap: .*?
+    aid: .*?
+  example: 1792595444.001122334 MR-FL2-EAST events type=wpa_auth radio='1' vap='0' aid='1813578850'
+  source_url: https://documentation.meraki.com/General_Administration/Monitoring_and_Reporting/Syslog_Event_Types_and_Log_Samples
+  verified: true
+  demoted_reason: null
+- id: MERAKI:wpa_deauth
+  vendor: Cisco Meraki
+  header_style: meraki
+  severity: null
+  message: events type=wpa_deauth radio='{radio}' vap='{vap}' aid='{aid}'
+  placeholders:
+    radio: .*?
+    vap: .*?
+    aid: .*?
+  example: 1792595600.445566778 MR-FL2-EAST events type=wpa_deauth radio='1' vap='0' aid='1813578850'
+  source_url: https://documentation.meraki.com/General_Administration/Monitoring_and_Reporting/Syslog_Event_Types_and_Log_Samples
+  verified: true
+  demoted_reason: null
+- id: MERAKI:8021x_eap_failure
+  vendor: Cisco Meraki
+  header_style: meraki
+  severity: null
+  message: events type=8021x_eap_failure radio='{radio}' vap='{vap}' identity='{identity}' aid='{aid}'
+  placeholders:
+    radio: .*?
+    vap: .*?
+    identity: .*?
+    aid: .*?
+  example: 1792595700.998877665 MR-FL2-EAST events type=8021x_eap_failure radio='1' vap='2' identity='jdoe@example.com' aid='1701992265'
+  source_url: https://documentation.meraki.com/General_Administration/Monitoring_and_Reporting/Syslog_Event_Types_and_Log_Samples
+  verified: true
+  demoted_reason: null
+- id: MERAKI:8021x_eap_success
+  vendor: Cisco Meraki
+  header_style: meraki
+  severity: null
+  message: events type=8021x_eap_success radio='{radio}' vap='{vap}' identity='{identity}' aid='{aid}'
+  placeholders:
+    radio: .*?
+    vap: .*?
+    identity: .*?
+    aid: .*?
+  example: 1792595701.123456789 MR-FL2-EAST events type=8021x_eap_success radio='1' vap='2' identity='jdoe@example.com' aid='1849280097'
+  source_url: https://documentation.meraki.com/General_Administration/Monitoring_and_Reporting/Syslog_Event_Types_and_Log_Samples
+  verified: true
+  demoted_reason: null
+- id: MERAKI:8021x-auth-fail-health
+  vendor: Cisco Meraki
+  header_style: meraki
+  severity: null
+  message: type='802.1X auth fail' num_eap='{num_eap}' first_time='{first_time}' associated='{bool}' radio='{radio}' vap='{vap}'
+  placeholders:
+    num_eap: .*?
+    first_time: .*?
+    bool: .*?
+    radio: .*?
+    vap: .*?
+  example: type='802.1X auth fail' num_eap='9' first_time='0.012724844' associated='false' radio='1' vap='7'
+  source_url: https://documentation.meraki.com/Wireless/Troubleshooting_and_Support/Troubleshooting/Common_Wireless_Event_Log_Messages_and_Issues
+  verified: true
+  demoted_reason: null
+- id: MERAKI:splash_auth
+  vendor: Cisco Meraki
+  header_style: meraki
+  severity: null
+  message: events type=splash_auth ip='{client_ip}' duration='{seconds}' vap='{vap}' download='{bps}bps' upload='{bps_2}bps'
+  placeholders:
+    client_ip: .*?
+    seconds: .*?
+    vap: .*?
+    bps: .*?
+    bps_2: .*?
+  example: 1792595800.000111222 MR-LOBBY events type=splash_auth ip='10.20.30.40' duration='3600' vap='2' download='5242880bps' upload='5242880bps'
+  source_url: https://documentation.meraki.com/General_Administration/Monitoring_and_Reporting/Syslog_Event_Types_and_Log_Samples
+  verified: true
+  demoted_reason: null
+- id: MERAKI:dashboard-disassociation
+  vendor: Cisco Meraki
+  header_style: meraki
+  severity: null
+  message: '{client_mac} {aid_or_vlan} {client_name} 802.11 disassociation {reason_text}'
+  placeholders:
+    client_mac: .*?
+    aid_or_vlan: .*?
+    client_name: .*?
+    reason_text: client has left AP|previous authentication expired|Client association expired|Client was deauthenticated|unknown reason
+  example: Oct 21 14:51:35 00:00:5e:00:53:01 101 LAPTOP-JDOE 802.11 disassociation previous authentication expired
+  source_url: https://documentation.meraki.com/Wireless/Troubleshooting_and_Support/Troubleshooting/Common_Wireless_Event_Log_Messages_and_Issues
+  verified: true
+  demoted_reason: null
+- id: MERAKI:ms-port-status
+  vendor: Cisco Meraki
+  header_style: meraki
+  severity: null
+  message: events port {port} status changed from {old} to {new}
+  placeholders:
+    port: .*?
+    old: down|10fdx|100fdx|1Gfdx|10Gfdx
+    new: down|10fdx|100fdx|1Gfdx|10Gfdx
+  example: 1792596000.409907239 MS-IDF2 events port 3 status changed from 1Gfdx to down
+  source_url: https://documentation.meraki.com/General_Administration/Monitoring_and_Reporting/Syslog_Event_Types_and_Log_Samples
+  verified: true
+  demoted_reason: null
+- id: MERAKI:ms-stp-role
+  vendor: Cisco Meraki
+  header_style: meraki
+  severity: null
+  message: events Port {port} changed STP role from {old_role} to {new_role}
+  placeholders:
+    port: .*?
+    old_role: designated|root|alternate|disabled
+    new_role: designated|root|alternate|disabled
+  example: 1792596100.195563376 MS-IDF2 events Port 5 changed STP role from designated to alternate
+  source_url: https://documentation.meraki.com/General_Administration/Monitoring_and_Reporting/Syslog_Event_Types_and_Log_Samples
+  verified: true
+  demoted_reason: null
+- id: MERAKI:ms-stp-guard
+  vendor: Cisco Meraki
+  header_style: meraki
+  severity: null
+  message: events Port {port} received an STP BPDU from {mac} so the port was blocked
+  placeholders:
+    port: .*?
+    mac: .*?
+  example: 1792596101.577982192 MS-IDF2 events Port 5 received an STP BPDU from 00:00:5E:00:53:44 so the port was blocked
+  source_url: https://documentation.meraki.com/General_Administration/Monitoring_and_Reporting/Syslog_Event_Types_and_Log_Samples
+  verified: true
+  demoted_reason: null
+- id: MERAKI:mx-vpn_connectivity_change
+  vendor: Cisco Meraki
+  header_style: meraki
+  severity: null
+  message: events type=vpn_connectivity_change vpn_type='{vpn_type}' peer_contact='{peer_ip}:{port}' peer_ident='{peer_ident}' connectivity='{bool}'
+  placeholders:
+    vpn_type: .*?
+    peer_ip: .*?
+    port: .*?
+    peer_ident: '[0-9a-f]{32}'
+    bool: true|false
+  example: 1792596200.583851938 MX-BRANCH07 events type=vpn_connectivity_change vpn_type='site-to-site' peer_contact='203.0.113.9:51856' peer_ident='0123456789abcdef0123456789abcdef' connectivity='false'
+  source_url: https://documentation.meraki.com/General_Administration/Monitoring_and_Reporting/Syslog_Event_Types_and_Log_Samples
+  verified: true
+  demoted_reason: null
+- id: MERAKI:mx-failover
+  vendor: Cisco Meraki
+  header_style: meraki
+  severity: null
+  message: events failover to {uplink}
+  placeholders:
+    uplink: wan1|wan2|cellular
+  example: Oct 21 08:45:24 192.0.2.1 1 1792596300.803931423 MX-BRANCH07 events failover to wan2
+  source_url: https://documentation.meraki.com/General_Administration/Monitoring_and_Reporting/Syslog_Event_Types_and_Log_Samples
+  verified: true
+  demoted_reason: null
+- id: MERAKI:mx-dhcp-no-offers
+  vendor: Cisco Meraki
+  header_style: meraki
+  severity: null
+  message: events dhcp no offers for mac {mac} host = {host_ip}
+  placeholders:
+    mac: .*?
+    host_ip: .*?
+  example: Oct 21 16:12:41 192.0.2.1 1 1792597961.535491111 MX-BRANCH07 events dhcp no offers for mac 00:00:5E:00:53:05 host = 192.0.2.1
+  source_url: https://documentation.meraki.com/General_Administration/Monitoring_and_Reporting/Syslog_Event_Types_and_Log_Samples
+  verified: true
+  demoted_reason: null
+- id: ARUBA:121004
+  vendor: HPE Aruba
+  header_style: null
+  severity: null
+  message: '121004:  <WARN> |authmgr| |aaa| RADIUS server {server_name}-{server_ip}-{port} timeout for client={client_mac} auth method {method}'
+  placeholders:
+    server_name: .*?
+    server_ip: .*?
+    port: .*?
+    client_mac: .*?
+    method: .*?
+  example: 'Oct 21 09:04:12 :121004:  <WARN> |authmgr| |aaa| RADIUS server Primary--192.0.2.102-1812 timeout for client=00:00:5e:00:53:01 auth method 802.1x'
+  source_url: https://community.networking.hpe.com/discussion/source-of-radius-timeouts
+  verified: true
+  demoted_reason: null
+- id: ARUBA:132207
+  vendor: HPE Aruba
+  header_style: null
+  severity: null
+  message: '132207:  <ERRS> |authmgr|  RADIUS reject for station {username} {client_mac} from server {server_name}.'
+  placeholders:
+    username: .*?
+    client_mac: .*?
+    server_name: .*?
+  example: 'Oct 21 07:25:02 :132207:  <ERRS> |authmgr|  RADIUS reject for station jdoe 00:00:5e:00:53:01 from server Secondary.'
+  source_url: https://community.networking.hpe.com/discussion/source-of-radius-timeouts
+  verified: true
+  demoted_reason: null
+- id: ARUBA:132197
+  vendor: HPE Aruba
+  header_style: null
+  severity: null
+  message: '132197:  <ERRS> |authmgr|  Maximum number of retries was attempted for station {username} {rest}'
+  placeholders:
+    username: .*?
+    rest: .*?
+  example: 'Oct 21 09:04:27 :132197:  <ERRS> |authmgr|  Maximum number of retries was attempted for station jdoe'
+  source_url: https://community.networking.hpe.com/discussion/source-of-radius-timeouts
+  verified: false
+  demoted_reason: example does not match its own pattern
+- id: ARUBA:522275
+  vendor: HPE Aruba
+  header_style: null
+  severity: null
+  message: '522275: <ERRS> |authmgr| User Authentication failed. username={username} userip={ip} usermac={mac} authmethod={method} servername={server_name} serverip={server_ip} apname={ap_name} bssid={bssid}'
+  placeholders:
+    username: .*?
+    ip: .*?
+    mac: .*?
+    method: .*?
+    server_name: .*?
+    server_ip: .*?
+    ap_name: .*?
+    bssid: .*?
+  example: 'Oct 21 12:54:17 :522275: <ERRS> |authmgr| User Authentication failed. username=host/LT-0042.corp.example.com userip=0.0.0.0 usermac=00:00:5e:00:53:01 authmethod=802.1x servername=nps-02 serverip=192.0.2.50 apname=BLDG1-AP-17 bssid=00:00:5e:00:53:20'
+  source_url: https://community.networking.hpe.com/discussion/computer-name-logging-of-authentication-success
+  verified: true
+  demoted_reason: null
+- id: ARUBA:522008
+  vendor: HPE Aruba
+  header_style: null
+  severity: null
+  message: '522008: <NOTI> |authmgr| User Authentication Successful: username={username} MAC={mac} IP={ip} role={role} VLAN={vlan} AP={ap_name} SSID={ssid} AAA profile={aaa_profile} auth method={method} auth server={server}'
+  placeholders:
+    username: .*?
+    mac: .*?
+    ip: .*?
+    role: .*?
+    vlan: .*?
+    ap_name: .*?
+    ssid: .*?
+    aaa_profile: .*?
+    method: .*?
+    server: .*?
+  example: 'Oct 21 12:55:01 :522008: <NOTI> |authmgr| User Authentication Successful: username=jdoe MAC=00:00:5e:00:53:01 IP=10.20.30.41 role=employee VLAN=20 AP=BLDG1-AP-17 SSID=CORP-WLAN AAA profile=corp-aaa auth method=802.1x auth server=nps-02'
+  source_url: https://community.arubanetworks.com/t5/Wireless-Access/difference-between-authentication-event-522008-and-522038/td-p/433001
+  verified: false
+  demoted_reason: null
+- id: ARUBA:ap-down
+  vendor: HPE Aruba
+  header_style: null
+  severity: null
+  message: (unverified) AP {ap_name} is down
+  placeholders:
+    ap_name: .*?
+  example: (unverified)
+  source_url: ''
+  verified: false
+  demoted_reason: null
+- id: FREERADIUS:login-ok
+  vendor: FreeRADIUS
+  header_style: null
+  severity: null
+  message: 'Auth: {req_prefix}Login OK: [{username}{slash_pw}] (from client {client_shortname} port {nas_port} cli {calling_station_id}){tunnel}'
+  placeholders:
+    req_prefix: .*?
+    username: .*?
+    slash_pw: .*?
+    client_shortname: .*?
+    nas_port: .*?
+    calling_station_id: .*?
+    tunnel: .*?
+  example: 'Wed Oct 21 22:27:02 2026 : Auth: (12) Login OK: [jdoe] (from client wlc-hq-01 port 0 cli 00-00-5E-00-53-01)'
+  source_url: https://raw.githubusercontent.com/FreeRADIUS/freeradius-server/v3.2.x/src/main/auth.c
+  verified: true
+  demoted_reason: null
+- id: FREERADIUS:login-incorrect
+  vendor: FreeRADIUS
+  header_style: null
+  severity: null
+  message: 'Auth: {req_prefix}Login incorrect{detail}: [{username}{slash_pw}] (from client {client_shortname} port {nas_port} cli {calling_station_id}){tunnel}'
+  placeholders:
+    req_prefix: .*?
+    detail: .*?
+    username: .*?
+    slash_pw: .*?
+    client_shortname: .*?
+    nas_port: .*?
+    calling_station_id: .*?
+    tunnel: .*?
+  example: 'Wed Oct 21 22:32:23 2026 : Auth: (13) Login incorrect (mschap: MS-CHAP2-Response is incorrect): [jdoe] (from client wlc-hq-01 port 0 cli 00-00-5E-00-53-01)'
+  source_url: https://raw.githubusercontent.com/FreeRADIUS/freeradius-server/v3.2.x/src/main/auth.c
+  verified: true
+  demoted_reason: null
+- id: FREERADIUS:invalid-user
+  vendor: FreeRADIUS
+  header_style: null
+  severity: null
+  message: 'Auth: {req_prefix}Invalid user{detail}: [{username}] (from client {client_shortname} port {nas_port} cli {calling_station_id})'
+  placeholders:
+    req_prefix: .*?
+    detail: .*?
+    username: .*?
+    client_shortname: .*?
+    nas_port: .*?
+    calling_station_id: .*?
+  example: 'Wed Oct 21 22:40:00 2026 : Auth: (14) Invalid user: [nosuchuser] (from client wlc-hq-01 port 0 cli 00-00-5E-00-53-02)'
+  source_url: https://raw.githubusercontent.com/FreeRADIUS/freeradius-server/v3.2.x/src/main/auth.c
+  verified: true
+  demoted_reason: null
+- id: FREERADIUS:unknown-client
+  vendor: FreeRADIUS
+  header_style: null
+  severity: null
+  message: 'Error: Ignoring request to {listener} from unknown client {src_ip} port {src_port} proto {proto}'
+  placeholders:
+    listener: .*?
+    src_ip: .*?
+    src_port: .*?
+    proto: udp|tcp
+  example: 'Wed Oct 21 22:41:10 2026 : Error: Ignoring request to auth address * port 1812 bound to server default from unknown client 192.0.2.77 port 51234 proto udp'
+  source_url: https://raw.githubusercontent.com/FreeRADIUS/freeradius-server/v3.2.x/src/main/listen.c
+  verified: true
+  demoted_reason: null
+- id: FREERADIUS:home-server-no-response
+  vendor: FreeRADIUS
+  header_style: null
+  severity: null
+  message: 'Error: No response to status check {n} ID {id} for home server {ip} port {port}'
+  placeholders:
+    n: .*?
+    id: .*?
+    ip: .*?
+    port: .*?
+  example: 'Wed Oct 21 22:45:00 2026 : Error: No response to status check 3 ID 17 for home server 192.0.2.60 port 1812'
+  source_url: https://raw.githubusercontent.com/FreeRADIUS/freeradius-server/v3.2.x/src/main/process.c
+  verified: true
+  demoted_reason: null
+- id: IEEE80211:reason-1
+  vendor: IEEE
+  header_style: null
+  severity: null
+  message: reason={code}
+  placeholders:
+    code: .*?
+  example: reason='1'
+  source_url: https://raw.githubusercontent.com/wireshark/wireshark/master/epan/dissectors/packet-ieee80211.c
+  verified: true
+  demoted_reason: null
+- id: IEEE80211:reason-2
+  vendor: IEEE
+  header_style: null
+  severity: null
+  message: reason={code}
+  placeholders:
+    code: .*?
+  example: reason='2'
+  source_url: https://raw.githubusercontent.com/wireshark/wireshark/master/epan/dissectors/packet-ieee80211.c
+  verified: true
+  demoted_reason: null
+- id: IEEE80211:reason-3
+  vendor: IEEE
+  header_style: null
+  severity: null
+  message: reason={code}
+  placeholders:
+    code: .*?
+  example: reason='3'
+  source_url: https://raw.githubusercontent.com/wireshark/wireshark/master/epan/dissectors/packet-ieee80211.c
+  verified: true
+  demoted_reason: null
+- id: IEEE80211:reason-4
+  vendor: IEEE
+  header_style: null
+  severity: null
+  message: reason={code}
+  placeholders:
+    code: .*?
+  example: reason='4'
+  source_url: https://raw.githubusercontent.com/wireshark/wireshark/master/epan/dissectors/packet-ieee80211.c
+  verified: true
+  demoted_reason: null
+- id: IEEE80211:reason-5
+  vendor: IEEE
+  header_style: null
+  severity: null
+  message: reason={code}
+  placeholders:
+    code: .*?
+  example: reason='5'
+  source_url: https://raw.githubusercontent.com/wireshark/wireshark/master/epan/dissectors/packet-ieee80211.c
+  verified: true
+  demoted_reason: null
+- id: IEEE80211:reason-6
+  vendor: IEEE
+  header_style: null
+  severity: null
+  message: reason={code}
+  placeholders:
+    code: .*?
+  example: reason='6'
+  source_url: https://raw.githubusercontent.com/wireshark/wireshark/master/epan/dissectors/packet-ieee80211.c
+  verified: true
+  demoted_reason: null
+- id: IEEE80211:reason-7
+  vendor: IEEE
+  header_style: null
+  severity: null
+  message: reason={code}
+  placeholders:
+    code: .*?
+  example: reason='7'
+  source_url: https://raw.githubusercontent.com/wireshark/wireshark/master/epan/dissectors/packet-ieee80211.c
+  verified: true
+  demoted_reason: null
+- id: IEEE80211:reason-8
+  vendor: IEEE
+  header_style: null
+  severity: null
+  message: reason={code}
+  placeholders:
+    code: .*?
+  example: reason='8'
+  source_url: https://raw.githubusercontent.com/wireshark/wireshark/master/epan/dissectors/packet-ieee80211.c
+  verified: true
+  demoted_reason: null
+- id: IEEE80211:reason-9
+  vendor: IEEE
+  header_style: null
+  severity: null
+  message: reason={code}
+  placeholders:
+    code: .*?
+  example: reason='9'
+  source_url: https://raw.githubusercontent.com/wireshark/wireshark/master/epan/dissectors/packet-ieee80211.c
+  verified: true
+  demoted_reason: null
+- id: IEEE80211:reason-14
+  vendor: IEEE
+  header_style: null
+  severity: null
+  message: reason={code}
+  placeholders:
+    code: .*?
+  example: reason='14'
+  source_url: https://raw.githubusercontent.com/wireshark/wireshark/master/epan/dissectors/packet-ieee80211.c
+  verified: true
+  demoted_reason: null
+- id: IEEE80211:reason-15
+  vendor: IEEE
+  header_style: null
+  severity: null
+  message: reason={code}
+  placeholders:
+    code: .*?
+  example: reason='15'
+  source_url: https://raw.githubusercontent.com/wireshark/wireshark/master/epan/dissectors/packet-ieee80211.c
+  verified: true
+  demoted_reason: null
+- id: IEEE80211:reason-16
+  vendor: IEEE
+  header_style: null
+  severity: null
+  message: reason={code}
+  placeholders:
+    code: .*?
+  example: reason='16'
+  source_url: https://raw.githubusercontent.com/wireshark/wireshark/master/epan/dissectors/packet-ieee80211.c
+  verified: true
+  demoted_reason: null
+- id: IEEE80211:reason-17
+  vendor: IEEE
+  header_style: null
+  severity: null
+  message: reason={code}
+  placeholders:
+    code: .*?
+  example: reason='17'
+  source_url: https://raw.githubusercontent.com/wireshark/wireshark/master/epan/dissectors/packet-ieee80211.c
+  verified: true
+  demoted_reason: null
+- id: IEEE80211:reason-23
+  vendor: IEEE
+  header_style: null
+  severity: null
+  message: reason={code}
+  placeholders:
+    code: .*?
+  example: reason='23'
+  source_url: https://raw.githubusercontent.com/wireshark/wireshark/master/epan/dissectors/packet-ieee80211.c
+  verified: true
+  demoted_reason: null
+- id: IEEE80211:reason-24
+  vendor: IEEE
+  header_style: null
+  severity: null
+  message: reason={code}
+  placeholders:
+    code: .*?
+  example: reason='24'
+  source_url: https://raw.githubusercontent.com/wireshark/wireshark/master/epan/dissectors/packet-ieee80211.c
+  verified: true
+  demoted_reason: null
+- id: IEEE80211:reason-34
+  vendor: IEEE
+  header_style: null
+  severity: null
+  message: reason={code}
+  placeholders:
+    code: .*?
+  example: reason='34'
+  source_url: https://raw.githubusercontent.com/wireshark/wireshark/master/epan/dissectors/packet-ieee80211.c
+  verified: true
+  demoted_reason: null
+- id: IEEE80211:status-17
+  vendor: IEEE
+  header_style: null
+  severity: null
+  message: status={code}
+  placeholders:
+    code: .*?
+  example: status=17
+  source_url: https://raw.githubusercontent.com/wireshark/wireshark/master/epan/dissectors/packet-ieee80211.c
+  verified: true
+  demoted_reason: null
+- id: IEEE80211:status-18
+  vendor: IEEE
+  header_style: null
+  severity: null
+  message: status={code}
+  placeholders:
+    code: .*?
+  example: status=18
+  source_url: https://raw.githubusercontent.com/wireshark/wireshark/master/epan/dissectors/packet-ieee80211.c
+  verified: true
+  demoted_reason: null
+- id: IEEE80211:status-53
+  vendor: IEEE
+  header_style: null
+  severity: null
+  message: status={code}
+  placeholders:
+    code: .*?
+  example: status=53
+  source_url: https://raw.githubusercontent.com/wireshark/wireshark/master/epan/dissectors/packet-ieee80211.c
+  verified: true
+  demoted_reason: null
+- id: EAPOL:4way-fail
+  vendor: hostap (wpa_supplicant / hostapd)
+  header_style: null
+  severity: null
+  message: 'wpa_supplicant: WPA: 4-Way Handshake failed - pre-shared key may be incorrect | hostapd: {iface}: AP-STA-POSSIBLE-PSK-MISMATCH {sta_mac}'
+  placeholders:
+    iface: .*?
+    sta_mac: .*?
+  example: 'Oct 21 10:00:01 ap-lab hostapd: wlan0: AP-STA-POSSIBLE-PSK-MISMATCH 00:00:5e:00:53:01'
+  source_url: https://w1.fi/cgit/hostap/
+  verified: false
+  demoted_reason: null
+- id: ISCDHCPD:DHCPDISCOVER
+  vendor: ISC
+  header_style: bsd
+  severity: null
+  message: 'dhcpd[{pid}]: DHCPDISCOVER from {mac} {opt_hostname}via {iface_or_relay}'
+  placeholders:
+    pid: .*?
+    mac: .*?
+    opt_hostname: .*?
+    iface_or_relay: .*?
+  example: 'Oct 21 14:28:20 dhcp01 dhcpd[3044]: DHCPDISCOVER from 00:00:5e:00:53:01 (LAPTOP-JDOE) via 192.0.2.1'
+  source_url: https://raw.githubusercontent.com/isc-projects/dhcp/master/server/dhcp.c
+  verified: true
+  demoted_reason: null
+- id: ISCDHCPD:DHCPOFFER
+  vendor: ISC
+  header_style: bsd
+  severity: null
+  message: 'dhcpd[{pid}]: DHCPOFFER on {ip} to {mac} {opt_hostname}via {iface_or_relay}'
+  placeholders:
+    pid: .*?
+    ip: .*?
+    mac: .*?
+    opt_hostname: .*?
+    iface_or_relay: .*?
+  example: 'Oct 21 14:28:20 dhcp01 dhcpd[3044]: DHCPOFFER on 10.20.30.41 to 00:00:5e:00:53:01 (LAPTOP-JDOE) via 192.0.2.1'
+  source_url: https://raw.githubusercontent.com/isc-projects/dhcp/master/server/dhcp.c
+  verified: true
+  demoted_reason: null
+- id: ISCDHCPD:DHCPREQUEST
+  vendor: ISC
+  header_style: bsd
+  severity: null
+  message: 'dhcpd[{pid}]: DHCPREQUEST for {ip}{server_id} from {mac} {opt_hostname}via {iface_or_relay}'
+  placeholders:
+    pid: .*?
+    ip: .*?
+    server_id: .*?
+    mac: .*?
+    opt_hostname: .*?
+    iface_or_relay: .*?
+  example: 'Oct 21 14:28:21 dhcp01 dhcpd[3044]: DHCPREQUEST for 10.20.30.41 (192.0.2.10) from 00:00:5e:00:53:01 (LAPTOP-JDOE) via 192.0.2.1'
+  source_url: https://raw.githubusercontent.com/isc-projects/dhcp/master/server/dhcp.c
+  verified: true
+  demoted_reason: null
+- id: ISCDHCPD:DHCPACK
+  vendor: ISC
+  header_style: bsd
+  severity: null
+  message: 'dhcpd[{pid}]: DHCPACK on {ip} to {mac} {opt_hostname}via {iface_or_relay}'
+  placeholders:
+    pid: .*?
+    ip: .*?
+    mac: .*?
+    opt_hostname: .*?
+    iface_or_relay: .*?
+  example: 'Oct 21 14:28:21 dhcp01 dhcpd[3044]: DHCPACK on 10.20.30.41 to 00:00:5e:00:53:01 (LAPTOP-JDOE) via 192.0.2.1'
+  source_url: https://raw.githubusercontent.com/isc-projects/dhcp/master/server/dhcp.c
+  verified: true
+  demoted_reason: null
+- id: ISCDHCPD:DHCPNAK
+  vendor: ISC
+  header_style: bsd
+  severity: null
+  message: 'dhcpd[{pid}]: DHCPNAK on {ip} to {mac} via {iface_or_relay}'
+  placeholders:
+    pid: .*?
+    ip: .*?
+    mac: .*?
+    iface_or_relay: .*?
+  example: 'Oct 21 14:30:02 dhcp01 dhcpd[3044]: DHCPNAK on 172.16.5.20 to 00:00:5e:00:53:01 via 192.0.2.1'
+  source_url: https://raw.githubusercontent.com/isc-projects/dhcp/master/server/dhcp.c
+  verified: true
+  demoted_reason: null
+- id: ISCDHCPD:wrong-network
+  vendor: ISC
+  header_style: bsd
+  severity: null
+  message: 'dhcpd[{pid}]: DHCPREQUEST for {ip} from {mac} via {iface_or_relay}: wrong network.'
+  placeholders:
+    pid: .*?
+    ip: .*?
+    mac: .*?
+    iface_or_relay: .*?
+  example: 'Oct 21 14:30:02 dhcp01 dhcpd[3044]: DHCPREQUEST for 172.16.5.20 from 00:00:5e:00:53:01 via 192.0.2.1: wrong network.'
+  source_url: https://raw.githubusercontent.com/isc-projects/dhcp/master/server/dhcp.c
+  verified: true
+  demoted_reason: null
+- id: ISCDHCPD:no-free-leases
+  vendor: ISC
+  header_style: bsd
+  severity: null
+  message: 'dhcpd[{pid}]: DHCPDISCOVER from {mac} via {iface_or_relay}: network {shared_network}: no free leases'
+  placeholders:
+    pid: .*?
+    mac: .*?
+    iface_or_relay: .*?
+    shared_network: .*?
+  example: 'Oct 21 14:28:20 dhcp01 dhcpd[3044]: DHCPDISCOVER from 00:00:5e:00:53:09 via 192.0.2.1: network 10.20.30.0/24: no free leases'
+  source_url: https://raw.githubusercontent.com/isc-projects/dhcp/master/server/dhcp.c
+  verified: true
+  demoted_reason: null
+- id: ISCDHCPD:peer-holds-all-free-leases
+  vendor: ISC
+  header_style: bsd
+  severity: null
+  message: 'dhcpd[{pid}]: DHCPDISCOVER from {mac} via {iface_or_relay}: peer holds all free leases'
+  placeholders:
+    pid: .*?
+    mac: .*?
+    iface_or_relay: .*?
+  example: 'Oct 21 04:10:44 dhcp01 dhcpd[3044]: DHCPDISCOVER from 00:00:5e:00:53:0a via 192.0.2.1: peer holds all free leases'
+  source_url: https://raw.githubusercontent.com/isc-projects/dhcp/master/server/dhcp.c
+  verified: true
+  demoted_reason: null
+- id: KEA:DHCP4_LEASE_ALLOC
+  vendor: ISC
+  header_style: null
+  severity: null
+  message: 'INFO  [kea-dhcp4.leases/{pid}.{tid}] DHCP4_LEASE_ALLOC {client_info}: lease {ip} has been allocated for {seconds} seconds'
+  placeholders:
+    pid: .*?
+    tid: .*?
+    client_info: .*?
+    ip: .*?
+    seconds: .*?
+  example: '2026-10-21 14:28:21.104 INFO  [kea-dhcp4.leases/8475.139870321] DHCP4_LEASE_ALLOC [hwtype=1 00:00:5e:00:53:01], cid=[no info], tid=0x5a1b2c3d: lease 10.20.30.41 has been allocated for 4000 seconds'
+  source_url: https://kea.readthedocs.io/en/latest/kea-messages.html
+  verified: true
+  demoted_reason: null
+- id: KEA:ALLOC_ENGINE_V4_ALLOC_FAIL_SUBNET
+  vendor: ISC
+  header_style: null
+  severity: null
+  message: 'WARN  [kea-dhcp4.alloc-engine/{pid}.{tid}] ALLOC_ENGINE_V4_ALLOC_FAIL_SUBNET {client_info}: failed to allocate an IPv4 lease in the subnet {subnet}, subnet-id {id}, shared network {shared_network}'
+  placeholders:
+    pid: .*?
+    tid: .*?
+    client_info: .*?
+    subnet: .*?
+    id: .*?
+    shared_network: .*?
+  example: '2026-10-21 14:28:20.551 WARN  [kea-dhcp4.alloc-engine/8475.139870321] ALLOC_ENGINE_V4_ALLOC_FAIL_SUBNET [hwtype=1 00:00:5e:00:53:09], cid=[no info], tid=0x11223344: failed to allocate an IPv4 lease in the subnet 10.20.30.0/24, subnet-id 20, shared network (none)'
+  source_url: https://kea.readthedocs.io/en/latest/kea-messages.html
+  verified: true
+  demoted_reason: null
+- id: KEA:ALLOC_ENGINE_V4_ALLOC_FAIL
+  vendor: ISC
+  header_style: null
+  severity: null
+  message: 'WARN  [kea-dhcp4.alloc-engine/{pid}.{tid}] ALLOC_ENGINE_V4_ALLOC_FAIL {client_info}: failed to allocate an IPv4 address after {n} attempt(s)'
+  placeholders:
+    pid: .*?
+    tid: .*?
+    client_info: .*?
+    n: .*?
+  example: '2026-10-21 14:28:20.552 WARN  [kea-dhcp4.alloc-engine/8475.139870321] ALLOC_ENGINE_V4_ALLOC_FAIL [hwtype=1 00:00:5e:00:53:09], cid=[no info], tid=0x11223344: failed to allocate an IPv4 address after 250 attempt(s)'
+  source_url: https://kea.readthedocs.io/en/latest/kea-messages.html
+  verified: true
+  demoted_reason: null
+- id: KEA:ALLOC_ENGINE_V4_ALLOC_FAIL_SHARED_NETWORK
+  vendor: ISC
+  header_style: null
+  severity: null
+  message: 'ALLOC_ENGINE_V4_ALLOC_FAIL_SHARED_NETWORK {client_info}: failed to allocate an IPv4 address in the shared network {name}: {n1} subnets have no available addresses, {n2} subnets have no matching pools'
+  placeholders:
+    client_info: .*?
+    name: .*?
+    n1: .*?
+    n2: .*?
+  example: '2026-10-21 14:28:20.553 WARN  [kea-dhcp4.alloc-engine/8475.139870321] ALLOC_ENGINE_V4_ALLOC_FAIL_SHARED_NETWORK [hwtype=1 00:00:5e:00:53:09], cid=[no info], tid=0x11223344: failed to allocate an IPv4 address in the shared network office-floor2: 2 subnets have no available addresses, 0 subnets have no matching pools'
+  source_url: https://kea.readthedocs.io/en/latest/kea-messages.html
+  verified: true
+  demoted_reason: null
+- id: KEA:DHCP4_PACKET_NAK_0001
+  vendor: ISC
+  header_style: null
+  severity: null
+  message: 'DHCP4_PACKET_NAK_0001 {client_info}: failed to select a subnet for incoming packet, src {src_ip}, type {pkt_type}'
+  placeholders:
+    client_info: .*?
+    src_ip: .*?
+    pkt_type: DHCPREQUEST|DHCPDISCOVER
+  example: '2026-10-21 14:31:00.010 ERROR [kea-dhcp4.bad-packets/8475.139870321] DHCP4_PACKET_NAK_0001 [hwtype=1 00:00:5e:00:53:0b], cid=[no info], tid=0x99aa: failed to select a subnet for incoming packet, src 192.0.2.1, type DHCPREQUEST'
+  source_url: https://kea.readthedocs.io/en/latest/kea-messages.html
+  verified: true
+  demoted_reason: null
+- id: KEA:DHCP4_DECLINE_LEASE
+  vendor: ISC
+  header_style: null
+  severity: null
+  message: DHCP4_DECLINE_LEASE Received DHCPDECLINE for addr {ip} from client {client_info}. The lease will be unavailable for {seconds} seconds.
+  placeholders:
+    ip: .*?
+    client_info: .*?
+    seconds: .*?
+  example: 2026-10-21 14:33:00.200 INFO  [kea-dhcp4.leases/8475.139870321] DHCP4_DECLINE_LEASE Received DHCPDECLINE for addr 10.20.30.50 from client [hwtype=1 00:00:5e:00:53:0c], cid=[no info], tid=0x77. The lease will be unavailable for 86400 seconds.
+  source_url: https://kea.readthedocs.io/en/latest/kea-messages.html
+  verified: true
+  demoted_reason: null
+- id: WINDHCP:1020
+  vendor: Microsoft
+  header_style: null
+  severity: null
+  message: Scope, {scope}, is {pct} percent full with only {n} IP addresses remaining.
+  placeholders:
+    scope: .*?
+    pct: .*?
+    n: .*?
+  example: Scope, 10.20.30.0, is 92 percent full with only 20 IP addresses remaining.
+  source_url: ''
+  verified: false
+  demoted_reason: null
+- id: WINDHCP:1063
+  vendor: Microsoft
+  header_style: null
+  severity: null
+  message: There are no IP addresses available for lease in the scope or superscope "{scope}".
+  placeholders:
+    scope: .*?
+  example: There are no IP addresses available for lease in the scope or superscope "10.20.30.0".
+  source_url: ''
+  verified: false
+  demoted_reason: null
+- id: WINDHCP:1376
+  vendor: Microsoft
+  header_style: null
+  severity: null
+  message: IP address range of scope {scope} is {pct} percent full with only {n} IP addresses available.
+  placeholders:
+    scope: .*?
+    pct: .*?
+    n: .*?
+  example: IP address range of scope 10.20.30.0 is 92 percent full with only 20 IP addresses available.
+  source_url: ''
+  verified: false
+  demoted_reason: null
+- id: BIND:query-cache-denied
+  vendor: ISC
+  header_style: null
+  severity: null
+  message: 'client @{ptr} {client_ip}#{port} ({qname}): query (cache) ''{qname_2}/{qtype}/{qclass}'' denied ({reason})'
+  placeholders:
+    ptr: .*?
+    client_ip: .*?
+    port: .*?
+    qname: .*?
+    qname_2: .*?
+    qtype: .*?
+    qclass: .*?
+    reason: .*?
+  example: '21-Oct-2026 14:02:11.123 security: info: client @0x7f3a2c001234 203.0.113.50#53211 (example.com): query (cache) ''example.com/A/IN'' denied (allow-query-cache did not match)'
+  source_url: https://gitlab.isc.org/isc-projects/bind9/-/raw/main/lib/ns/query.c
+  verified: false
+  demoted_reason: null
+- id: BIND:query-denied
+  vendor: ISC
+  header_style: null
+  severity: null
+  message: 'client @{ptr} {client_ip}#{port} ({qname}): query ''{qname_2}/{qtype}/{qclass}'' denied'
+  placeholders:
+    ptr: .*?
+    client_ip: .*?
+    port: .*?
+    qname: .*?
+    qname_2: .*?
+    qtype: .*?
+    qclass: .*?
+  example: '21-Oct-2026 14:02:12.001 security: info: client @0x7f3a2c001240 203.0.113.51#40112 (internal.example.com): query ''internal.example.com/A/IN'' denied'
+  source_url: https://gitlab.isc.org/isc-projects/bind9/-/raw/main/lib/ns/query.c
+  verified: false
+  demoted_reason: null
+- id: BIND:lame-server
+  vendor: ISC
+  header_style: null
+  severity: null
+  message: 'lame-servers: info: lame server resolving ''{qname}'' (in ''{domain}''?): {server_ip}#{port}'
+  placeholders:
+    qname: .*?
+    domain: .*?
+    server_ip: .*?
+    port: .*?
+  example: '21-Oct-2026 14:05:00.000 lame-servers: info: lame server resolving ''www.example.net'' (in ''example.net''?): 198.51.100.53#53'
+  source_url: https://gitlab.isc.org/isc-projects/bind9/-/raw/main/lib/dns/resolver.c
+  verified: true
+  demoted_reason: null
+- id: BIND:resolving-error
+  vendor: ISC
+  header_style: null
+  severity: null
+  message: 'lame-servers: info: {code} {reason} resolving ''{qname}/{qtype}/{qclass}'': {server_ip}#{port}'
+  placeholders:
+    code: .*?
+    reason: .*?
+    qname: .*?
+    qtype: .*?
+    qclass: .*?
+    server_ip: .*?
+    port: .*?
+  example: '21-Oct-2026 14:05:03.410 lame-servers: info: SERVFAIL unexpected RCODE resolving ''app.example.org/AAAA/IN'': 198.51.100.54#53'
+  source_url: https://gitlab.isc.org/isc-projects/bind9/-/raw/main/lib/dns/resolver.c
+  verified: false
+  demoted_reason: null
+- id: UNBOUND:servfail-reply
+  vendor: NLnet Labs
+  header_style: bsd
+  severity: null
+  message: 'unbound[{pid}:{thread}] info: {message}'
+  placeholders:
+    pid: .*?
+    thread: .*?
+    message: .*?
+  example: 'Oct 21 14:06:00 resolver01 unbound[812:0] info: validation failure <app.example.org. A IN>: no keys have a DS with algorithm RSASHA256 from 198.51.100.54 for key example.org. while building chain of trust'
+  source_url: ''
+  verified: false
+  demoted_reason: null
+- id: WINDNS:4013
+  vendor: Microsoft
+  header_style: null
+  severity: null
+  message: The DNS server is waiting for Active Directory Domain Services (AD DS) to signal that the initial synchronization of the directory has been completed.
+  placeholders: {}
+  example: The DNS server is waiting for Active Directory Domain Services (AD DS) to signal that the initial synchronization of the directory has been completed.
+  source_url: ''
+  verified: false
+  demoted_reason: null
+- id: CHRONY:selected-source
+  vendor: chrony
+  header_style: bsd
+  severity: null
+  message: 'chronyd[{pid}]: Selected source {source}'
+  placeholders:
+    pid: .*?
+    source: .*?
+  example: 'Oct 21 06:00:05 srv01 chronyd[611]: Selected source 192.0.2.123 (ntp1.example.net)'
+  source_url: https://raw.githubusercontent.com/mlichvar/chrony/master/sources.c
+  verified: true
+  demoted_reason: null
+- id: CHRONY:no-selectable-sources
+  vendor: chrony
+  header_style: bsd
+  severity: null
+  message: 'chronyd[{pid}]: Can''t synchronise: no selectable sources'
+  placeholders:
+    pid: .*?
+  example: 'Oct 21 06:30:00 srv01 chronyd[611]: Can''t synchronise: no selectable sources'
+  source_url: https://raw.githubusercontent.com/mlichvar/chrony/master/sources.c
+  verified: true
+  demoted_reason: null
+- id: CHRONY:clock-wrong-by
+  vendor: chrony
+  header_style: bsd
+  severity: null
+  message: 'chronyd[{pid}]: System clock wrong by {offset} seconds'
+  placeholders:
+    pid: .*?
+    offset: .*?
+  example: 'Oct 21 06:31:12 srv01 chronyd[611]: System clock wrong by -2.417352 seconds'
+  source_url: https://raw.githubusercontent.com/mlichvar/chrony/master/reference.c
+  verified: true
+  demoted_reason: null
+- id: CHRONY:clock-stepped
+  vendor: chrony
+  header_style: bsd
+  severity: null
+  message: 'chronyd[{pid}]: System clock was stepped by {offset} seconds'
+  placeholders:
+    pid: .*?
+    offset: .*?
+  example: 'Oct 21 06:31:12 srv01 chronyd[611]: System clock was stepped by 2.417352 seconds'
+  source_url: https://raw.githubusercontent.com/mlichvar/chrony/master/reference.c
+  verified: true
+  demoted_reason: null
+- id: NTPD:event
+  vendor: NTP Project
+  header_style: bsd
+  severity: null
+  message: 'ntpd[{pid}]: {src} {status_hex4} {event_hex2} {event_name}{detail}'
+  placeholders:
+    pid: .*?
+    src: .*?
+    status_hex4: '[0-9a-f]{4}'
+    event_hex2: '[0-9a-f]{2}'
+    event_name: clock_step|no_sys_peer|spike_detect|clock_sync|freq_set|panic_stop|kern|restart
+    detail: .*?
+  example: 'Oct 21 06:40:01 srv01 ntpd[702]: 0.0.0.0 061c 0c clock_step +0.512345 s'
+  source_url: https://raw.githubusercontent.com/ntp-project/ntp/stable/ntpd/ntp_control.c
+  verified: true
+  demoted_reason: null
+- id: JUNOS:RPD_OSPF_NBRSTATE
+  vendor: Juniper
+  header_style: bsd
+  severity: null
+  message: 'rpd[{pid}]: RPD_OSPF_NBRSTATE: OSPF neighbor {nbr_ip} (realm ospf-v2 {ifname} area {area}) state changed from {old} to {new} due to {event} (event reason: {reason})'
+  placeholders:
+    pid: .*?
+    nbr_ip: .*?
+    ifname: .*?
+    area: .*?
+    old: Full|Init|2Way|ExStart|Exchange|Loading|Down
+    new: Full|Init|2Way|ExStart|Exchange|Loading|Down
+    event: .*?
+    reason: .*?
+  example: 'Oct 21 14:10:00 edge-r1 rpd[2201]: RPD_OSPF_NBRSTATE: OSPF neighbor 192.0.2.2 (realm ospf-v2 ge-0/0/1.0 area 0.0.0.0) state changed from Full to Init due to 1WayRcvd (event reason: neighbor is in one-way mode)'
+  source_url: ''
+  verified: false
+  demoted_reason: null
+- id: JUNOS:RPD_BGP_NEIGHBOR_STATE_CHANGED
+  vendor: Juniper
+  header_style: bsd
+  severity: null
+  message: 'rpd[{pid}]: bgp_peer_mgmt_clear:{n}: NOTIFICATION sent ... | BGP_IO_ERROR_CLOSE_SESSION ... | RPD_BGP_NEIGHBOR_STATE_CHANGED: BGP peer {peer_ip} (External AS {asn}) changed state from {old} to {new} (event {event}) (instance {instance})'
+  placeholders:
+    pid: .*?
+    n: .*?
+    peer_ip: .*?
+    asn: .*?
+    old: Established|Idle|Active|Connect|OpenSent|OpenConfirm
+    new: Established|Idle|Active|Connect|OpenSent|OpenConfirm
+    event: .*?
+    instance: .*?
+  example: 'Oct 21 14:12:00 edge-r1 rpd[2201]: RPD_BGP_NEIGHBOR_STATE_CHANGED: BGP peer 198.51.100.1 (External AS 64500) changed state from Established to Idle (event HoldTime) (instance master)'
+  source_url: ''
+  verified: false
+  demoted_reason: null
+- id: JUNOS:BGP_IO_ERROR_CLOSE_SESSION
+  vendor: Juniper
+  header_style: bsd
+  severity: null
+  message: 'rpd[{pid}]: BGP_IO_ERROR_CLOSE_SESSION: BGP peer {peer_ip} (External AS {asn}): Error event {err} for I/O session - closing it'
+  placeholders:
+    pid: .*?
+    peer_ip: .*?
+    asn: .*?
+    err: .*?
+  example: 'Oct 21 14:11:58 edge-r1 rpd[2201]: BGP_IO_ERROR_CLOSE_SESSION: BGP peer 198.51.100.1 (External AS 64500): Error event Connection reset by peer(54) for I/O session - closing it'
+  source_url: ''
+  verified: false
+  demoted_reason: null
+- id: JUNOS:SNMP_TRAP_LINK_DOWN
+  vendor: Juniper
+  header_style: bsd
+  severity: null
+  message: 'mib2d[{pid}]: SNMP_TRAP_LINK_DOWN: ifIndex {ifindex}, ifAdminStatus {admin}({n}), ifOperStatus {oper}({n_2}), ifName {ifname}'
+  placeholders:
+    pid: .*?
+    ifindex: .*?
+    admin: up|down
+    n: .*?
+    oper: up|down
+    n_2: .*?
+    ifname: .*?
+  example: 'Oct 21 14:09:59 edge-r1 mib2d[1890]: SNMP_TRAP_LINK_DOWN: ifIndex 516, ifAdminStatus up(1), ifOperStatus down(2), ifName ge-0/0/1'
+  source_url: ''
+  verified: false
+  demoted_reason: null
+- id: JUNOS:LACPD_TIMEOUT
+  vendor: Juniper
+  header_style: bsd
+  severity: null
+  message: 'lacpd[{pid}]: LACPD_TIMEOUT: {member_if}: lacp current while timer expired current Receive State: CURRENT'
+  placeholders:
+    pid: .*?
+    member_if: .*?
+  example: 'Oct 21 14:09:58 edge-r1 lacpd[1777]: LACPD_TIMEOUT: ge-0/0/2: lacp current while timer expired current Receive State: CURRENT'
+  source_url: ''
+  verified: false
+  demoted_reason: null
+- id: JUNOS:structured-data
+  vendor: Juniper
+  header_style: bsd
+  severity: null
+  message: 1 {iso8601_ts} {host} {process} {pid} {TAG} [junos@2636.{platform_oid} {key}="{value}" ...] {message}
+  placeholders:
+    iso8601_ts: .*?
+    host: .*?
+    process: .*?
+    pid: .*?
+    TAG: .*?
+    platform_oid: .*?
+    key: .*?
+    value: .*?
+    message: .*?
+  example: <29>1 2026-10-21T14:10:00.123Z edge-r1 rpd 2201 RPD_OSPF_NBRSTATE [junos@2636.1.1.1.2.135 neighbor-address="192.0.2.2" interface-name="ge-0/0/1.0" neighbor-state="Full" new-neighbor-state="Init"] OSPF neighbor 192.0.2.2 ... state changed from Full to Init
+  source_url: ''
+  verified: false
+  demoted_reason: null

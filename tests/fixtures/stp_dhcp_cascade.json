@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "meta": {
+    "id": "pkt-0a1b2c",
+    "style": "multi-source",
+    "window": {"start": "2025-06-01T12:00:00Z", "end": "2025-06-01T12:06:00Z"},
+    "difficulty": {"min_noise": 3, "show_diff_notes": false, "shuffle_rows": 0},
+    "allow_unverified": false,
+    "brief": "Synthetic reference scenario. You have been handed this case after first-line triage stalled. At 12:03 the helpdesk reported that users on the second floor cannot get an IP address and the network feels slow. Using the attached syslog export, telemetry and recent config changes, find what happened."
+  },
+  "topology": {
+    "devices": [
+      {"hostname": "ACC-SW2", "role": "access-switch", "header_style": "ios", "mgmt_ip": "10.20.0.12", "tz_offset_min": 0, "clock": "ntp"},
+      {"hostname": "ACC-SW1", "role": "access-switch", "header_style": "ios", "mgmt_ip": "10.20.0.11", "tz_offset_min": 0, "clock": "ntp"},
+      {"hostname": "DIST-SW1", "role": "distribution-switch", "header_style": "ios", "mgmt_ip": "10.20.0.2", "tz_offset_min": 0, "clock": "ntp"},
+      {"hostname": "CORE-SW1", "role": "core-switch", "header_style": "ios", "mgmt_ip": "10.20.0.1", "tz_offset_min": 0, "clock": "ntp"},
+      {"hostname": "DHCP01", "role": "dhcp-server", "header_style": "bsd", "mgmt_ip": "10.20.0.50", "tz_offset_min": 0, "clock": "ntp"}
+    ],
+    "links": [
+      ["ACC-SW1:GigabitEthernet1/0/49", "DIST-SW1:GigabitEthernet1/0/1"],
+      ["ACC-SW2:GigabitEthernet1/0/49", "DIST-SW1:GigabitEthernet1/0/2"],
+      ["DIST-SW1:TenGigabitEthernet1/1/1", "CORE-SW1:TenGigabitEthernet1/1/1"]
+    ],
+    "entities": {
+      "client-a": {"mac": "00:00:5e:00:53:21", "ip": "10.20.20.41"},
+      "client-b": {"mac": "00:00:5e:00:53:22"},
+      "ntp-server": {"ip": "192.0.2.123"},
+      "dhcp-relay": {"ip": "10.20.20.1"}
+    }
+  },
+  "events": [
+    {"id": "e1", "t": "2025-06-01T12:00:12Z", "device": "ACC-SW2", "format_id": "IOS:SYS-5-CONFIG_I",
+     "fields": {"source": "console", "who": "vty0 (192.0.2.50)"},
+     "label": "symptom", "caused_by": "cd1", "signal": null},
+    {"id": "e2", "t": "2025-06-01T12:01:05Z", "device": "DIST-SW1", "format_id": "IOS:SPANTREE-5-TOPOTRAP",
+     "fields": {"stp_type": "vlan", "instance": "20"},
+     "label": "symptom", "caused_by": "cd1", "signal": null},
+    {"id": "e3", "t": "2025-06-01T12:01:40Z", "device": "CORE-SW1", "format_id": "IOS:NTP-4-PEERUNREACH",
+     "fields": {"ip": "192.0.2.123"},
+     "label": "unrelated", "caused_by": null, "signal": null},
+    {"id": "e4", "t": "2025-06-01T12:02:00Z", "device": "DIST-SW1", "format_id": "IOS:SYS-1-CPURISINGTHRESHOLD",
+     "fields": {"threshold_type": "Total", "total": "95", "intr": "3", "top_processes": ""},
+     "label": "symptom", "caused_by": "e2", "signal": {"series": "tm1", "op": ">=", "value": 50}},
+    {"id": "e5", "t": "2025-06-01T12:02:30Z", "device": "ACC-SW1", "format_id": "IOS:LINK-3-UPDOWN",
+     "fields": {"interface": "GigabitEthernet1/0/7", "state": "down"},
+     "label": "noise", "caused_by": null, "signal": null},
+    {"id": "e6", "t": "2025-06-01T12:02:31Z", "device": "ACC-SW1", "format_id": "IOS:LINEPROTO-5-UPDOWN",
+     "fields": {"interface": "GigabitEthernet1/0/7", "state": "down"},
+     "label": "noise", "caused_by": null, "signal": null},
+    {"id": "e7", "t": "2025-06-01T12:03:00Z", "device": "DHCP01", "format_id": "ISCDHCPD:no-free-leases",
+     "fields": {"pid": "3044", "mac": "00:00:5e:00:53:22", "iface_or_relay": "10.20.20.1", "shared_network": "10.20.20.0/24"},
+     "label": "symptom", "caused_by": "e2", "signal": null},
+    {"id": "e8", "t": "2025-06-01T12:04:10Z", "device": "DHCP01", "format_id": "ISCDHCPD:DHCPDISCOVER",
+     "fields": {"pid": "3044", "mac": "00:00:5e:00:53:21", "opt_hostname": "", "iface_or_relay": "10.20.20.1"},
+     "label": "noise", "caused_by": null, "signal": null}
+  ],
+  "telemetry": [
+    {"id": "tm1", "device": "DIST-SW1", "metric": "cpu_1min", "kind": "gauge", "unit": "%", "interval_s": 60,
+     "points": [["2025-06-01T12:00:00Z", 22], ["2025-06-01T12:01:00Z", 24], ["2025-06-01T12:02:00Z", 61],
+                ["2025-06-01T12:03:00Z", 58], ["2025-06-01T12:04:00Z", 30], ["2025-06-01T12:05:00Z", 25]]},
+    {"id": "tm2", "device": "DIST-SW1", "metric": "ifOutDiscards", "kind": "rate", "unit": "pkts/s", "interval_s": 60,
+     "points": [["2025-06-01T12:00:00Z", 0], ["2025-06-01T12:01:00Z", 0], ["2025-06-01T12:02:00Z", 140],
+                ["2025-06-01T12:03:00Z", 120], ["2025-06-01T12:04:00Z", 5], ["2025-06-01T12:05:00Z", 0]]}
+  ],
+  "config_diffs": [
+    {"id": "cd1", "device": "ACC-SW2", "t_change": "2025-06-01T12:00:10Z",
+     "before": "interface GigabitEthernet1/0/48\n switchport access vlan 20\n switchport mode access\n spanning-tree portfast\n spanning-tree bpduguard enable\n",
+     "after": "interface GigabitEthernet1/0/48\n switchport access vlan 20\n switchport mode access\n spanning-tree portfast\n spanning-tree bpdufilter enable\n",
+     "note": "Conference room switch kept err-disabling this port; swapped guard for filter."}
+  ],
+  "answer": {
+    "root_cause_id": "cd1",
+    "chain": ["cd1", "e2", "e4", "e7"],
+    "fix": "Remove 'spanning-tree bpdufilter enable' from ACC-SW2 Gi1/0/48 and restore 'spanning-tree bpduguard enable'; shut the port until the downstream unmanaged switch is removed; clear the stale DHCP bindings once the loop stops.",
+    "root_cause_terms": ["bpdufilter", "bridging loop"],
+    "rubric": [
+      {"id": "r1", "weight": 4, "criterion": "Names the bpdufilter change on ACC-SW2 Gi1/0/48 (cd1, logged by e1) as the root cause", "evidence_refs": ["cd1", "e1"]},
+      {"id": "r2", "weight": 2, "criterion": "Explains the chain: loop -> STP topology changes -> DIST-SW1 CPU and discards -> DHCP pool exhaustion, citing times", "evidence_refs": ["e2", "e4", "tm1", "tm2", "e7"]},
+      {"id": "r3", "weight": 2, "criterion": "Labels the NTP peer, the Gi1/0/7 flap and the normal DISCOVER as unrelated/noise", "evidence_refs": ["e3", "e5", "e6", "e8"]},
+      {"id": "r4", "weight": 1, "criterion": "Fix restores bpduguard (not just removing filter) and addresses the downstream loop source", "evidence_refs": ["cd1"]},
+      {"id": "r5", "weight": 1, "criterion": "States confidence and one confirming test (e.g. show spanning-tree detail TCN counters, show interfaces counters on Gi1/0/48)", "evidence_refs": ["e2"]}
+    ]
+  }
+}
