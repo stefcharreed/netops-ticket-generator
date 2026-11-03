@@ -7,6 +7,7 @@ import matplotlib
 
 matplotlib.use("Agg")  # headless; must precede pyplot import
 import matplotlib.pyplot as plt  # noqa: E402
+import matplotlib.dates as mdates  # noqa: E402
 
 from packetgen.timebase import parse_utc  # noqa: E402
 
@@ -23,9 +24,10 @@ def render_telemetry(spec: dict, out: Path) -> dict[str, str]:
         name = f"telemetry_{device}.png"
         fig, ax = plt.subplots(figsize=(10, 5))
         for s in series:
-            xs = [parse_utc(t).replace(tzinfo=None) for t, _ in s["points"]]
+            xs = mdates.date2num([parse_utc(t).replace(tzinfo=None) for t, _ in s["points"]])
             ax.plot(xs, [v for _, v in s["points"]], marker="o", label=f"{s['metric']} ({s['unit']})")
             manifest[s["id"]] = name
+        ax.xaxis_date()
         ax.set_title(f"{device} telemetry ({minutes}-minute window)")
         ax.set_xlabel("time (UTC)")
         ax.grid(True, linestyle="--", alpha=0.5)
