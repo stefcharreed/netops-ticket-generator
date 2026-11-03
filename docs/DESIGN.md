@@ -145,9 +145,9 @@ Every header comes from the event's UTC instant plus the device's offset and (if
 
 Checks (`ticket.py`, all run from `validate()`):
 - **TK1** (error): the text names a device-like token (`EDGE1`, `SW-L3`) that is not a topology hostname,
-  an IPv4 address that is not a mgmt IP or entity IP, or any interface name (`Gi1/0/1`, `Vlan10`).
+  an IPv4 address that is not a mgmt IP or entity IP, or any interface name (`Gi1/0/1`, `Vlan10`; lowercase only in slot/port form, `gi1/0/1`).
 - **TK2** (error): an `anecdote` persona quotes device output (`show ...`, `traceroute`, `config t`).
-- **TK3** (error): a misdirection `claim` is not in the text (case and whitespace normalized).
+- **TK3** (error): a misdirection `claim` is under 4 words, or is not in the text (case and whitespace normalized).
 - **TK4** (warning): no misdirection planted.
 - **TK5** (warning): the text shares 2 or more word stems (first four letters) with `answer.fix` and
   `root_cause_terms`, not counting stems already in `meta.brief` or symptom-event fields.

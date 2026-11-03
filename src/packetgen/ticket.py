@@ -37,7 +37,12 @@ _DEVICE_TOKEN = re.compile(r"\b[A-Z][A-Z0-9-]{1,}\d\b")
 _ADDRESS = re.compile(r"\b\d{1,3}(?:\.\d{1,3}){3}\b")
 _INTERFACE = re.compile(
     r"\b(?:Gi|Fa|Te|Tw|Hu|Po|Vl|GigabitEthernet|FastEthernet|TenGigabitEthernet|"
-    r"Port-channel|Vlan)\s?\d[\d/.]*\b")
+    r"Port-channel|Vlan)\s?\d[\d/.]*\b"
+    # Lowercase too, but only in slot/port form, so prose like "PO 4521" is not an interface.
+    r"|(?i:\b(?:gi|fa|te|tw|hu|gigabitethernet|fastethernet|tengigabitethernet)\s?\d+/[\d/.]*\d\b)")
+
+#: A planted claim shorter than this is too thin to mislead anyone (and matches by accident).
+_MIN_CLAIM_WORDS = 4
 
 #: Shared stems with the fault before a ticket has given the answer away (a WARNING).
 _GIVEAWAY_TERMS = 2
@@ -95,7 +100,11 @@ def check_ticket(spec: dict) -> list[dict]:
 
     ntext = _norm(text)
     for m in ticket["misdirection"]:
-        if _norm(m["claim"]) not in ntext:
+        if len(m["claim"].split()) < _MIN_CLAIM_WORDS:
+            out.append(finding(
+                "TK3", f"misdirection claim {m['claim']!r} is under {_MIN_CLAIM_WORDS} words",
+                "plant a full sentence the user would actually write"))
+        elif _norm(m["claim"]) not in ntext:
             out.append(finding(
                 "TK3", f"misdirection claim {m['claim']!r} does not appear in the ticket text",
                 "copy the claim from the ticket text, or add it to the text"))

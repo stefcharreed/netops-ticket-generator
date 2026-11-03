@@ -68,7 +68,7 @@ catalog first (filters: `--topic`, `--cert`, `--exclude ID...`; also `--file`, `
 | N1 / Q1 | too little noise / root is the loudest line (warning) | add noise; quieter root evidence |
 | TK1 | ticket names a device, IP or interface not in topology | name only known devices/addresses; an end_user shouldn't name gear at all; tokens like O365/M365, W10 or room numbers (B204) trip TK1, so spell them out (Office 365, Windows 10, room 204) |
 | TK2 | end_user ticket quotes device output (show/traceroute/config) | describe what the user noticed |
-| TK3 | misdirection claim not found in the ticket text | copy the sentence exactly |
+| TK3 | misdirection claim under 4 words, or not found in the ticket text | plant a full sentence; copy it exactly |
 | TK4 | no misdirection planted (warning) | plant one true-but-misleading statement |
 | TK5 | ticket reuses 2+ word stems from `answer.fix`/`root_cause_terms` (warning); stems already in `meta.brief` or symptom-event fields do not count | describe the symptom, not the cause |
 | X1, Z1, Z2, B1 | xlsx date cell / non-doc IP / non-doc MAC / packet exists | build-side; B1 needs `--force` |

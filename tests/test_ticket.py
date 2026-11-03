@@ -58,6 +58,14 @@ def test_interface_label_flagged():
     assert "TK1" in checks(spec(TEXT + " The jack says Gi1/0/48."))
 
 
+def test_lowercase_interface_flagged():
+    assert "TK1" in checks(spec(TEXT + " The jack label says gi1/0/48."))
+
+
+def test_purchase_order_not_interface():
+    assert "TK1" not in checks(spec(TEXT + " I put in PO 4521 for a new laptop."))
+
+
 def test_anecdote_quoting_device_output_flagged():
     s = spec(TEXT + " I ran show ip int brief and it looked odd.")
     f = [x for x in check_ticket(s) if x["check"] == "TK2"]
@@ -69,6 +77,12 @@ def test_claim_not_in_text():
     s["ticket"]["misdirection"][0]["claim"] = "The printer is also broken."
     f = [x for x in check_ticket(s) if x["check"] == "TK3"]
     assert f and f[0]["severity"] == "error"
+
+
+def test_tiny_claim_flagged():
+    s = spec()
+    s["ticket"]["misdirection"][0]["claim"] = "a"
+    assert "TK3" in checks(s)
 
 
 def test_claim_matches_case_and_whitespace():
