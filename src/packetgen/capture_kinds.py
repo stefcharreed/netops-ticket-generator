@@ -15,7 +15,7 @@ KINDS: dict[str, dict] = {
             "required": ["outcome", "username", "client", "nas_port"],
             "properties": {
                 "outcome": {"enum": ["accept", "reject", "no_response"]},
-                "username": {"type": "string", "pattern": "^[a-z][a-z0-9._-]{0,31}$"},
+                "username": {"type": "string", "pattern": "^(?!.*\n)[a-z][a-z0-9._-]{0,31}$"},
                 "client": {"type": "string", "minLength": 1},
                 "nas_port": {"type": "string", "minLength": 1},
                 "retries": {**_RETRIES, "maximum": 10, "default": 3},
@@ -56,7 +56,7 @@ KINDS: dict[str, dict] = {
             "required": ["outcome", "name"],
             "properties": {
                 "outcome": {"enum": ["ok", "nxdomain", "servfail", "timeout"]},
-                "name": {"type": "string", "pattern": r"(^|\.)(test|example\.(com|net|org))$"},
+                "name": {"type": "string", "pattern": "^(?!.*\n)(.*\\.)?(test|example\\.(com|net|org))$"},
                 "qtype": {"enum": ["A", "AAAA"], "default": "A"},
                 "answer": {"type": "string", "minLength": 1},
                 "retries": {**_RETRIES, "maximum": 5, "default": 1},

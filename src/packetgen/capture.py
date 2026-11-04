@@ -4,6 +4,10 @@ Seam discipline: returns plain data, never prints. (Truth checks arrive later.)
 """
 from __future__ import annotations
 
+import re
+
+_UNSAFE = re.compile(r"[^A-Za-z0-9._-]")
+
 
 def resolve_endpoint(spec: dict, name: str) -> dict | None:
     """Resolve an endpoint name to {"mac", "ip"} (either may be None), or None.
@@ -32,5 +36,4 @@ def resolve_endpoint(spec: dict, name: str) -> dict | None:
 def capture_filename(spec: dict) -> str:
     """e.g. capture_ACC-SW1_Gi1-0-48.pcap ('/' and ':' in the interface become '-')."""
     cap = spec["capture"]
-    iface = cap["interface"].replace("/", "-").replace(":", "-")
-    return f"capture_{cap['device']}_{iface}.pcap"
+    return f"capture_{_UNSAFE.sub('-', cap['device'])}_{_UNSAFE.sub('-', cap['interface'])}.pcap"

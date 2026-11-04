@@ -3,6 +3,7 @@ import copy
 import json
 from pathlib import Path
 
+import pytest
 from jsonschema import Draft202012Validator
 
 from packetgen import capture, capture_kinds
@@ -83,3 +84,42 @@ def test_resolve_unknown_none():
 
 def test_capture_filename():
     assert capture.capture_filename(SPEC) == "capture_ACC-SW1_Gi1-0-48.pcap"
+
+
+def test_capture_filename_hostile():
+    s = copy.deepcopy(SPEC)
+    s["capture"]["device"] = "..\\x"
+    s["capture"]["interface"] = "Gi1/0/1\\.."
+    name = capture.capture_filename(s)
+    assert "/" not in name and "\\" not in name
+    assert Path(name).name == name
+
+
+def _errs(kind, params):
+    return list(Draft202012Validator(capture_kinds.KINDS[kind]["params"]).iter_errors(params))
+
+
+_RAD = {"outcome": "accept", "username": "bob", "client": "pc-18", "nas_port": "Gi1/0/1"}
+_DNS = {"outcome": "nxdomain", "name": "a.example.com"}
+
+
+@pytest.mark.parametrize("kind,params,ok", [
+    ("radius_request", _RAD, True),
+    ("arp", {"outcome": "reply"}, True),
+    ("dns_query", _DNS, True),
+    ("dns_query", {"outcome": "ok", "name": "a.test", "answer": "dns-1"}, True),
+    ("dns_query", {"outcome": "ok", "name": "a.test"}, False),
+    ("radius_request", {**_RAD, "username": "Bob"}, False),
+    ("radius_request", {**_RAD, "username": "1bob"}, False),
+    ("radius_request", {**_RAD, "username": "a" * 33}, False),
+    ("radius_request", {**_RAD, "username": "bob\n"}, False),
+    ("dns_query", {**_DNS, "name": "a.corp.local"}, False),
+    ("dns_query", {**_DNS, "name": "a.test\n"}, False),
+    ("dns_query", {**_DNS, "name": "xexample.com"}, False),
+    ("radius_request", {**_RAD, "retries": 11}, False),
+    ("radius_request", {**_RAD, "timeout_s": 0}, False),
+    ("arp", {"outcome": "reply", "retries": 6}, False),
+    ("arp", {"outcome": "reply", "bogus": 1}, False),
+])
+def test_param_schema(kind, params, ok):
+    assert (not _errs(kind, params)) is ok
