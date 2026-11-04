@@ -16,7 +16,7 @@ import openpyxl
 from openpyxl.cell.cell import Cell
 
 from packetgen import capture_kinds, tshark
-from packetgen.capture import capture_filename
+from packetgen.capture import capture_filename, capture_text
 from packetgen.findings import finding, has_errors
 from packetgen.registry import load_registry
 from packetgen.render.brief import render_brief
@@ -73,7 +73,8 @@ def _capture_checks(spec: dict, tmp: Path, manifest: dict, use_tshark: bool) -> 
         return [finding("PK7", f"{name}: {count} frames exceeds the {MAX_CAPTURE_FRAMES} cap",
                         "shorten capture.start..end or lower capture.noise")], False
     if not use_tshark:
-        return [finding("PK6", f"{name}: tshark read-back skipped (--no-tshark)",
+        return [finding("PK6", f"{name}: the tshark read-back was skipped (--no-tshark); the capture's addresses "
+                               "were still checked, its dissection was not",
                         "run without --no-tshark before handing the packet out", "warning")], False
     ver = tshark.tshark_version()
     need = ".".join(map(str, tshark.MIN_VERSION))
@@ -121,7 +122,10 @@ def build_packet(spec_path: Path, out_root: Path, registry_dir: Path, today: dat
         tshark_ran = False
         if spec.get("capture"):
             cap_findings, tshark_ran = _capture_checks(spec, tmp, manifest, use_tshark)
-            findings += cap_findings
+            if any(f["check"] == "PK0" for f in cap_findings):  # environment error: nothing else is meaningful
+                shutil.rmtree(tmp)
+                return _result(False, None, cap_findings, {})
+            findings += cap_findings + sanitize_findings(capture_text(spec), capture_filename(spec))
         render_brief(spec, sorted(p.name for p in tmp.iterdir()), tmp)
         findings += _postchecks(spec, tmp, manifest)
         if has_errors(findings):

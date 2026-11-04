@@ -85,6 +85,7 @@ catalog first (filters: `--topic`, `--cert`, `--exclude ID...`; also `--file`, `
 | R1–R5 | unknown id / unverified / missing or extra field / value breaks pattern / header style mismatch | see **log-formats** |
 | T1–T4 | naive time / outside window / effect before cause / change after first symptom | use `Z` times; reorder |
 | C1–C4 | root missing or doubled / chain can't reach root / noise has a parent / answer chain wrong | fix labels and `caused_by` |
+| C5 | an id is used more than once across events, telemetry, config diffs and capture flows | give each its own id |
 | S1–S4 | uneven points / error counter not rate or negative / CPU 5 min peak above 1 min / signal not visible | regenerate the series |
 | E1–E2 | unknown device / undeclared MAC or IP | declare it in `topology` |
 | K1–K3 | evidence ref unknown / duplicate rubric id / ref not rendered | point at real ids |
@@ -98,9 +99,9 @@ catalog first (filters: `--topic`, `--cert`, `--exclude ID...`; also `--file`, `
 | PK0 | capture extra (dpkt) not installed | `pip install -e '.[capture]'` in the repo's venv |
 | PK1 | capture device, peer or interface not in topology, or the pair isn't linked | declare the device, interface and link |
 | PK2 | capture start not before end, outside the window, or a flow plus its span doesn't fit | move the flow or widen the capture inside the window |
-| PK3 | endpoint doesn't resolve or lacks the MAC/IP the kind needs (RADIUS client needs an entity with a MAC; DNS answer needs an IP) | declare it under `entities` or the device's `interfaces[]` |
+| PK3 | endpoint doesn't resolve or lacks the MAC/IP the kind needs, or an entity/interface MAC isn't a MAC or its IP isn't IPv4 (RADIUS client needs an entity with a MAC; DNS answer needs an IP) | declare it under `entities` or the device's `interfaces[]` |
 | PK4 | flow params break the kind's schema, gratuitous ARP with dst != src, DNS ok without answer, or AAAA ok | fix the params; AAAA answers are unsupported |
 | PK5 | symptom on a kind with no symptom rule, or a RADIUS flow whose outcome disagrees with the RADIUS_DEAD/ALIVE log events | label it noise or use `radius_request`; no_response: put it inside a dead period (DEAD at most 30 s after the request, or earlier with no ALIVE between); accept/reject: move it outside DEAD <= t < next ALIVE |
-| PK6 | tshark missing or older than 4.2, a filter/dump failure, malformed or expert-error frames, a symptom flow whose expected filter matches none of its frames; a warning "read-back skipped" under `--no-tshark` | install tshark 4.2+; fix the flow params; rebuild without `--no-tshark` before handing out |
+| PK6 | tshark missing or older than 4.2, a filter/dump failure, malformed or expert-error frames, a symptom flow whose expected filter matches none of its frames; a warning "the tshark read-back was skipped" under `--no-tshark` | install tshark 4.2+; fix the flow params; rebuild without `--no-tshark` before handing out |
 | PK7 | capture over 5,000 frames | shorten `start..end` or lower `noise` |
 | X1, Z1, Z2, B1 | xlsx date cell / non-doc IP / non-doc MAC / packet exists | build-side; B1 needs `--force` |

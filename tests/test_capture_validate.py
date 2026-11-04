@@ -189,3 +189,40 @@ def test_e2_interface_ip():
     s = spec()
     ev(s, "e3")["fields"]["ip"] = "10.10.100.2"
     assert "E2" not in errors(s)
+
+
+def test_c5_duplicate_pk_id():
+    s = spec()
+    flow(s, "pk2")["id"] = "pk1"
+    assert "C5" in errors(s)
+
+
+def test_c5_duplicate_event_id():
+    s = spec()
+    ev(s, "e4")["id"] = "e3"
+    found = [f for f in validate(s, REG) if f["check"] == "C5"]
+    assert found and "e3" in found[0]["message"] and "events" in found[0]["message"]
+
+
+def test_pk4_nas_port_too_long_does_not_crash_build():
+    s = spec()
+    flow(s, "pk1")["params"]["nas_port"] = "G" * 300
+    assert "PK4" in errors(s)
+
+
+def test_pk3_unparsable_mac():
+    s = spec()
+    s["topology"]["entities"]["printer-7"]["mac"] = "zz:zz:5e:00:53:81"
+    assert "PK3" in errors(s)
+
+
+def test_pk3_ipv6_endpoint():
+    s = spec()
+    s["topology"]["entities"]["ise-a"]["ip"] = "2001:db8::1"
+    assert "PK3" in errors(s)
+
+
+def test_pk3_unparsable_interface_mac_used_by_noise():
+    s = spec()
+    s["topology"]["devices"][1]["interfaces"][1]["mac"] = "nonsense"
+    assert "PK3" in errors(s)

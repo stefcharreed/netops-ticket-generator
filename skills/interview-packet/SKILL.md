@@ -51,7 +51,9 @@ tell the user the key will show in the transcript and ask before going on.
    per the hint (see **packet-builder**); it is answer-adjacent, so the subagent writes it into the spec like
    everything else, and the main conversation sees it only as a file in the list.
 4. Run `build "<spec>" --out "<interview_prep_dir>"` (for a capture, without `--no-tshark`). On error findings,
-   fix the spec and rerun. **At most 3 attempts**; if it still fails, report the check ids and stop. Never
+   fix the spec and rerun, except **PK0, or a PK6 saying tshark is missing or too old**: those are environment errors, so
+   stop at once and report the install step (`pip install -e '.[capture]'` for PK0; install Wireshark 4.2+ for PK6)
+   without editing the spec or retrying. **At most 3 attempts**; if it still fails, report the check ids and stop. Never
    hand-write packet files. If the spec has a capture, read `<Keys>/pkt-xxxxxx.manifest.json`: if it says
    `"tshark_checked": false`, refuse to hand the packet over (report that and stop; install tshark 4.2+ and rebuild).
 5. Append `pkt-xxxxxx <pattern-id> <YYYY-MM-DD>` to `<Keys>/history.txt`.

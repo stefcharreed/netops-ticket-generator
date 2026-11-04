@@ -4,6 +4,7 @@ Seam discipline: returns plain data, never prints. (Truth checks arrive later.)
 """
 from __future__ import annotations
 
+import ipaddress
 import re
 from datetime import timedelta
 
@@ -16,6 +17,22 @@ from packetgen.timebase import parse_utc
 _DEAD, _ALIVE = "IOS:RADIUS-4-RADIUS_DEAD", "IOS:RADIUS-4-RADIUS_ALIVE"
 _DEAD_LEAD = timedelta(seconds=30)  # a switch marks a server dead ~30 s after the first unanswered request
 _UNSAFE = re.compile(r"[^A-Za-z0-9._-]")
+_MAC = re.compile(r"[0-9A-Fa-f]{2}([:-])(?:[0-9A-Fa-f]{2}\1){4}[0-9A-Fa-f]{2}|(?:[0-9A-Fa-f]{4}\.){2}[0-9A-Fa-f]{4}")
+
+
+def parse_mac(text: str) -> bytes | None:
+    """Colon, dash or Cisco-dotted MAC text -> 6 bytes, or None when it isn't one."""
+    if not isinstance(text, str) or not _MAC.fullmatch(text):
+        return None
+    return bytes.fromhex(re.sub(r"[:.\-]", "", text))
+
+
+def _is_ipv4(text: str) -> bool:
+    try:
+        ipaddress.IPv4Address(text)
+    except ValueError:
+        return False
+    return True
 
 
 def resolve_endpoint(spec: dict, name: str) -> dict | None:
@@ -55,7 +72,7 @@ def check_capture(spec: dict) -> list[dict]:
     cap = spec.get("capture")
     if not cap:
         return []
-    out = _check_pk1(spec, cap) + _check_pk2_window(spec, cap)
+    out = _check_pk1(spec, cap) + _check_pk2_window(spec, cap) + _check_pk3_addresses(spec)
     for fl in cap["flows"]:
         kind = KINDS.get(fl["kind"])
         if kind is None:
@@ -73,6 +90,24 @@ def capture_strings(spec: dict) -> list[tuple[str, str]]:
     cap = spec.get("capture") or {}
     return [(f"{fl['id']} params.{k}", v)
             for fl in cap.get("flows", []) for k, v in fl["params"].items() if isinstance(v, str)]
+
+
+def capture_text(spec: dict) -> str:
+    """Every mac/ip the capture can emit, plus every flow string param, one per line (for the sanitize gate)."""
+    cap = spec["capture"]
+    lines = []
+    for dev in spec["topology"]["devices"]:
+        if dev["hostname"] in (cap["device"], cap["peer"]):
+            lines += [f"{i.get('mac') or ''} {i.get('ip') or ''}" for i in dev.get("interfaces", [])]
+    for fl in cap["flows"]:
+        names = [fl.get(r) for r in ("src", "dst", "via")]
+        names += [fl["params"].get(k) for k in ("client", "answer")]
+        for name in names:
+            ep = resolve_endpoint(spec, name) if isinstance(name, str) else None
+            if ep:
+                lines.append(f"{ep['mac'] or ''} {ep['ip'] or ''}")
+        lines += [v for v in fl["params"].values() if isinstance(v, str)]
+    return "\n".join(lines)
 
 
 def _check_pk1(spec: dict, cap: dict) -> list[dict]:
@@ -141,6 +176,25 @@ def _check_pk3(spec: dict, fl: dict, kind: dict) -> list[dict]:
         if not answer or not answer["ip"]:
             out.append(finding("PK3", f"{fid}: answer {params['answer']!r} doesn't resolve to an ip",
                                "declare it under topology.entities with an ip"))
+    return out
+
+
+def _check_pk3_addresses(spec: dict) -> list[dict]:
+    """Every mac/ip the renderer can touch (flow endpoints, clients, answers and noise hosts) must parse.
+
+    Checks the whole topology: noise draws on any entity or interface, and a bad one would crash build.
+    """
+    topo = spec["topology"]
+    hosts = list(topo.get("entities", {}).items())
+    hosts += [(f"{d['hostname']}:{i['name']}", i) for d in topo["devices"] for i in d.get("interfaces", [])]
+    out = []
+    for name, h in hosts:
+        if h.get("mac") and parse_mac(h["mac"]) is None:
+            out.append(finding("PK3", f"{name}: mac {h['mac']!r} is not a MAC address",
+                               "use colon, dash or Cisco-dotted hex, e.g. 00:00:5e:00:53:01"))
+        if h.get("ip") and not _is_ipv4(h["ip"]):
+            out.append(finding("PK3", f"{name}: ip {h['ip']!r} is not an IPv4 address",
+                               "the capture renderer supports IPv4 only"))
     return out
 
 

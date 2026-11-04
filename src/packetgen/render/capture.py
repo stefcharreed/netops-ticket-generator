@@ -7,13 +7,12 @@ from __future__ import annotations
 
 import ipaddress
 import random
-import re
 import struct
 from pathlib import Path
 
 import dpkt
 
-from packetgen.capture import capture_filename, resolve_endpoint
+from packetgen.capture import capture_filename, parse_mac, resolve_endpoint
 from packetgen.timebase import parse_utc
 
 BCAST = b"\xff" * 6
@@ -28,10 +27,10 @@ _Frame = tuple[float, tuple[int, int, int], bytes, "str | None"]
 
 def mac_bytes(text: str) -> bytes:
     """Colon, dash or Cisco-dotted MAC text -> 6 bytes."""
-    digits = re.sub(r"[:.\-]", "", text)
-    if len(digits) != 12:
+    mac = parse_mac(text)
+    if mac is None:
         raise ValueError(f"not a MAC address: {text!r}")
-    return bytes.fromhex(digits)
+    return mac
 
 
 def _pad(buf: bytes) -> bytes:

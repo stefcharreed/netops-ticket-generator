@@ -53,8 +53,10 @@ python -m packetgen patterns [--topic T] [--cert C] [--exclude ID ...] [--show-c
 ```
 - `validate` prints findings as JSON; exit 1 if any is an error, else 0.
 - `build` prints `{ok, packet_dir, findings, manifest}`; exit 0 when `ok`, else 1.
-- `build --no-tshark` skips the capture's tshark read-back and adds the PK6 warning "read-back skipped";
-  the manifest then records `"tshark_checked": false`.
+- `build --no-tshark` skips the capture's tshark read-back and adds the PK6 warning "the tshark read-back was skipped";
+  the manifest then records `"tshark_checked": false`. The sanitize gate still scans every MAC/IP the capture
+  can emit (capture device and peer interfaces, resolved flow endpoints) and every flow string param, with or
+  without tshark; tshark adds the `-V` dump scan. On PK0 (dpkt missing) `build` returns only that finding.
 - `patterns` checks the catalog first, then prints matching ids in file order. Exit 0 = ids printed,
   1 = no match, 2 = invalid `--topic`/`--cert` value or invalid catalog (findings on stderr).
   `--show-capture ID` prints that pattern's capture hint as JSON instead (exit 1 when there is none).
@@ -99,7 +101,7 @@ after the registry checks, because rules that compare times need parseable insta
 | S0 | `spec.py` | S0 | JSON Schema violation, reported with its JSON path |
 | R | `validate.py` | R1-R5 | unknown `format_id`; unverified entry (error, or warning with `allow_unverified`); missing field (error) or extra field (warning), or a half-filled optional section; rendered message fails the entry's regex; entry's `header_style` differs from the device's |
 | T | `validate.py` | T1-T4 | naive or unparsable time; event, telemetry point or diff outside `meta.window` (diffs may precede it); effect before its cause; root-cause diff at or after the first symptom |
-| C | `validate.py` | C1-C4 | root id unknown or a second `root_cause` label; a symptom whose `caused_by` chain loops, dangles or stops short of the root; unrelated/noise with a parent; `answer.chain` not starting at the root, naming unknown ids or out of time order |
+| C | `validate.py` | C1-C5 | an id used more than once across events, telemetry, config diffs and capture flows (C5, checked first; the rest is skipped); root id unknown or a second `root_cause` label; a symptom whose `caused_by` chain loops, dangles or stops short of the root; unrelated/noise with a parent; `answer.chain` not starting at the root, naming unknown ids or out of time order |
 | S | `validate.py` | S1-S4 | points not exactly `interval_s` apart; error/discard/CRC metrics not `rate`/`delta` or negative; `cpu_1min`/`cpu_5min` peaking above a shorter window on the same device; an event's `signal` not met within one interval of the event, or its series missing or on another device |
 | E | `validate.py` | E1-E2 | device not in topology; a field ending in `ip`/`mac` whose value is not a mgmt IP or declared entity |
 | K | `validate.py`, `build.py` | K1-K3 | rubric evidence id unknown; duplicate rubric id; evidence id not in any rendered file (post-render) |
@@ -113,7 +115,7 @@ after the registry checks, because rules that compare times need parseable insta
 | P | `patterns.py` | P1-P7 | see Pattern catalog |
 | PK | `capture.py`, `build.py` | PK0-PK7 | see Capture |
 
-Warnings are R2 (with `allow_unverified`), R3 (extra field), Q1, TK4, TK5 and the PK6 "read-back skipped"
+Warnings are R2 (with `allow_unverified`), R3 (extra field), Q1, TK4, TK5 and the PK6 "the tshark read-back was skipped"
 notice; everything else is an error.
 The packet-builder skill's fix table maps each id to a repair.
 
@@ -241,9 +243,10 @@ The manifest also records `"tshark_checked"`: false under `--no-tshark`, or when
 - **PK2** (error): `start` is not before `end`, the capture is outside `meta.window`, or a flow plus its span
   does not fit inside `start..end`.
 - **PK3** (error): `src`/`dst`/`via` does not resolve, lacks the MAC or IP the kind needs, or a RADIUS
-  `client` / DNS `answer` is not a declared entity with a MAC / IP.
+  `client` / DNS `answer` is not a declared entity with a MAC / IP. Also any topology entity or device interface
+  whose MAC does not parse (colon, dash or Cisco-dotted) or whose IP is not IPv4: noise draws on all of them.
 - **PK4** (error): `params` break the kind's schema, a gratuitous ARP has `dst != src`, a DNS `ok` has no
-  `answer`, or `qtype` is `AAAA` with outcome `ok`.
+  `answer`, or `qtype` is `AAAA` with outcome `ok`. `nas_port` is printable ASCII, 1-64 characters, no newline.
 - **PK5** (error): a symptom flow of a kind with no symptom rule; a RADIUS flow that contradicts the log. Per
   (NAS device, server ip), a dead period runs from 30 s before an `IOS:RADIUS-4-RADIUS_DEAD` event to the next
   `IOS:RADIUS-4-RADIUS_ALIVE` (open-ended if none). An unanswered (`no_response`) request must fall inside a dead
@@ -252,7 +255,7 @@ The manifest also records `"tshark_checked"`: false under `--no-tshark`, or when
 - **PK6** (error unless noted): the tshark read-back failed. tshark is missing or older than 4.2; a display
   filter or the `-V` dump failed or came back empty; tshark flags malformed or expert-error frames (any frame);
   tshark read a different frame count than the renderer wrote; or a symptom flow's expected filter matches
-  none of its own frames. Under `--no-tshark` it is a warning, "read-back skipped".
+  none of its own frames. Under `--no-tshark` it is a warning, "the tshark read-back was skipped".
 - **PK7** (error): the capture has more than 5,000 frames.
 
 ## Sanitize gate

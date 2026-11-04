@@ -17,7 +17,7 @@ KINDS: dict[str, dict] = {
                 "outcome": {"enum": ["accept", "reject", "no_response"]},
                 "username": {"type": "string", "pattern": "^(?!.*\n)[a-z][a-z0-9._-]{0,31}$"},
                 "client": {"type": "string", "minLength": 1},
-                "nas_port": {"type": "string", "minLength": 1},
+                "nas_port": {"type": "string", "minLength": 1, "maxLength": 64, "pattern": "^(?!.*\n)[ -~]+$"},
                 "retries": {**_RETRIES, "maximum": 10, "default": 3},
                 "timeout_s": {"type": "integer", "minimum": 1, "maximum": 60, "default": 5},
                 "auth_port": {"enum": [1812, 1645], "default": 1812},

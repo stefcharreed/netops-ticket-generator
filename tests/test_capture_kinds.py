@@ -123,3 +123,24 @@ _DNS = {"outcome": "nxdomain", "name": "a.example.com"}
 ])
 def test_param_schema(kind, params, ok):
     assert (not _errs(kind, params)) is ok
+
+
+@pytest.mark.parametrize("text,want", [
+    ("00:00:5e:00:53:01", "00005e005301"),
+    ("00-00-5E-00-53-01", "00005e005301"),
+    ("0000.5e00.5301", "00005e005301"),
+    ("00:00:5e:00:53", None),
+    ("zz:zz:5e:00:53:01", None),
+    ("0000.5e00.53011", None),
+    ("00:00:5e:00:53:01\n", None),
+    ("", None),
+])
+def test_parse_mac(text, want):
+    assert capture.parse_mac(text) == (bytes.fromhex(want) if want else None)
+
+
+@pytest.mark.parametrize("nas_port,ok", [
+    ("Gi1/0/1", True), ("G" * 64, True), ("G" * 65, False), ("Gi1\n", False), ("Gi1\x00", False), ("Gi\u00e91", False),
+])
+def test_nas_port_schema(nas_port, ok):
+    assert (not _errs("radius_request", {**_RAD, "nas_port": nas_port})) is ok

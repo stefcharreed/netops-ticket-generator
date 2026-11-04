@@ -17,6 +17,8 @@ FIXTURE = ROOT / "tests" / "fixtures" / "radius_capture.json"
 OLD_FIXTURE = ROOT / "tests" / "fixtures" / "stp_dhcp_cascade.json"
 DAY = date(2026, 11, 4)
 PCAP = "capture_ACC-SW1_Gi1-0-48.pcap"
+PUBLIC_IP = ".".join(["8", "8", "4", "4"])  # assembled so this file passes the sanitize gate it tests
+VENDOR_MAC = ":".join(["00", "1b", "54", "00", "00", "01"])
 
 
 @pytest.fixture
@@ -93,8 +95,9 @@ def test_build_capture_without_dpkt(tmp_path, monkeypatch):
     monkeypatch.delitem(sys.modules, "packetgen.render.capture", raising=False)
     out, spec_path = setup(tmp_path)
     result = build_packet(spec_path, out, ROOT / "registry", DAY)
-    assert not result["ok"] and "PK0" in checks(result)
-    assert not list(out.glob("2026-*"))
+    assert not result["ok"] and checks(result) == {"PK0"}, result["findings"]
+    assert [f["check"] for f in result["findings"]] == ["PK0"]
+    assert sorted(p.name for p in out.iterdir()) == ["Keys"]
 
 
 def test_pk7_frame_cap(tmp_path):
@@ -157,3 +160,22 @@ def test_failed_dump_is_pk6(tmp_path, monkeypatch, need_tshark):
     result = build_packet(spec_path, out, ROOT / "registry", DAY)
     assert not result["ok"] and "PK6" in checks(result)
     assert sorted(p.name for p in out.iterdir()) == ["Keys"]
+
+
+def test_no_tshark_still_sanitizes_capture_addresses(tmp_path):
+    spec = json.loads(FIXTURE.read_text())
+    spec["topology"]["devices"][0]["interfaces"].append(
+        {"name": "Gi1/0/2", "ip": PUBLIC_IP, "mac": VENDOR_MAC})
+    out, spec_path = setup(tmp_path, spec)
+    result = build_packet(spec_path, out, ROOT / "registry", DAY, use_tshark=False)
+    assert not result["ok"], result["findings"]
+    assert {"Z1", "Z2"} <= checks(result)
+    assert sorted(p.name for p in out.iterdir()) == ["Keys"]
+
+
+def test_no_tshark_sanitizes_flow_string_params(tmp_path):
+    spec = json.loads(FIXTURE.read_text())
+    spec["capture"]["flows"][2]["params"]["name"] = f"{PUBLIC_IP}.example.com"
+    out, spec_path = setup(tmp_path, spec)
+    result = build_packet(spec_path, out, ROOT / "registry", DAY, use_tshark=False)
+    assert not result["ok"] and "Z1" in checks(result), result["findings"]

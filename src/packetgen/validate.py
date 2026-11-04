@@ -34,6 +34,9 @@ def validate(spec: dict, registry: dict[str, dict]) -> list[dict]:
     found += time_found
     if time_found:
         return found
+    dupes = _check_C5(spec)
+    if dupes:
+        return found + dupes  # the id maps below would silently collapse duplicates
     times = _times(spec)
     for check in (_check_T2, _check_T3, _check_T4, _check_C, _check_S):
         found += check(spec, times)
@@ -161,6 +164,18 @@ def _check_T4(spec: dict, times: dict[str, datetime]) -> list[dict]:
 
 
 # --- C: causality ----------------------------------------------------------------------
+
+def _check_C5(spec: dict) -> list[dict]:
+    """An id used twice across events, telemetry, config diffs and capture flows corrupts the key."""
+    where: dict[str, list[str]] = {}
+    for section, items in (("events", spec["events"]), ("telemetry", spec["telemetry"]),
+                           ("config_diffs", spec["config_diffs"]), ("capture flows", _flows(spec))):
+        for item in items:
+            where.setdefault(item["id"], []).append(section)
+    return [finding("C5", f"id {i} is used {len(s)} times ({', '.join(sorted(set(s)))})",
+                    "give every event, series, diff and flow its own id")
+            for i, s in where.items() if len(s) > 1]
+
 
 def _check_C(spec: dict, times: dict[str, datetime]) -> list[dict]:
     out = []
