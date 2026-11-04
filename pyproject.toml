@@ -17,6 +17,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "pyright>=1.1.400"]
+capture = ["dpkt==1.9.8"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

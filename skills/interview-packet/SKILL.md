@@ -38,14 +38,24 @@ tell the user the key will show in the transcript and ask before going on.
    - A requested topic or cert goes through the filtered draw (random). Only a pasted JD (or requested style)
      may override the draw: take the closest pattern instead.
    - Note for the main conversation: with one pattern per topic today, asking for the same topic twice can repeat.
+   - After the draw, run `… -m packetgen patterns --show-capture <pattern id>`. If it prints a hint (exit 0), flip a
+     real coin: `python3 -c "import random; print(random.random() < 0.5)"`; include a capture only on `True`.
+     No hint (exit 1) means no capture. Exit 2 means the catalog is invalid: tell the user and stop, as for the
+     other patterns commands.
 2. Make the id with `python3 -c "import secrets; print('pkt-' + secrets.token_hex(3))"`; never encode the answer.
 3. Write the spec to `<Keys>/pkt-xxxxxx.json`, using **log-formats** for message ids and **packet-builder** for
    the shape, times and clocks. Requirements: a brief written as a short case hand-off (who is asking, when the first complaint arrived, what
    users see) that doesn't name the cause, ≥ `min_noise` unrelated/noise events, the root cause as quiet as the story allows. Also a `ticket`
    (end_user persona, ≥1 misdirection with claims copied exactly from its text) and one rubric item for spotting
-   the misdirection, with `evidence_refs` to events that disprove it.
-4. Run `build "<spec>" --out "<interview_prep_dir>"`. On error findings, fix the spec and rerun.
-   **At most 3 attempts**; if it still fails, report the check ids and stop. Never hand-write packet files.
+   the misdirection, with `evidence_refs` to events that disprove it. With a capture, write the `capture` block
+   per the hint (see **packet-builder**); it is answer-adjacent, so the subagent writes it into the spec like
+   everything else, and the main conversation sees it only as a file in the list.
+4. Run `build "<spec>" --out "<interview_prep_dir>"` (for a capture, without `--no-tshark`). On error findings,
+   fix the spec and rerun, except **PK0, or a PK6 saying tshark is missing or too old**: those are environment errors, so
+   stop at once and report the install step (`pip install -e '.[capture]'` for PK0; install Wireshark 4.2+ for PK6)
+   without editing the spec or retrying. **At most 3 attempts**; if it still fails, report the check ids and stop. Never
+   hand-write packet files. If the spec has a capture, read `<Keys>/pkt-xxxxxx.manifest.json`: if it says
+   `"tshark_checked": false`, refuse to hand the packet over (report that and stop; install tshark 4.2+ and rebuild).
 5. Append `pkt-xxxxxx <pattern-id> <YYYY-MM-DD>` to `<Keys>/history.txt`.
 6. (Main conversation) Show the user `BRIEF.md`, `TICKET.md` and the file list. Both are written to be safe to show;
    add nothing that hints at the cause. The misdirection is answer material, never shown before grading.
@@ -56,7 +66,8 @@ tell the user the key will show in the transcript and ask before going on.
 2. Score each rubric item: full, half, or zero of its weight, judged against `criterion` and the user's cited evidence.
    Report the total as a percentage of the summed weights.
 3. For every miss, cite the evidence by location: `logs.xlsx row N`, `telemetry_<device>.png at HH:MM`,
-   `config_diffs.txt line N` (use the manifest).
+   `config_diffs.txt line N`, `capture_<…>.pcap frame N` (use the manifest; its capture entry maps each `pk` id
+   to frame numbers). Accept a frame number the user cites as evidence when it lies in that flow's frame list.
 4. Write `GRADE.md` into the packet folder: score, per-item results, misses with citations, then the full key
    (root cause, chain, fix, every event's label, and each planted misdirection with its `true_because`).
 5. Append a row to `<interview_prep_dir>/index.md` (create it with a table header if missing):

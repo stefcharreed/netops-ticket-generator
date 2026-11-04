@@ -7,7 +7,7 @@ permissions:
   contents: read
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         python-version: ["3.10", "3.13"]
@@ -18,8 +18,12 @@ jobs:
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0 (node24)
         with:
           python-version: ${{ matrix.python-version }}
+      - run: sudo apt-get update
+      - run: sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tshark
       - run: python -m venv .venv
-      - run: .venv/bin/pip install -e '.[dev]'
+      - run: .venv/bin/pip install -e '.[dev,capture]'
       - run: MPLCONFIGDIR=$RUNNER_TEMP/mpl .venv/bin/python -m pytest -q
+        env:
+          PACKETGEN_REQUIRE_TSHARK: "1"
       - run: .venv/bin/pyright
       - run: git ls-files -z | PYTHONPATH=src xargs -0 .venv/bin/python -m packetgen.sanitize

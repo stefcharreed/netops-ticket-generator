@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "meta": {
+    "id": "pkt-5ca9e1",
+    "style": "multi-source",
+    "window": {"start": "2026-10-20T13:55:00Z", "end": "2026-10-20T14:25:00Z"},
+    "difficulty": {"min_noise": 2, "show_diff_notes": false, "shuffle_rows": 0},
+    "allow_unverified": false,
+    "brief": "Synthetic reference scenario. At 14:02 a user on the access switch reported that their PC would not finish signing in to the wired network. You have the switch syslog export and a short SPAN capture taken on the access uplink port. Find what happened."
+  },
+  "topology": {
+    "devices": [
+      {"hostname": "ACC-SW1", "role": "access-switch", "header_style": "ios", "mgmt_ip": "10.0.0.11", "tz_offset_min": 0, "clock": "ntp",
+       "interfaces": [
+         {"name": "Vlan100", "ip": "10.10.100.2", "mac": "00:00:5e:00:53:01"},
+         {"name": "Gi1/0/48", "mac": "00:00:5e:00:53:11"}
+       ]},
+      {"hostname": "DIST-SW1", "role": "distribution-switch", "header_style": "ios", "mgmt_ip": "10.0.0.1", "tz_offset_min": 0, "clock": "ntp",
+       "interfaces": [
+         {"name": "Vlan100", "ip": "10.10.100.1", "mac": "00:00:5e:00:53:02"},
+         {"name": "Gi1/0/1", "mac": "00:00:5e:00:53:12"}
+       ]}
+    ],
+    "links": [
+      ["ACC-SW1", "DIST-SW1"]
+    ],
+    "entities": {
+      "ise-a": {"ip": "10.20.0.10", "mac": "00:00:5e:00:53:20"},
+      "ise-b": {"ip": "10.20.0.11", "mac": "00:00:5e:00:53:21"},
+      "dns-1": {"ip": "10.20.0.53", "mac": "00:00:5e:00:53:22"},
+      "pc-18": {"ip": "10.10.100.50", "mac": "0000.5e00.5380"},
+      "printer-7": {"ip": "10.10.100.60", "mac": "00:00:5e:00:53:81"},
+      "old-nas": {"ip": "10.10.100.99"},
+      "ntp-server": {"ip": "192.0.2.123"}
+    }
+  },
+  "events": [
+    {"id": "e1", "t": "2026-10-20T14:02:10Z", "device": "ACC-SW1", "format_id": "IOS:RADIUS-4-RADIUS_DEAD",
+     "fields": {"ip": "10.20.0.10", "auth_port": "1812", "acct_port": "1813"},
+     "label": "root_cause", "caused_by": null, "signal": null},
+    {"id": "e2", "t": "2026-10-20T14:02:46Z", "device": "ACC-SW1", "format_id": "IOS:DOT1X-5-FAIL",
+     "fields": {"mac": "0000.5e00.5380", "interface": "Gi1/0/18", "session_id": "C0000201000000A1B2C3D4E5"},
+     "label": "symptom", "caused_by": "e1", "signal": null},
+    {"id": "e3", "t": "2026-10-20T14:01:20Z", "device": "DIST-SW1", "format_id": "IOS:NTP-4-PEERUNREACH",
+     "fields": {"ip": "192.0.2.123"},
+     "label": "unrelated", "caused_by": null, "signal": null},
+    {"id": "e4", "t": "2026-10-20T14:04:30Z", "device": "ACC-SW1", "format_id": "IOS:LINK-3-UPDOWN",
+     "fields": {"interface": "GigabitEthernet1/0/7", "state": "down"},
+     "label": "noise", "caused_by": null, "signal": null},
+    {"id": "e5", "t": "2026-10-20T14:04:31Z", "device": "ACC-SW1", "format_id": "IOS:LINEPROTO-5-UPDOWN",
+     "fields": {"interface": "GigabitEthernet1/0/7", "state": "down"},
+     "label": "noise", "caused_by": null, "signal": null}
+  ],
+  "telemetry": [],
+  "config_diffs": [],
+  "capture": {
+    "device": "ACC-SW1",
+    "interface": "Gi1/0/48",
+    "peer": "DIST-SW1",
+    "peer_interface": "Gi1/0/1",
+    "direction": "both",
+    "start": "2026-10-20T14:00:00Z",
+    "end": "2026-10-20T14:10:00Z",
+    "tagged": false,
+    "noise": "medium",
+    "flows": [
+      {"id": "pk1", "kind": "radius_request", "t": "2026-10-20T14:02:30Z",
+       "src": "ACC-SW1:Vlan100", "dst": "ise-a", "via": "DIST-SW1:Vlan100",
+       "params": {"outcome": "no_response", "username": "user18", "client": "pc-18",
+                  "nas_port": "GigabitEthernet1/0/18", "retries": 3, "timeout_s": 5},
+       "label": "symptom", "caused_by": "e1"},
+      {"id": "pk2", "kind": "radius_request", "t": "2026-10-20T14:03:05Z",
+       "src": "ACC-SW1:Vlan100", "dst": "ise-b", "via": "DIST-SW1:Vlan100",
+       "params": {"outcome": "accept", "username": "user19", "client": "printer-7",
+                  "nas_port": "GigabitEthernet1/0/19"},
+       "label": "noise", "caused_by": null},
+      {"id": "pk3", "kind": "dns_query", "t": "2026-10-20T14:05:10Z",
+       "src": "pc-18", "dst": "dns-1", "via": "DIST-SW1:Vlan100",
+       "params": {"outcome": "nxdomain", "name": "fileserver-old.corp.example.com"},
+       "label": "noise", "caused_by": null},
+      {"id": "pk4", "kind": "arp", "t": "2026-10-20T14:06:20Z",
+       "src": "printer-7", "dst": "old-nas", "via": null,
+       "params": {"outcome": "no_reply"},
+       "label": "noise", "caused_by": null}
+    ]
+  },
+  "answer": {
+    "root_cause_id": "e1",
+    "chain": ["e1", "pk1", "e2"],
+    "fix": "Restore reachability from ACC-SW1 to the primary ISE node (10.20.0.10) or fail the RADIUS server group over to the secondary; confirm with 'test aaa group' and clear the failed 802.1X session on Gi1/0/18.",
+    "root_cause_terms": ["RADIUS", "not responding"],
+    "rubric": [
+      {"id": "r1", "weight": 4, "criterion": "Identifies the primary RADIUS server being marked dead on ACC-SW1 as the root cause", "evidence_refs": ["e1", "pk1"]},
+      {"id": "r2", "weight": 2, "criterion": "Links the 802.1X failure for the user's PC to the unanswered Access-Requests", "evidence_refs": ["pk1", "e2"]},
+      {"id": "r3", "weight": 1, "criterion": "Treats the NTP peer message, the Gi1/0/7 flap, the stale-name DNS lookup and the ARP for the retired host as unrelated", "evidence_refs": ["e3", "e4", "e5", "pk3", "pk4"]}
+    ]
+  }
+}
