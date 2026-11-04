@@ -5,6 +5,7 @@ from pathlib import Path
 
 import yaml
 
+from .capture_kinds import KINDS
 from .findings import finding
 from .timebase import STYLES
 
@@ -48,7 +49,41 @@ def check_patterns(patterns: list[dict], registry: dict[str, dict]) -> list[dict
                 out.append(finding("P3", f"pattern {pid}: {rid} header_style "
                                    f"{e['header_style']!r} unsupported",
                                    f"use an id with header_style in {', '.join(STYLES)}"))
+        if "capture" in p:
+            out.extend(_check_capture(pid, p["capture"]))
     return out
+
+
+def _check_capture(pid: str, cap: object) -> list[dict]:
+    fix = "use capture: {kinds: [...], evidence_kind: ..., evidence: ...}"
+    if not isinstance(cap, dict):
+        return [finding("P7", f"pattern {pid}: capture must be a mapping", fix)]
+    missing = [k for k in ("kinds", "evidence_kind", "evidence") if k not in cap]
+    if missing:
+        return [finding("P7", f"pattern {pid}: capture missing {', '.join(missing)}", fix)]
+    out: list[dict] = []
+    kinds, ek = cap["kinds"], cap["evidence_kind"]
+    if not isinstance(kinds, list):
+        return [finding("P7", f"pattern {pid}: capture kinds must be a list", fix)]
+    for k in kinds:
+        if k not in KINDS:
+            out.append(finding("P7", f"pattern {pid}: capture kind {k!r} not in the flow catalog",
+                               f"use one of {', '.join(KINDS)}"))
+    if ek not in kinds:
+        out.append(finding("P7", f"pattern {pid}: evidence_kind {ek!r} is not in capture kinds",
+                           "add it to kinds or change evidence_kind"))
+    elif ek in KINDS and not KINDS[ek]["symptom_rule"]:
+        out.append(finding("P7", f"pattern {pid}: evidence_kind {ek!r} has no symptom rule",
+                           "use a kind with a symptom rule"))
+    return out
+
+
+def capture_hint(patterns: list[dict], pattern_id: str) -> dict | None:
+    """The pattern's capture hint, or None when the pattern or the hint is absent."""
+    for p in patterns:
+        if p.get("id") == pattern_id:
+            return p.get("capture")
+    return None
 
 
 def select_patterns(patterns: list[dict], topic: str | None = None, cert: str | None = None,

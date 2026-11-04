@@ -28,6 +28,10 @@
   root_cause: The primary RADIUS server stopped answering (marked dead), so authentications time out until failover.
   registry_ids: [IOS:RADIUS-4-RADIUS_DEAD, IOS:DOT1X-5-FAIL, IOS:MAB-5-FAIL, IOS:RADIUS-4-RADIUS_ALIVE]
   red_herrings: [one user with a genuinely wrong password, a printer failing MAB as usual, NTP noise]
+  capture:
+    kinds: [radius_request, arp, dns_query]
+    evidence_kind: radius_request
+    evidence: Access-Requests from the access switch to the primary server go unanswered and are retransmitted
 - id: ntp-unsynced-log-skew
   topic: ntp
   cert: ENCOR

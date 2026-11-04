@@ -29,12 +29,13 @@ def main(argv: list[str] | None = None) -> int:
     t.add_argument("--topic")
     t.add_argument("--cert")
     t.add_argument("--exclude", nargs="*", default=[], metavar="ID")
+    t.add_argument("--show-capture", metavar="ID", help="print a pattern's capture hint as JSON")
     t.add_argument("--file", type=Path, default=DEFAULT_PATTERNS)
     t.add_argument("--registry", type=Path, default=DEFAULT_REGISTRY)
     args = p.parse_args(argv)
 
     if args.cmd == "patterns":
-        from packetgen.patterns import CERTS, TOPICS, check_patterns, load_patterns, select_patterns
+        from packetgen.patterns import CERTS, TOPICS, capture_hint, check_patterns, load_patterns, select_patterns
         from packetgen.registry import load_registry
         for name, val, allowed in (("topic", args.topic, TOPICS), ("cert", args.cert, CERTS)):
             if val is not None and val not in allowed:
@@ -45,6 +46,12 @@ def main(argv: list[str] | None = None) -> int:
         if bad:
             print(json.dumps(bad, indent=2), file=sys.stderr)
             return 2
+        if args.show_capture is not None:
+            hint = capture_hint(pats, args.show_capture)
+            if hint is None:
+                return 1
+            print(json.dumps(hint, indent=2))
+            return 0
         ids = select_patterns(pats, args.topic, args.cert, args.exclude)
         print("\n".join(ids))
         return 0 if ids else 1

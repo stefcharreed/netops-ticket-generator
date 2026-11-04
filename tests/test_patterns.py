@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 
 from packetgen import cli
-from packetgen.patterns import check_patterns, load_patterns, select_patterns
+from packetgen.patterns import capture_hint, check_patterns, load_patterns, select_patterns
 from packetgen.registry import load_registry
 from packetgen.timebase import STYLES
 
@@ -108,3 +108,56 @@ def test_cli_patterns_invalid_catalog_exit_2(tmp_path):
     bad.write_text("- id: x\n  topic: ospf\n  cert: ENCOR\n  symptom: s\n  root_cause: r\n"
                    "  registry_ids: [IOS:NOPE-1-NOPE]\n  red_herrings: [a]\n")
     assert cli.main(["patterns", "--file", str(bad)]) == 2
+
+
+def radius(p: list[dict]) -> dict:
+    return next(x for x in p if x["id"] == "radius-server-dead-dot1x")
+
+
+def test_p7_unknown_kind():
+    p = pats()
+    radius(p)["capture"]["kinds"].append("bogus")
+    assert "P7" in checks(p)
+
+
+def test_p7_evidence_without_rule():
+    p = pats()
+    radius(p)["capture"]["evidence_kind"] = "arp"
+    assert "P7" in checks(p)
+
+
+def test_p7_evidence_kind_not_in_kinds():
+    p = pats()
+    radius(p)["capture"]["kinds"] = ["arp", "dns_query"]
+    assert "P7" in checks(p)
+
+
+def test_p7_malformed_capture():
+    p = pats()
+    radius(p)["capture"] = "radius_request"
+    assert "P7" in checks(p)
+    del radius(p)["capture"]
+    radius(p)["capture"] = {"kinds": ["arp"]}
+    assert "P7" in checks(p)
+
+
+def test_capture_hint_radius():
+    h = capture_hint(pats(), "radius-server-dead-dot1x")
+    assert h is not None
+    assert h["kinds"] == ["radius_request", "arp", "dns_query"]
+    assert h["evidence_kind"] == "radius_request"
+    assert capture_hint(pats(), "ntp-unsynced-log-skew") is None
+    assert capture_hint(pats(), "nope") is None
+
+
+def test_cli_show_capture(capsys):
+    assert cli.main(["patterns", "--show-capture", "radius-server-dead-dot1x"]) == 0
+    assert json.loads(capsys.readouterr().out)["evidence_kind"] == "radius_request"
+    assert cli.main(["patterns", "--show-capture", "ntp-unsynced-log-skew"]) == 1
+    assert cli.main(["patterns", "--show-capture", "nope"]) == 1
+
+
+def test_cli_show_capture_invalid_catalog_exit_2(tmp_path):
+    bad = tmp_path / "bad.yaml"
+    bad.write_text("- id: x\n")
+    assert cli.main(["patterns", "--file", str(bad), "--show-capture", "x"]) == 2
