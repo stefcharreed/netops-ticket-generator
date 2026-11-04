@@ -10,7 +10,7 @@ cross-file consistency rules, then renders the files. Nothing is written unless 
 Current scenarios target CCNP Enterprise (ENCOR-level) topics; the log registry is multi-vendor.
 
 ## What is and is not verified
-- Fixture-tested: 240 tests.
+- Fixture-tested: 272 tests.
 - Live generation runs were built and leak-checked (no answer text in the packet).
 - Generated packets have not yet been graded against real attempts.
 - Captures: synthetic, protocol-checked and tshark-checked; not gear-validated. Only symptom flows are

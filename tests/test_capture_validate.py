@@ -191,6 +191,20 @@ def test_e2_interface_ip():
     assert "E2" not in errors(s)
 
 
+def test_fixture_story_failover_follows_the_timed_out_attempts():
+    """IOS radius-server deadtime 0 (not checked against gear): ise-a is tried first, then ise-b answers."""
+    from datetime import timedelta
+
+    from packetgen.timebase import parse_utc
+
+    s = spec()
+    pk1, pk2 = flow(s, "pk1"), flow(s, "pk2")
+    p = pk1["params"]
+    last = parse_utc(pk1["t"]) + timedelta(seconds=p["timeout_s"] * p["retries"])
+    assert parse_utc(pk1["t"]) >= parse_utc(ev(s, "e1")["t"])  # T3: the symptom flow starts after the DEAD event
+    assert parse_utc(pk2["t"]) >= last + timedelta(seconds=p["timeout_s"])
+
+
 def test_c5_duplicate_pk_id():
     s = spec()
     flow(s, "pk2")["id"] = "pk1"

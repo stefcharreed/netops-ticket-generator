@@ -217,6 +217,11 @@ straight to `dst`. `arp` ignores `via` (link-local broadcast).
 | `dns_query` | `servfail` | `dns.flags.rcode == 2` |
 | `dns_query` | `timeout` | `dns.flags.response == 0 && !dns.response_in` |
 
+RADIUS frames are 802.1X-shaped (RFC 2865/3579/3580): the Access-Request carries Service-Type Framed,
+Framed-MTU 1485, a seeded NAS-Port, an EAP-Response/Identity (the username) and a Message-Authenticator;
+retransmits are byte-identical. Replies carry EAP-Success (accept) or EAP-Failure (reject) with the request's EAP
+identifier, plus a Message-Authenticator. Ceiling: the Message-Authenticator is random bytes, not an HMAC-MD5.
+
 Params are validated per kind (PK4). `radius_request` needs `outcome`, `username`, `client` (an entity with a
 MAC, sent as Calling-Station-Id) and `nas_port`, with optional `retries`, `timeout_s`, `auth_port`.
 `dns_query` needs `outcome` and `name` (`.test` or under example.com/net/org); `ok` also needs `answer`.
@@ -227,9 +232,10 @@ RADIUS flow lasts `timeout_s * retries` seconds (retransmits every `timeout_s`),
 milliseconds. The whole span must fit inside `capture.start..end` (PK2). Reply delays are seeded jitter.
 
 **Noise and SPAN realism.** The renderer adds background traffic so the symptom is not the only thing in the
-file: implicit noise is a spanning-tree BPDU from the peer every 2 s at `medium` and `high`, plus ARP
-request/reply pairs among declared hosts in the capture and peer subnets (every 30, 10 or 3 s for `low`,
-`medium`, `high`). Flows add their own explicit noise. Frames are untagged and zero-padded to 60 bytes, with
+file: implicit noise is a spanning-tree BPDU from the peer every 2 s at `medium` and `high` (seeded phase offset
+under 2 s, +-5 ms jitter per frame, bridge priority 32769 = 32768 + VLAN 1), plus ARP request/reply pairs among
+declared hosts in the capture and peer subnets (about every 30, 10 or 3 s for `low`, `medium`, `high`, each
+tick jittered by up to +-40% and offset by a sub-second phase). Flows add their own explicit noise. Frames are untagged and zero-padded to 60 bytes, with
 consistent source and destination MACs, TTLs (255 for switch-sourced, 64 for hosts) and per-sender IP ids.
 All randomness is seeded from `meta.id` and the flow id, so the same spec gives the same bytes.
 
@@ -252,6 +258,12 @@ The manifest also records `"tshark_checked"`: false under `--no-tshark`, or when
   `IOS:RADIUS-4-RADIUS_ALIVE` (open-ended if none). An unanswered (`no_response`) request must fall inside a dead
   period: the DEAD event is at most 30 s after the request, or any time before it with no ALIVE in between. An
   answered (`accept`/`reject`) request is an error when DEAD <= t < the next ALIVE.
+  *Ordering with T3.* T3 applies to flows at their first-frame time, so a symptom flow `caused_by` the DEAD
+  event must start at or after that event; the 30 s lead half of PK5 is usable only when the flow's cause is
+  earlier than the DEAD event (for example a config-diff root). The reference story assumes IOS
+  `radius-server deadtime 0` (the default): the switch still tries the dead primary first on each new
+  authentication, then fails over to the secondary, so an accept from the secondary should follow an
+  unanswered attempt sequence to the primary. Not checked against gear.
 - **PK6** (error unless noted): the tshark read-back failed. tshark is missing or older than 4.2; a display
   filter or the `-V` dump failed or came back empty; tshark flags malformed or expert-error frames (any frame);
   tshark read a different frame count than the renderer wrote; or a symptom flow's expected filter matches
