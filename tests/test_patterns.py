@@ -136,7 +136,6 @@ def test_p7_malformed_capture():
     p = pats()
     radius(p)["capture"] = "radius_request"
     assert "P7" in checks(p)
-    del radius(p)["capture"]
     radius(p)["capture"] = {"kinds": ["arp"]}
     assert "P7" in checks(p)
 
@@ -161,3 +160,21 @@ def test_cli_show_capture_invalid_catalog_exit_2(tmp_path):
     bad = tmp_path / "bad.yaml"
     bad.write_text("- id: x\n")
     assert cli.main(["patterns", "--file", str(bad), "--show-capture", "x"]) == 2
+
+
+def p7_msgs(p: list[dict]) -> list[str]:
+    return [f["message"] for f in check_patterns(p, REG) if f["check"] == "P7"]
+
+
+def test_p7_bad_field_types_never_raise():
+    for field, bad, text in (
+        ("kinds", [["a"]], "kinds must be a non-empty list of strings"),
+        ("kinds", [], "kinds must be a non-empty list of strings"),
+        ("evidence_kind", ["radius_request"], "evidence_kind must be a string"),
+        ("evidence", "", "evidence must be a non-empty string"),
+        ("evidence", None, "evidence must be a non-empty string"),
+        ("evidence", ["x"], "evidence must be a non-empty string"),
+    ):
+        p = pats()
+        radius(p)["capture"][field] = bad
+        assert any(text in m for m in p7_msgs(p)), (field, bad)

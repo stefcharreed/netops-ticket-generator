@@ -62,14 +62,22 @@ def _check_capture(pid: str, cap: object) -> list[dict]:
     if missing:
         return [finding("P7", f"pattern {pid}: capture missing {', '.join(missing)}", fix)]
     out: list[dict] = []
-    kinds, ek = cap["kinds"], cap["evidence_kind"]
-    if not isinstance(kinds, list):
-        return [finding("P7", f"pattern {pid}: capture kinds must be a list", fix)]
+    kinds, ek, ev = cap["kinds"], cap["evidence_kind"], cap["evidence"]
+    if not (isinstance(kinds, list) and kinds and all(isinstance(k, str) for k in kinds)):
+        out.append(finding("P7", f"pattern {pid}: capture kinds must be a non-empty list of strings", fix))
+        kinds = []
+    if not isinstance(ek, str):
+        out.append(finding("P7", f"pattern {pid}: capture evidence_kind must be a string", fix))
+        ek = None
+    if not (isinstance(ev, str) and ev.strip()):
+        out.append(finding("P7", f"pattern {pid}: capture evidence must be a non-empty string", fix))
     for k in kinds:
         if k not in KINDS:
             out.append(finding("P7", f"pattern {pid}: capture kind {k!r} not in the flow catalog",
                                f"use one of {', '.join(KINDS)}"))
-    if ek not in kinds:
+    if ek is None:
+        pass
+    elif ek not in kinds:
         out.append(finding("P7", f"pattern {pid}: evidence_kind {ek!r} is not in capture kinds",
                            "add it to kinds or change evidence_kind"))
     elif ek in KINDS and not KINDS[ek]["symptom_rule"]:
