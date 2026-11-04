@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 from datetime import datetime
 
+from packetgen.capture import capture_strings, check_capture
 from packetgen.findings import finding
 from packetgen.registry import compile_pattern, render_message
 from packetgen.spec import schema_findings
@@ -37,6 +38,7 @@ def validate(spec: dict, registry: dict[str, dict]) -> list[dict]:
     for check in (_check_T2, _check_T3, _check_T4, _check_C, _check_S):
         found += check(spec, times)
     found += _check_E(spec) + _check_K(spec) + _check_L1(spec) + _check_N1(spec)
+    found += check_capture(spec)
     found += check_ticket(spec)
     found += _check_Q1(spec, registry)
     return found
@@ -94,6 +96,10 @@ def _all_timestamps(spec: dict) -> list[tuple[str, str]]:
     stamps += [(e["id"], e["t"]) for e in spec["events"]]
     stamps += [(f"{s['id']} point {i}", p[0]) for s in spec["telemetry"] for i, p in enumerate(s["points"])]
     stamps += [(c["id"], c["t_change"]) for c in spec["config_diffs"]]
+    cap = spec.get("capture")
+    if cap:
+        stamps += [("capture.start", cap["start"]), ("capture.end", cap["end"])]
+        stamps += [(f["id"], f["t"]) for f in cap["flows"]]
     return stamps
 
 
@@ -109,10 +115,20 @@ def _check_T1(spec: dict) -> list[dict]:
 
 
 def _times(spec: dict) -> dict[str, datetime]:
-    """When each id happened: events at t, diffs at t_change."""
+    """When each id happened: events and capture flows at t, diffs at t_change."""
     t = {e["id"]: parse_utc(e["t"]) for e in spec["events"]}
     t.update({c["id"]: parse_utc(c["t_change"]) for c in spec["config_diffs"]})
+    t.update({f["id"]: parse_utc(f["t"]) for f in _flows(spec)})
     return t
+
+
+def _flows(spec: dict) -> list[dict]:
+    return spec.get("capture", {}).get("flows", [])
+
+
+def _nodes(spec: dict) -> list[dict]:
+    """Everything with an id, a label and a caused_by: events and capture flows."""
+    return spec["events"] + _flows(spec)
 
 
 def _check_T2(spec: dict, times: dict[str, datetime]) -> list[dict]:
@@ -130,13 +146,13 @@ def _check_T2(spec: dict, times: dict[str, datetime]) -> list[dict]:
 def _check_T3(spec: dict, times: dict[str, datetime]) -> list[dict]:
     return [finding("T3", f"{e['id']} happens before its cause {e['caused_by']}",
                     "move the effect later or the cause earlier")
-            for e in spec["events"]
+            for e in _nodes(spec)
             if e["caused_by"] in times and times[e["caused_by"]] > times[e["id"]]]
 
 
 def _check_T4(spec: dict, times: dict[str, datetime]) -> list[dict]:
     root = spec["answer"]["root_cause_id"]
-    symptoms = [times[e["id"]] for e in spec["events"] if e["label"] == "symptom"]
+    symptoms = [times[e["id"]] for e in _nodes(spec) if e["label"] == "symptom"]
     is_diff = any(c["id"] == root for c in spec["config_diffs"])
     if is_diff and symptoms and times[root] >= min(symptoms):
         return [finding("T4", f"{root} changes at/after the first symptom",
@@ -149,11 +165,11 @@ def _check_T4(spec: dict, times: dict[str, datetime]) -> list[dict]:
 def _check_C(spec: dict, times: dict[str, datetime]) -> list[dict]:
     out = []
     root = spec["answer"]["root_cause_id"]
-    events = {e["id"]: e for e in spec["events"]}
+    parents = {e["id"]: e["caused_by"] for e in _nodes(spec)}
     if root not in times:
         out.append(finding("C1", f"root_cause_id {root} is not an event or config diff",
                            "point root_cause_id at the causing event or diff"))
-    for e in spec["events"]:
+    for e in _nodes(spec):
         if e["label"] == "root_cause" and e["id"] != root:
             out.append(finding("C1", f"{e['id']} is labelled root_cause but the root is {root}",
                                "exactly one root: relabel it symptom/unrelated/noise"))
@@ -161,7 +177,7 @@ def _check_C(spec: dict, times: dict[str, datetime]) -> list[dict]:
             out.append(finding("C3", f"{e['id']} is {e['label']} but has caused_by {e['caused_by']}",
                                "unrelated and noise events have no parent"))
         if e["label"] == "symptom":
-            problem = _trace_to_root(e["id"], events, times, root)
+            problem = _trace_to_root(e["id"], parents, times, root)
             if problem:
                 out.append(finding("C2", f"{e['id']}: {problem}", "make caused_by lead back to the root"))
     chain = spec["answer"]["chain"]
@@ -174,7 +190,7 @@ def _check_C(spec: dict, times: dict[str, datetime]) -> list[dict]:
     return out
 
 
-def _trace_to_root(eid: str, events: dict[str, dict], times: dict[str, datetime], root: str) -> str | None:
+def _trace_to_root(eid: str, parents: dict[str, str | None], times: dict[str, datetime], root: str) -> str | None:
     """Follow caused_by upward. Returns what went wrong, or None if it reaches the root."""
     seen, current = set(), eid
     while current != root:
@@ -183,7 +199,7 @@ def _trace_to_root(eid: str, events: dict[str, dict], times: dict[str, datetime]
         seen.add(current)
         if current not in times:
             return f"caused_by points at unknown id {current}"
-        parent = events[current]["caused_by"] if current in events else None
+        parent = parents.get(current)  # config diffs have no parent
         if parent is None:
             return f"chain stops at {current} without reaching {root}"
         current = parent
@@ -253,6 +269,8 @@ def _check_E(spec: dict) -> list[dict]:
     out += [finding("E1", f"{who}: device {dev} is not in topology", "add the device or fix the name")
             for who, dev in users if dev not in devices]
     declared = {d["mgmt_ip"].lower() for d in spec["topology"]["devices"]}
+    for d in spec["topology"]["devices"]:
+        declared |= {i[k].lower() for i in d.get("interfaces", []) for k in ("ip", "mac") if k in i}
     for ent in spec["topology"]["entities"].values():
         declared |= {v.lower() for v in ent.values()}
     for e in spec["events"]:
@@ -266,7 +284,7 @@ def _check_E(spec: dict) -> list[dict]:
 def _check_K(spec: dict) -> list[dict]:
     out = []
     ids = {e["id"] for e in spec["events"]} | {c["id"] for c in spec["config_diffs"]}
-    ids |= {s["id"] for s in spec["telemetry"]}
+    ids |= {s["id"] for s in spec["telemetry"]} | {f["id"] for f in _flows(spec)}
     rubric = spec["answer"]["rubric"]
     for item in rubric:
         out += [finding("K1", f"rubric {item['id']}: evidence {ref} doesn't exist", "cite a real event/series/diff id")
@@ -283,6 +301,7 @@ def _check_L1(spec: dict) -> list[dict]:
         visible += [(f"{c['id']} note", c["note"]) for c in spec["config_diffs"] if c["note"]]
     if "ticket" in spec:
         visible.append(("ticket.text", spec["ticket"]["text"]))
+    visible += capture_strings(spec)
     return [finding("L1", f"{where} gives away the answer ({term!r})", "reword it so the root cause stays hidden")
             for term in spec["answer"]["root_cause_terms"]
             for where, text in visible if term.lower() in text.lower()]
@@ -290,7 +309,7 @@ def _check_L1(spec: dict) -> list[dict]:
 
 def _check_N1(spec: dict) -> list[dict]:
     need = spec["meta"]["difficulty"].get("min_noise", 3)
-    have = sum(e["label"] in ("unrelated", "noise") for e in spec["events"])
+    have = sum(e["label"] in ("unrelated", "noise") for e in _nodes(spec))
     if have < need:
         return [finding("N1", f"{have} unrelated/noise events, need {need}", "add realistic distractors")]
     return []
