@@ -44,6 +44,14 @@ def _frame_numbers(pcap: Path, display_filter: str | None) -> tuple[list[int], s
 
 def read_back(pcap: Path, filters: dict[str, str]) -> dict:
     """Two-pass read of `pcap`: frame count, bad frames, per-key filter matches, and the -V dump."""
+    try:
+        return _read_back(pcap, filters)
+    except (OSError, subprocess.SubprocessError) as e:  # tshark vanished or hung: report, never raise
+        return {"frames": 0, "bad_frames": [], "matches": {}, "dump": "",
+                "filter_errors": {"tshark": f"{type(e).__name__}: {e}"}}
+
+
+def _read_back(pcap: Path, filters: dict[str, str]) -> dict:
     frames, err = _frame_numbers(pcap, None)
     filter_errors: dict[str, str] = {}
     if err:
@@ -56,6 +64,9 @@ def read_back(pcap: Path, filters: dict[str, str]) -> dict:
         matches[key], err = _frame_numbers(pcap, flt)
         if err:
             filter_errors[key] = err
-    dump = _run(["-2", "-n", "-r", str(pcap), "-V"]).stdout
+    proc = _run(["-2", "-n", "-r", str(pcap), "-V"])
+    dump = proc.stdout
+    if proc.returncode != 0 or (frames and not dump.strip()):  # an empty dump would pass the sanitize gate vacuously
+        filter_errors["_dump"] = proc.stderr.strip() or f"-V dump failed or was empty (exit {proc.returncode})"
     return {"frames": len(frames), "bad_frames": bad, "matches": matches,
             "filter_errors": filter_errors, "dump": dump}

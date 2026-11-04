@@ -2,6 +2,7 @@ import json
 import os
 import shutil
 import struct
+import subprocess
 import sys
 from datetime import date
 from pathlib import Path
@@ -127,3 +128,32 @@ def test_build_without_capture_unchanged(tmp_path):
     assert "## Capture" not in brief and "capture frame numbers" not in brief
     assert "citing log ids, chart minutes\n  and config diff lines.\n" in brief
     assert "tshark_checked" not in spec_path.with_suffix(".manifest.json").read_text()
+
+
+@pytest.mark.parametrize("exc", [FileNotFoundError("tshark"), subprocess.TimeoutExpired("tshark", 1)])
+def test_tshark_vanishes_or_hangs(tmp_path, monkeypatch, exc):
+    monkeypatch.setattr(tshark, "tshark_version", lambda: (4, 6, 9))
+
+    def boom(args):
+        raise exc
+
+    monkeypatch.setattr(tshark, "_run", boom)
+    out, spec_path = setup(tmp_path)
+    result = build_packet(spec_path, out, ROOT / "registry", DAY)
+    assert not result["ok"] and "PK6" in checks(result)
+    assert sorted(p.name for p in out.iterdir()) == ["Keys"]
+
+
+def test_failed_dump_is_pk6(tmp_path, monkeypatch, need_tshark):
+    real = tshark._run
+
+    def run(args):
+        if "-V" in args:
+            return subprocess.CompletedProcess(args, 1, "", "dump failed")
+        return real(args)
+
+    monkeypatch.setattr(tshark, "_run", run)
+    out, spec_path = setup(tmp_path)
+    result = build_packet(spec_path, out, ROOT / "registry", DAY)
+    assert not result["ok"] and "PK6" in checks(result)
+    assert sorted(p.name for p in out.iterdir()) == ["Keys"]
