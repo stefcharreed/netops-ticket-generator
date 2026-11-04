@@ -93,12 +93,12 @@ def capture_strings(spec: dict) -> list[tuple[str, str]]:
 
 
 def capture_text(spec: dict) -> str:
-    """Every mac/ip the capture can emit, plus every flow string param, one per line (for the sanitize gate)."""
+    """Every mac/ip of every topology entity and interface (noise included), plus every flow string param, one per line (for the sanitize gate)."""
     cap = spec["capture"]
-    lines = []
-    for dev in spec["topology"]["devices"]:
-        if dev["hostname"] in (cap["device"], cap["peer"]):
-            lines += [f"{i.get('mac') or ''} {i.get('ip') or ''}" for i in dev.get("interfaces", [])]
+    topo = spec["topology"]
+    # Whole topology, not just the capture pair: implicit ARP noise draws on any entity or interface.
+    hosts = list(topo.get("entities", {}).values()) + [i for d in topo["devices"] for i in d.get("interfaces", [])]
+    lines = [f"{h.get('mac') or ''} {h.get('ip') or ''}" for h in hosts]
     for fl in cap["flows"]:
         names = [fl.get(r) for r in ("src", "dst", "via")]
         names += [fl["params"].get(k) for k in ("client", "answer")]

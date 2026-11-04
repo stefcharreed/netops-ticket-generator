@@ -200,6 +200,18 @@ def test_no_tshark_still_sanitizes_capture_addresses(tmp_path):
     assert sorted(p.name for p in out.iterdir()) == ["Keys"]
 
 
+def test_no_tshark_sanitizes_noise_only_entity(tmp_path):
+    from packetgen.render.capture import build_frames
+    spec = json.loads(FIXTURE.read_text())
+    spec["topology"]["entities"]["camera-3"] = {"ip": "10.10.100.70", "mac": VENDOR_MAC}  # anchored /24, no flow
+    mac = bytes.fromhex(VENDOR_MAC.replace(":", ""))
+    assert any(mac in buf for _, buf in build_frames(spec)[0]), "entity must reach the implicit noise"
+    out, spec_path = setup(tmp_path, spec)
+    result = build_packet(spec_path, out, ROOT / "registry", DAY, use_tshark=False)
+    assert not result["ok"] and "Z2" in checks(result), result["findings"]
+    assert sorted(p.name for p in out.iterdir()) == ["Keys"]
+
+
 def test_no_tshark_sanitizes_flow_string_params(tmp_path):
     spec = json.loads(FIXTURE.read_text())
     spec["capture"]["flows"][2]["params"]["name"] = f"{PUBLIC_IP}.example.com"
