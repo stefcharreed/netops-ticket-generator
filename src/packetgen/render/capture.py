@@ -120,7 +120,7 @@ def _flow_frames(ctx: _Ctx, fl: dict, idx: int) -> list[_Frame]:
         s, d = ctx.ep(src), ctx.ep(dst)
         smac, dmac = _need_mac(s, src), _need_mac(d, dst)
         hop = _need_mac(ctx.ep(via), via) if via else None
-        fwd_dst, back_dst = hop or dmac, hop or smac
+        fwd_dst = back_src = hop or dmac  # routed replies leave the gateway, not the server
         ttl_f = 64 if ctx.is_entity(src) else 255
         ttl_b = (64 if ctx.is_entity(dst) else 255) - (1 if via else 0)  # replies crossed via
         sip, dip = s["ip"], d["ip"]
@@ -129,7 +129,7 @@ def _flow_frames(ctx: _Ctx, fl: dict, idx: int) -> list[_Frame]:
             return _eth(fwd_dst, smac, _ETH_IP, _ipv4_udp(sip, dip, sport, dport, payload, ttl_f, ctx.ipid(src)))
 
         def back(sport: int, dport: int, payload: bytes) -> bytes:
-            return _eth(back_dst, dmac, _ETH_IP, _ipv4_udp(dip, sip, sport, dport, payload, ttl_b, ctx.ipid(dst)))
+            return _eth(smac, back_src, _ETH_IP, _ipv4_udp(dip, sip, sport, dport, payload, ttl_b, ctx.ipid(dst)))
 
         out = []
         if fl["kind"] == "radius_request":

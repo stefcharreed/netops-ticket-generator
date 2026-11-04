@@ -110,6 +110,44 @@ def test_render_capture_writes_pcap(spec, tmp_path):
     assert pk == build_frames(spec)[1]
 
 
+def _attrs(data):
+    out, i = {}, 0
+    while i < len(data):
+        out[data[i]] = data[i + 2:i + data[i + 1]]
+        i += data[i + 1]
+    return out
+
+
+def test_radius_request_attrs_and_shared_auth(spec):
+    frames, pk = build_frames(spec)
+    rs = [dpkt.radius.RADIUS(_udp(frames[n - 1][1])[2].data) for n in pk["pk1"]]
+    assert len({r.auth for r in rs}) == 1
+    a = _attrs(_udp(frames[pk["pk1"][0] - 1][1])[2].data[20:])
+    assert str(ipaddress.IPv4Address(a[4])) == "10.10.100.2"
+    assert a[31] == b"00-00-5E-00-53-80"
+    assert a[87] == b"GigabitEthernet1/0/18"
+
+
+def test_routed_replies_come_from_gateway(spec):
+    frames, pk = build_frames(spec)
+    gw, nas = bytes.fromhex("00005e005302"), bytes.fromhex("00005e005301")
+    req_e, req_ip, req_u = _udp(frames[pk["pk2"][0] - 1][1])
+    eth, ip, udp = _udp(frames[pk["pk2"][1] - 1][1])
+    assert (eth.src, eth.dst) == (gw, nas)
+    assert ip.ttl == 63
+    assert (udp.sport, udp.dport) == (1812, req_u.sport)
+    assert dpkt.radius.RADIUS(udp.data).id == dpkt.radius.RADIUS(req_u.data).id
+    # DNS: pc-18 -> dns-1 via the gateway; reply is delivered by the gateway to pc-18
+    q_e, q_ip, q_u = _udp(frames[pk["pk3"][0] - 1][1])
+    r_e, r_ip, r_u = _udp(frames[pk["pk3"][1] - 1][1])
+    assert (r_e.src, r_e.dst) == (gw, q_e.src)
+    assert (r_u.sport, r_u.dport) == (53, q_u.sport)
+    assert dpkt.dns.DNS(r_u.data).id == dpkt.dns.DNS(q_u.data).id
+    assert r_ip.ttl == 63
+    # non-via flow unaffected: ARP request is broadcast from the sender
+    assert dpkt.ethernet.Ethernet(frames[pk["pk4"][0] - 1][1]).dst == b"\xff" * 6
+
+
 def test_dns_ok_gratuitous_timeout(spec, tmp_path):
     fl = spec["capture"]["flows"]
     fl[2]["params"] = {"outcome": "ok", "name": "fileserver.corp.example.com", "answer": "ise-a"}
