@@ -244,8 +244,11 @@ The manifest also records `"tshark_checked"`: false under `--no-tshark`, or when
   `client` / DNS `answer` is not a declared entity with a MAC / IP.
 - **PK4** (error): `params` break the kind's schema, a gratuitous ARP has `dst != src`, a DNS `ok` has no
   `answer`, or `qtype` is `AAAA` with outcome `ok`.
-- **PK5** (error): a symptom flow of a kind with no symptom rule; a RADIUS request that is unanswered outside a
-  dead period (no `IOS:RADIUS-4-RADIUS_DEAD` for that server within 30 s after it), or answered during one.
+- **PK5** (error): a symptom flow of a kind with no symptom rule; a RADIUS flow that contradicts the log. Per
+  (NAS device, server ip), a dead period runs from 30 s before an `IOS:RADIUS-4-RADIUS_DEAD` event to the next
+  `IOS:RADIUS-4-RADIUS_ALIVE` (open-ended if none). An unanswered (`no_response`) request must fall inside a dead
+  period: the DEAD event is at most 30 s after the request, or any time before it with no ALIVE in between. An
+  answered (`accept`/`reject`) request is an error when DEAD <= t < the next ALIVE.
 - **PK6** (error unless noted): the tshark read-back failed. tshark is missing or older than 4.2; a display
   filter or the `-V` dump failed or came back empty; tshark flags malformed or expert-error frames (any frame);
   tshark read a different frame count than the renderer wrote; or a symptom flow's expected filter matches

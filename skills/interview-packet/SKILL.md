@@ -40,7 +40,8 @@ tell the user the key will show in the transcript and ask before going on.
    - Note for the main conversation: with one pattern per topic today, asking for the same topic twice can repeat.
    - After the draw, run `… -m packetgen patterns --show-capture <pattern id>`. If it prints a hint (exit 0), flip a
      real coin: `python3 -c "import random; print(random.random() < 0.5)"`; include a capture only on `True`.
-     No hint (exit 1) means no capture.
+     No hint (exit 1) means no capture. Exit 2 means the catalog is invalid: tell the user and stop, as for the
+     other patterns commands.
 2. Make the id with `python3 -c "import secrets; print('pkt-' + secrets.token_hex(3))"`; never encode the answer.
 3. Write the spec to `<Keys>/pkt-xxxxxx.json`, using **log-formats** for message ids and **packet-builder** for
    the shape, times and clocks. Requirements: a brief written as a short case hand-off (who is asking, when the first complaint arrived, what

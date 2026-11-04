@@ -62,7 +62,9 @@ Schema: `<repo>/schema/scenario.schema.json`. Worked example (read it before wri
 - Think like a SPAN port: it sits on `capture.interface`, so flows must plausibly cross that link. Put `via`
   on traffic that crosses the gateway; leave it null for same-subnet traffic.
 - A `no_response` RADIUS flow lasts `timeout_s * retries` seconds, all of which must fit before `capture.end`,
-  and the switch must log `IOS:RADIUS-4-RADIUS_DEAD` for that server within 30 s after it (PK5).
+  and it must sit inside a dead period (PK5): the switch logs `IOS:RADIUS-4-RADIUS_DEAD` for that server at most
+  30 s after the request, or any time before it with no `RADIUS_ALIVE` in between. An `accept`/`reject` flow must
+  not fall between a DEAD and its next ALIVE.
 - No leaks: usernames and DNS names are plain evidence the candidate reads. Never put a `root_cause_terms`
   word in them (L1), and use `.test` or example.com/net/org names and RFC 7042 MACs / RFC 5737 or 1918 IPs.
 - `<repo>/.venv/bin/python -m packetgen patterns --show-capture <pattern id>` prints a pattern's capture hint
@@ -98,7 +100,7 @@ catalog first (filters: `--topic`, `--cert`, `--exclude ID...`; also `--file`, `
 | PK2 | capture start not before end, outside the window, or a flow plus its span doesn't fit | move the flow or widen the capture inside the window |
 | PK3 | endpoint doesn't resolve or lacks the MAC/IP the kind needs (RADIUS client needs an entity with a MAC; DNS answer needs an IP) | declare it under `entities` or the device's `interfaces[]` |
 | PK4 | flow params break the kind's schema, gratuitous ARP with dst != src, DNS ok without answer, or AAAA ok | fix the params; AAAA answers are unsupported |
-| PK5 | symptom on a kind with no symptom rule, or a RADIUS flow whose outcome disagrees with the RADIUS_DEAD/ALIVE log events | label it noise or use `radius_request`; add the DEAD event within 30 s after the first request, or move the flow |
+| PK5 | symptom on a kind with no symptom rule, or a RADIUS flow whose outcome disagrees with the RADIUS_DEAD/ALIVE log events | label it noise or use `radius_request`; no_response: put it inside a dead period (DEAD at most 30 s after the request, or earlier with no ALIVE between); accept/reject: move it outside DEAD <= t < next ALIVE |
 | PK6 | tshark missing or older than 4.2, a filter/dump failure, malformed or expert-error frames, a symptom flow whose expected filter matches none of its frames; a warning "read-back skipped" under `--no-tshark` | install tshark 4.2+; fix the flow params; rebuild without `--no-tshark` before handing out |
 | PK7 | capture over 5,000 frames | shorten `start..end` or lower `noise` |
 | X1, Z1, Z2, B1 | xlsx date cell / non-doc IP / non-doc MAC / packet exists | build-side; B1 needs `--force` |
