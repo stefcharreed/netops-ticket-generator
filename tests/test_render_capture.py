@@ -66,9 +66,44 @@ def test_min_frame_len(spec):
     assert all(len(b) >= 60 for _, b in frames)
 
 
-def test_noise_medium_has_bpdus(spec):
+def _bpdu_times(spec):
     frames, _ = build_frames(spec)
-    assert abs(sum(b[:6] == STP for _, b in frames) - 300) <= 1
+    return [ts for ts, b in frames if b[:6] == STP], frames
+
+
+def test_noise_medium_has_bpdus(spec):
+    times, _ = _bpdu_times(spec)
+    assert abs(len(times) - 300) <= 1  # 600 s at 2 s, less the seeded phase offset
+
+
+def test_bpdu_phase_and_jitter(spec):
+    times, _ = _bpdu_times(spec)
+    lo = parse_utc(spec["capture"]["start"]).timestamp()
+    assert 0.0 <= times[0] - lo < 2.01
+    gaps = [b - a for a, b in zip(times, times[1:])]
+    assert all(1.989 <= g <= 2.011 for g in gaps)  # 2 s +- 2 x 5 ms
+    assert len({round(g, 4) for g in gaps}) > 50  # jittered, not a metronome
+    spec2 = copy.deepcopy(spec)
+    spec2["meta"]["id"] = "pkt-aaaaaa"
+    assert (_bpdu_times(spec2)[0][0] - lo) != (times[0] - lo)  # phase is seeded per packet id
+
+
+def test_bpdu_bridge_priority_includes_vlan1_ext(spec):
+    _, frames = _bpdu_times(spec)
+    bpdu = next(b for _, b in frames if b[:6] == STP)
+    assert bpdu[22:24] == bytes.fromhex("8001") and bpdu[34:36] == bytes.fromhex("8001")
+
+
+def test_noise_arp_is_jittered(spec):
+    frames, pk = build_frames(spec)
+    owned = {n for nums in pk.values() for n in nums}
+    reqs = [ts for n, (ts, b) in enumerate(frames, 1)
+            if n not in owned and b[:6] == b"\xff" * 6 and b[12:14] == b"\x08\x06"]
+    gaps = [b - a for a, b in zip(reqs, reqs[1:])]
+    assert len(reqs) >= 50
+    assert all(2.0 - 0.001 <= g <= 18.0 + 0.001 for g in gaps)  # interval 10 s, +-40% each tick
+    assert len({round(g, 2) for g in gaps}) > 20
+    assert any(abs(ts - round(ts)) > 0.05 for ts in reqs)  # sub-second offsets
 
 
 def test_noise_low_has_no_bpdus(spec):
@@ -126,6 +161,45 @@ def test_radius_request_attrs_and_shared_auth(spec):
     assert str(ipaddress.IPv4Address(a[4])) == "10.10.100.2"
     assert a[31] == b"00-00-5E-00-53-80"
     assert a[87] == b"GigabitEthernet1/0/18"
+
+
+def _eap(value):
+    code, ident, length = value[0], value[1], int.from_bytes(value[2:4], "big")
+    assert length == len(value)
+    return code, ident, (value[4], value[5:]) if length > 4 else None
+
+
+def test_access_request_is_8021x_shaped(spec):
+    frames, pk = build_frames(spec)
+    reqs = [_udp(frames[n - 1][1])[2].data for n in pk["pk1"]]
+    assert len(set(reqs)) == 1  # retransmits are byte-identical
+    a = _attrs(reqs[0][20:])
+    assert a[6] == (2).to_bytes(4, "big")  # Service-Type Framed
+    assert a[12] == (1485).to_bytes(4, "big")  # Framed-MTU
+    assert len(a[5]) == 4 and int.from_bytes(a[5], "big") > 0  # NAS-Port
+    code, ident, rest = _eap(a[79])
+    assert (code, rest) == (2, (1, b"user18"))  # EAP-Response/Identity
+    assert len(a[80]) == 16
+
+
+@pytest.mark.parametrize("outcome,eap_code", [("accept", 3), ("reject", 4)])
+def test_replies_carry_eap_result_with_matching_identifier(spec, outcome, eap_code):
+    spec["capture"]["flows"][1]["params"]["outcome"] = outcome
+    frames, pk = build_frames(spec)
+    req = _attrs(_udp(frames[pk["pk2"][0] - 1][1])[2].data[20:])
+    rep = _attrs(_udp(frames[pk["pk2"][1] - 1][1])[2].data[20:])
+    code, ident, rest = _eap(rep[79])
+    assert code == eap_code and rest is None
+    assert ident == _eap(req[79])[1]
+    assert len(rep[80]) == 16
+
+
+def test_eap_fields_are_seeded_per_flow(spec):
+    a = _attrs(_udp(build_frames(spec)[0][build_frames(spec)[1]["pk1"][0] - 1][1])[2].data[20:])
+    spec["meta"]["id"] = "pkt-aaaaaa"
+    frames, pk = build_frames(spec)
+    b = _attrs(_udp(frames[pk["pk1"][0] - 1][1])[2].data[20:])
+    assert a[80] != b[80]
 
 
 def test_routed_replies_come_from_gateway(spec):

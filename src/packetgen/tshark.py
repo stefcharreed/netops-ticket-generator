@@ -8,6 +8,7 @@ from __future__ import annotations
 import os
 import re
 import subprocess
+import tempfile
 from pathlib import Path
 
 MIN_VERSION = (4, 2)
@@ -16,8 +17,12 @@ _TIMEOUT_S = 120  # ceiling: a 5,000-frame capture reads back in well under a se
 
 
 def _run(args: list[str]) -> subprocess.CompletedProcess[str]:
-    env = {**os.environ, "TZ": "UTC"}  # keeps local-time "Arrival Time" lines out of the dump
-    return subprocess.run(["tshark", *args], capture_output=True, text=True, env=env, timeout=_TIMEOUT_S, check=False)
+    # TZ keeps local-time "Arrival Time" lines out of the dump; an empty WIRESHARK_CONFIG_DIR keeps a personal
+    # profile (disabled protocols, preferences, colour rules) from changing the dissection.
+    with tempfile.TemporaryDirectory(prefix="packetgen-wscfg-") as cfg:
+        env = {**os.environ, "TZ": "UTC", "WIRESHARK_CONFIG_DIR": cfg}
+        return subprocess.run(["tshark", *args], capture_output=True, text=True, env=env,
+                              timeout=_TIMEOUT_S, check=False)
 
 
 def tshark_version() -> tuple[int, int, int] | None:

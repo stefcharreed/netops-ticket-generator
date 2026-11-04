@@ -136,16 +136,24 @@ def _flow_frames(ctx: _Ctx, fl: dict, idx: int) -> list[_Frame]:
             ident, auth = rng.randrange(256), rng.randbytes(16)
             dport = p.get("auth_port", 1812)
             cmac = "-".join(f"{b:02X}" for b in mac_bytes(ctx.ep(p["client"])["mac"]))
-            attrs = [(1, p["username"].encode()), (4, _ip4(sip)), (61, struct.pack(">I", 15)),
-                     (31, cmac.encode()), (87, p["nas_port"].encode())]
+            user = p["username"].encode()
+            eap_id = rng.randrange(256)
+            # 802.1X shape (RFC 2865/3579/3580). Ceiling: Message-Authenticator is random bytes, not an HMAC-MD5.
+            attrs = [(1, user), (4, _ip4(sip)), (5, struct.pack(">I", rng.randrange(1, 0x10000))),
+                     (6, struct.pack(">I", 2)), (12, struct.pack(">I", 1485)), (31, cmac.encode()),
+                     (61, struct.pack(">I", 15)), (87, p["nas_port"].encode()),
+                     (79, struct.pack(">BBHB", 2, eap_id, 5 + len(user), 1) + user),  # EAP-Response/Identity
+                     (80, rng.randbytes(16))]
             req = _radius(dpkt.radius.RADIUS_ACCESS_REQUEST, ident, auth, attrs)
             if p["outcome"] == "no_response":
                 step = p.get("timeout_s", 5)
                 out = [(t0 + step * i, fwd(sport, dport, req)) for i in range(p.get("retries", 3) + 1)]
             else:
-                code = dpkt.radius.RADIUS_ACCESS_ACCEPT if p["outcome"] == "accept" else dpkt.radius.RADIUS_ACCESS_REJECT
-                out = [(t0, fwd(sport, dport, req)),
-                       (t0 + rng.uniform(0.002, 0.040), back(dport, sport, _radius(code, ident, rng.randbytes(16), [])))]
+                ok = p["outcome"] == "accept"
+                code = dpkt.radius.RADIUS_ACCESS_ACCEPT if ok else dpkt.radius.RADIUS_ACCESS_REJECT
+                eap = struct.pack(">BBH", 3 if ok else 4, eap_id, 4)  # EAP-Success / EAP-Failure
+                reply = _radius(code, ident, rng.randbytes(16), [(79, eap), (80, rng.randbytes(16))])
+                out = [(t0, fwd(sport, dport, req)), (t0 + rng.uniform(0.002, 0.040), back(dport, sport, reply))]
         else:  # dns_query
             sport, txid = rng.randrange(49152, 65536), rng.randrange(0x10000)
             qtype = dpkt.dns.DNS_AAAA if p.get("qtype", "A") == "AAAA" else dpkt.dns.DNS_A
@@ -168,7 +176,7 @@ def _flow_frames(ctx: _Ctx, fl: dict, idx: int) -> list[_Frame]:
 
 def _bridge_id(mac: bytes) -> bytes:
     # Ceiling: real bridges use their base MAC; the peer_interface MAC stands in for it.
-    return struct.pack(">H", 0x8000) + mac
+    return struct.pack(">H", 0x8000 + 1) + mac  # priority 32768 + sys-id-ext (VLAN 1)
 
 
 def _bpdu(mac: bytes) -> bytes:
@@ -187,9 +195,9 @@ def _noise_frames(ctx: _Ctx, cap: dict, lo: float, hi: float) -> list[_Frame]:
     if level in ("medium", "high"):
         peer = next(d for d in topo["devices"] if d["hostname"] == cap["peer"])
         pmac = mac_bytes(next(i for i in peer["interfaces"] if i["name"] == cap["peer_interface"])["mac"])
-        k = 0
-        while lo + 2.0 * k < hi:
-            out.append((lo + 2.0 * k, _bpdu(pmac)))
+        phase, k = rng.uniform(0.0, 2.0), 0
+        while lo + phase + 2.0 * k < hi - 0.01:  # margin keeps the +-5 ms jitter inside the window
+            out.append((max(lo, lo + phase + 2.0 * k + rng.uniform(-0.005, 0.005)), _bpdu(pmac)))
             k += 1
     # ARP pairs among declared hosts in a /24 that the capture device or its peer sits in.
     # Ceiling: the pair choice ignores which side of the SPAN port each host sits on.
@@ -199,15 +207,17 @@ def _noise_frames(ctx: _Ctx, cap: dict, lo: float, hi: float) -> list[_Frame]:
                if dv["hostname"] in (cap["device"], cap["peer"]) for i in dv.get("interfaces", []) if i.get("ip")}
     hosts = [h for h in hosts if ipaddress.ip_network(f"{h['ip']}/24", strict=False) in anchors]
     step = _NOISE_ARP_S[level]
-    k = 1
-    while len(hosts) >= 2 and lo + step * k < hi - 0.01:
+    phase, k = rng.uniform(0.0, 1.0), 1
+    while len(hosts) >= 2 and lo + phase + step * (k - 0.4) < hi - 0.01:
         a, b = rng.sample(hosts, 2)
         am, bm = mac_bytes(a["mac"]), mac_bytes(b["mac"])
-        t = lo + step * k
+        t = lo + phase + step * k + rng.uniform(-0.4, 0.4) * step
+        k += 1
+        if t >= hi - 0.01:  # jitter pushed it past the window end: skip this tick
+            continue
         out.append((t, _eth(BCAST, am, _ETH_ARP, _arp(dpkt.arp.ARP_OP_REQUEST, am, a["ip"], b"\x00" * 6, b["ip"]))))
         out.append((t + rng.uniform(0.0005, 0.005),
                     _eth(am, bm, _ETH_ARP, _arp(dpkt.arp.ARP_OP_REPLY, bm, b["ip"], am, a["ip"]))))
-        k += 1
     return [(ts, (1, 0, n), buf, None) for n, (ts, buf) in enumerate(out)]
 
 

@@ -58,6 +58,33 @@ def test_build_capture_happy_path(tmp_path, need_tshark):
         packet / "BRIEF.md").read_text()
 
 
+def test_tshark_env_is_hermetic(monkeypatch, need_tshark):
+    seen = {}
+    real = subprocess.run
+
+    def spy(argv, **kw):
+        seen.update(argv=argv, env=kw["env"], exists=Path(kw["env"]["WIRESHARK_CONFIG_DIR"]).is_dir())
+        return real(argv, **kw)
+
+    monkeypatch.setattr(subprocess, "run", spy)
+    monkeypatch.setenv("WIRESHARK_CONFIG_DIR", "/nonexistent/personal-profile")
+    proc = tshark._run(["-G", "folders"])
+    cfg = seen["env"]["WIRESHARK_CONFIG_DIR"]
+    assert seen["argv"][0] == "tshark" and seen["env"]["TZ"] == "UTC" and seen["exists"]
+    assert cfg != "/nonexistent/personal-profile" and not Path(cfg).exists()  # fresh per call, then removed
+    assert cfg in proc.stdout  # tshark really uses it as the personal configuration folder
+
+
+def test_rendered_fixture_is_clean_and_pk1_unanswered_filter_matches(tmp_path, need_tshark):
+    pytest.importorskip("dpkt")
+    from packetgen.render.capture import render_capture
+    spec = json.loads(FIXTURE.read_text())
+    pk = render_capture(spec, tmp_path)
+    rb = tshark.read_back(tmp_path / PCAP, {"pk1": "radius.code == 1 && !radius.rspframe"})
+    assert rb["filter_errors"] == {} and rb["bad_frames"] == []  # zero malformed / expert-error rows
+    assert rb["matches"]["pk1"] == pk["pk1"] and len(pk["pk1"]) == 4
+
+
 def test_read_back_planted_bad_frame(tmp_path, need_tshark):
     frame = bytes.fromhex("00005e005301" "00005e005302" "0800") + bytes.fromhex("4500002800010000400600000a000001")
     pcap = tmp_path / "bad.pcap"
