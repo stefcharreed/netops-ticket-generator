@@ -24,6 +24,7 @@ def main(argv: list[str] | None = None) -> int:
     b.add_argument("--out", type=Path, required=True, help="the output directory")
     b.add_argument("--registry", type=Path, default=DEFAULT_REGISTRY)
     b.add_argument("--force", action="store_true")
+    b.add_argument("--no-tshark", action="store_true", help="skip the tshark read-back of the capture (warns PK6)")
     t = sub.add_parser("patterns", help="list fault-pattern ids, optionally filtered")
     t.add_argument("--topic")
     t.add_argument("--cert")
@@ -57,7 +58,8 @@ def main(argv: list[str] | None = None) -> int:
         return 1 if has_errors(findings) else 0
 
     from packetgen.build import build_packet  # pulls in matplotlib; keep validate fast
-    result = build_packet(args.spec, args.out, args.registry, date.today(), force=args.force)
+    result = build_packet(args.spec, args.out, args.registry, date.today(), force=args.force,
+                          use_tshark=not args.no_tshark)
     print(json.dumps(result, indent=2))
     return 0 if result["ok"] else 1
 

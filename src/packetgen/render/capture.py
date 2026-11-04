@@ -239,3 +239,9 @@ def render_capture(spec: dict, out: Path) -> dict[str, list[int]]:
         for ts, buf in frames:
             w.writepkt(buf, ts=ts)
     return pk_map
+
+
+def frame_count(path: Path) -> int:
+    """Number of packets in a classic pcap file."""
+    with path.open("rb") as f:
+        return sum(1 for _ in dpkt.pcap.Reader(f))

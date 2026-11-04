@@ -78,6 +78,14 @@ def test_brief_has_deliverables(tmp_path):
     assert "tag each log line as exactly one of root_cause, symptom, unrelated or noise." in text
 
 
+def test_brief_capture_line(tmp_path):
+    s = load_spec(ROOT / "tests" / "fixtures" / "radius_capture.json")
+    render_brief(s, ["logs.xlsx"], tmp_path)
+    text = (tmp_path / "BRIEF.md").read_text()
+    assert "## Capture\nSPAN on ACC-SW1 Gi1/0/48 (toward DIST-SW1), both directions, 14:00–14:10 UTC.\n" in text
+    assert "config diff lines and capture frame numbers." in text
+
+
 TICKET = json.loads((ROOT / "tests" / "fixtures" / "ticket.json").read_text())
 
 
