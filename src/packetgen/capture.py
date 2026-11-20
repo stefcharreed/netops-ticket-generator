@@ -69,6 +69,7 @@ def capture_filename(spec: dict) -> str:
 
 
 _ALLOWED = re.compile(r"^\s*switchport trunk allowed vlan\s+(.+?)\s*$", re.MULTILINE)
+_NATIVE = re.compile(r"^\s*switchport trunk native vlan\s+(\d+)\s*$", re.MULTILINE)
 _VLAN_LIST = re.compile(r"\d+(-\d+)?(,\d+(-\d+)?)*")
 
 
@@ -100,23 +101,42 @@ def _stanza(text: str, ifname: str) -> str | None:
     return None if out is None else "\n".join(out)
 
 
+def stanza_decision(spec: dict, t: datetime, device: str, ifname: str, line_re: re.Pattern) -> str | None:
+    """The `after` stanza ('' when after lacks it) of the newest diff on device at or before t whose
+    `interface <ifname>` stanza has a line_re line in before or after; None when no diff decides."""
+    diffs = sorted((parse_utc(c["t_change"]), i, c) for i, c in enumerate(spec.get("config_diffs", []))
+                   if c["device"] == device and parse_utc(c["t_change"]) <= t)
+    for _, _, c in reversed(diffs):
+        before, after = _stanza(c["before"], ifname), _stanza(c["after"], ifname)
+        if any(x is not None and line_re.search(x) for x in (before, after)):
+            return after or ""
+    return None
+
+
+def _peer_decision(spec: dict, t: datetime, line_re: re.Pattern) -> str | None:
+    cap = spec["capture"]
+    if not cap.get("peer_interface"):
+        return None
+    return stanza_decision(spec, t, cap["peer"], cap["peer_interface"], line_re)
+
+
 def peer_allowed_vlans(spec: dict, t: datetime) -> set[int] | None:
     """The allowed list on the monitored trunk's far end (capture.peer peer_interface) in force at t, or None (all).
 
     The newest diff at or before t whose stanza for that interface has an allowed-vlan line in before or after
     decides: its after list, or None when after has no line (all VLANs) or a form this can't read (add/remove).
     """
-    cap = spec["capture"]
-    ifname = cap.get("peer_interface")
-    if not ifname:
+    after = _peer_decision(spec, t, _ALLOWED)
+    return None if after is None else parse_allowed_vlans(after)
+
+
+def peer_native_vlan(spec: dict, t: datetime) -> int | None:
+    """The far end's trunk native VLAN in force at t (1 when the deciding diff drops the line), or None."""
+    after = _peer_decision(spec, t, _NATIVE)
+    if after is None:
         return None
-    diffs = sorted((parse_utc(c["t_change"]), i, c) for i, c in enumerate(spec.get("config_diffs", []))
-                   if c["device"] == cap.get("peer") and parse_utc(c["t_change"]) <= t)
-    for _, _, c in reversed(diffs):
-        before, after = _stanza(c["before"], ifname), _stanza(c["after"], ifname)
-        if any(x is not None and _ALLOWED.search(x) for x in (before, after)):
-            return parse_allowed_vlans(after or "")
-    return None
+    found = _NATIVE.findall(after)
+    return int(found[-1]) if found else 1
 
 
 # --- validation (PK1-PK5) -----------------------------------------------------------------

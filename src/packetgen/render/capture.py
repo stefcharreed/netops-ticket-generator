@@ -14,8 +14,8 @@ from typing import NamedTuple
 
 import dpkt
 
-from packetgen.capture import capture_filename, parse_mac, peer_allowed_vlans, resolve_endpoint
-from packetgen.capture_views import flow_class, flow_vlan, keeps, tagged
+from packetgen.capture import capture_filename, parse_mac, peer_allowed_vlans, peer_native_vlan, resolve_endpoint
+from packetgen.capture_views import flow_class, flow_vlan, keeps, sender_native, tagged
 from packetgen.timebase import parse_utc
 
 BCAST = b"\xff" * 6
@@ -36,6 +36,7 @@ class _Frame(NamedTuple):
     pk: str | None
     vlan: int
     fclass: str
+    native: int  # the sender's native VLAN: frames in it leave its trunk untagged
 
 
 def mac_bytes(text: str) -> bytes:
@@ -184,8 +185,8 @@ def _flow_frames(ctx: _Ctx, fl: dict, idx: int) -> list[_Frame]:
                 resp = bytes(dpkt.dns.DNS(id=txid, op=dpkt.dns.DNS_QR | dpkt.dns.DNS_RD | dpkt.dns.DNS_RA,
                                           rcode=rcode, qd=qd, an=an))
                 out = [(t0, fwd(sport, 53, q)), (t0 + rng.uniform(0.002, 0.040), back(53, sport, resp))]
-    vlan, fclass = flow_vlan(ctx.spec, fl), flow_class(ctx.spec, fl)
-    return [_Frame(ts, (0, idx, n), buf, fl["id"], vlan, fclass) for n, (ts, buf) in enumerate(out)]
+    vlan, fclass, native = flow_vlan(ctx.spec, fl), flow_class(ctx.spec, fl), sender_native(ctx.spec, fl)
+    return [_Frame(ts, (0, idx, n), buf, fl["id"], vlan, fclass, native) for n, (ts, buf) in enumerate(out)]
 
 
 def _bridge_id(mac: bytes, vlan: int = 1) -> bytes:
@@ -215,7 +216,7 @@ def _noise_frames(ctx: _Ctx, cap: dict, lo: float, hi: float) -> list[_Frame]:
     level = cap.get("noise", "medium")
     rng = random.Random(f"{ctx.meta_id}:noise")
     native = cap.get("span", {}).get("native_vlan", 1)
-    out: list[tuple[float, bytes, int, str]] = []  # (ts, frame, vlan, fclass)
+    out: list[tuple[float, bytes, int, str, int]] = []  # (ts, frame, vlan, fclass, sender native)
     topo = ctx.spec["topology"]
     peer = next((d for d in topo["devices"] if d["hostname"] == cap["peer"]), None)
     if level in ("medium", "high") and peer is not None:  # an entity peer (a PC, a hub) sends no BPDUs
@@ -226,13 +227,15 @@ def _noise_frames(ctx: _Ctx, cap: dict, lo: float, hi: float) -> list[_Frame]:
         # Ceiling: the near end never takes over as root for a VLAN the peer pruned.
         while lo + phase + 2.0 * k < hi - 0.01:  # margin keeps the +-5 ms jitter inside the window
             t = max(lo, lo + phase + 2.0 * k + rng.uniform(-0.005, 0.005))
-            allowed = peer_allowed_vlans(ctx.spec, datetime.fromtimestamp(t, timezone.utc))
+            when = datetime.fromtimestamp(t, timezone.utc)
+            allowed = peer_allowed_vlans(ctx.spec, when)
+            pnat = peer_native_vlan(ctx.spec, when) or native  # the far end tags against its own native VLAN
             for v in vlans:
                 if allowed is not None and v not in allowed:
                     continue
-                if v == native:
-                    out.append((t, _bpdu(pmac), v, "l2_control"))
-                out.append((t, _sstp(pmac, v), v, "l2_control"))
+                if v == pnat:  # IEEE BPDU rides untagged with the native VLAN's SSTP (assumed for pnat != 1)
+                    out.append((t, _bpdu(pmac), v, "l2_control", pnat))
+                out.append((t, _sstp(pmac, v), v, "l2_control", pnat))
             k += 1
     # ARP pairs among declared hosts in a /24 that the capture device or its peer sits in.
     # Ceiling: the pair choice ignores which side of the SPAN port each host sits on.
@@ -255,10 +258,10 @@ def _noise_frames(ctx: _Ctx, cap: dict, lo: float, hi: float) -> list[_Frame]:
         if allowed is not None and {_host_vlan(a) or native, _host_vlan(b) or native} - allowed:
             continue  # a VLAN the far end pruned can't carry a request and its answer across the trunk
         out.append((t, _eth(BCAST, am, _ETH_ARP, _arp(dpkt.arp.ARP_OP_REQUEST, am, a["ip"], b"\x00" * 6, b["ip"])),
-                    vlan, "data"))
+                    vlan, "data", native))
         out.append((t + rng.uniform(0.0005, 0.005),
-                    _eth(am, bm, _ETH_ARP, _arp(dpkt.arp.ARP_OP_REPLY, bm, b["ip"], am, a["ip"])), vlan, "data"))
-    return [_Frame(ts, (1, 0, n), buf, None, vlan, fc) for n, (ts, buf, vlan, fc) in enumerate(out)]
+                    _eth(am, bm, _ETH_ARP, _arp(dpkt.arp.ARP_OP_REPLY, bm, b["ip"], am, a["ip"])), vlan, "data", native))
+    return [_Frame(ts, (1, 0, n), buf, None, vlan, fc, nat) for n, (ts, buf, vlan, fc, nat) in enumerate(out)]
 
 
 def _host_vlan(h: dict) -> int | None:
@@ -308,7 +311,7 @@ def build_frames(spec: dict) -> tuple[list[tuple[float, bytes]], dict[str, list[
         if cap["method"] == "erspan":
             buf = _erspan(ctx, cap, f.buf, f.vlan, (seq + n - 1) % 2**32)
         else:
-            buf = _dot1q(f.buf, f.vlan) if tagged(cap, f.vlan) else f.buf
+            buf = _dot1q(f.buf, f.vlan) if tagged(cap, f.vlan, f.native) else f.buf
         out.append((f.ts, buf))
         if f.pk is not None:
             pk_map.setdefault(f.pk, []).append(n)

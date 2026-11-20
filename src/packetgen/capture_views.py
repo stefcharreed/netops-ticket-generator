@@ -68,9 +68,19 @@ def flow_vlan(spec: dict, flow: dict) -> int:
     return (src or {}).get("vlan") or _native(spec["capture"])
 
 
-def tagged(cap: dict, vlan: int) -> bool:
-    """True when the frame leaves the capture with an 802.1Q tag."""
-    return _mode(cap) == ("span", "replicate") and vlan != _native(cap)
+def sender_native(spec: dict, flow: dict) -> int:
+    """The native VLAN of the trunk side that sent the flow: the far end's (as its diffs set it) or the near end's."""
+    from packetgen.capture import peer_native_vlan
+    from packetgen.timebase import parse_utc
+    cap = spec["capture"]
+    if flow["src"].partition(":")[0] == cap.get("peer"):
+        return peer_native_vlan(spec, parse_utc(flow["t"])) or _native(cap)
+    return _native(cap)
+
+
+def tagged(cap: dict, vlan: int, native: int | None = None) -> bool:
+    """True when the frame leaves the capture with an 802.1Q tag (native: the sender's native VLAN)."""
+    return _mode(cap) == ("span", "replicate") and vlan != (_native(cap) if native is None else native)
 
 
 def filter_suffix(spec: dict, flow: dict) -> str:
@@ -78,7 +88,7 @@ def filter_suffix(spec: dict, flow: dict) -> str:
     cap = spec["capture"]
     if cap["method"] == "erspan":
         return " && erspan"
-    return " && vlan" if tagged(cap, flow_vlan(spec, flow)) else ""
+    return " && vlan" if tagged(cap, flow_vlan(spec, flow), sender_native(spec, flow)) else ""
 
 
 def method_label(cap: dict) -> str:

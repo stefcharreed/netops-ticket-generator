@@ -385,3 +385,24 @@ def test_noise_arp_respects_pruned_vlan():
     gw30 = bytes.fromhex("00005e005303")
     frames, _ = build_frames(spec)
     assert not any(ts >= cut and b[6:12] == gw30 for ts, b in frames)
+
+
+def test_phase1_bytes_unchanged():
+    import hashlib
+    want = {"trunk_pruned_capture": "8dfa6983e33499e0514d9dd056c0d92ae7fa37a604e4e85d823229d371894614",
+            "radius_capture": "a4f7c1e210b061031e47d7f5ffd03dedd785d8c33219f27388b3beed8fbbec08"}
+    for name, digest in want.items():
+        frames, _ = build_frames(json.loads((Path(__file__).parent / "fixtures" / f"{name}.json").read_text()))
+        got = hashlib.sha256(b"".join(b for _, b in frames) + repr([t for t, _ in frames]).encode()).hexdigest()
+        assert got == digest, name
+
+
+def test_pvst_untagged_sstp_carries_peer_native(spec):
+    spec = _pvst(spec, [1, 99])
+    spec["config_diffs"] = [{"id": "cd1", "device": "DIST-SW1", "t_change": "2026-10-20T14:04:00Z",
+                             "before": "interface GigabitEthernet1/0/1\n switchport mode trunk\n",
+                             "after": "interface GigabitEthernet1/0/1\n switchport trunk native vlan 99\n",
+                             "note": None}]
+    cut = parse_utc("2026-10-20T14:04:00Z").timestamp()
+    seen = {(ts >= cut, _sstp_vlan(b)) for ts, b in build_frames(spec)[0] if b[:6] == SSTP}
+    assert seen == {(False, (None, 1)), (False, (99, 99)), (True, (None, 99)), (True, (1, 1))}

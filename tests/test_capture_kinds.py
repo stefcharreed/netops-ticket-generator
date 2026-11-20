@@ -228,3 +228,20 @@ def test_span_new_kinds():
     assert capture_kinds.span_s({"kind": "hsrp_hello", "params": {"outcome": "active"}}) == 12.0
     assert capture_kinds.span_s({"kind": "dhcp", "params": {"outcome": "no_offer"}}) == 12.01
     assert capture_kinds.span_s({"kind": "dhcp", "params": {"outcome": "ack"}}) == 0.1
+
+
+NATIVE99 = {"id": "cd2", "device": "DIST-SW1", "t_change": "2026-10-21T14:04:00Z",
+            "before": "interface GigabitEthernet1/0/1\n switchport mode trunk\n",
+            "after": "interface GigabitEthernet1/0/1\n switchport mode trunk\n switchport trunk native vlan 99\n",
+            "note": None}
+
+
+def test_peer_native_vlan_time():
+    from packetgen.timebase import parse_utc
+    s = _trunk()
+    s["config_diffs"].append(dict(NATIVE99))
+    assert capture.peer_native_vlan(s, parse_utc("2026-10-21T14:03:59Z")) is None
+    assert capture.peer_native_vlan(s, parse_utc("2026-10-21T14:05:00Z")) == 99
+    s["config_diffs"].append({**NATIVE99, "id": "cd3", "t_change": "2026-10-21T14:06:00Z",
+                              "before": NATIVE99["after"], "after": NATIVE99["before"]})
+    assert capture.peer_native_vlan(s, parse_utc("2026-10-21T14:07:00Z")) == 1  # line removed: default 1

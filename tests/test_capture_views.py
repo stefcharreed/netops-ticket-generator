@@ -115,3 +115,17 @@ def test_flow_class_l2_kinds():
     assert cv.flow_class(s, fl) == "l2_control"
     fl = dict(flow(s, "pk3"), kind="hsrp_hello")  # pc-18 -> dns-1, but hellos go to 224.0.0.2
     assert cv.flow_class(s, fl) == "control_plane"
+
+
+def test_sender_native_peer_vs_near():
+    s = json.loads((ROOT / "tests" / "fixtures" / "trunk_pruned_capture.json").read_text())
+    s["config_diffs"].append({"id": "cd2", "device": "DIST-SW1", "t_change": "2026-10-21T14:04:00Z",
+                              "before": "interface GigabitEthernet1/0/1\n",
+                              "after": "interface GigabitEthernet1/0/1\n switchport trunk native vlan 99\n",
+                              "note": None})
+    fl = {"src": "DIST-SW1:Vlan10", "t": "2026-10-21T14:05:00Z"}
+    assert cv.sender_native(s, fl) == 99
+    assert cv.sender_native(s, {**fl, "t": "2026-10-21T14:03:00Z"}) == 1
+    assert cv.sender_native(s, {**fl, "src": "pc-31"}) == 1
+    cap = s["capture"]
+    assert cv.tagged(cap, 1, native=99) is True and cv.tagged(cap, 99, native=99) is False
