@@ -4,6 +4,7 @@ from pathlib import Path
 
 from packetgen.ticket import MISDIRECTION_KINDS, PERSONAS
 from packetgen.timebase import STYLES
+from packetgen.topology import KINDS
 
 PROPS = json.loads((Path(__file__).parents[1] / "schema" / "scenario.schema.json").read_text())["properties"]
 TICKET = PROPS["ticket"]["properties"]
@@ -20,3 +21,8 @@ def test_personas_match_schema():
 
 def test_header_styles_match_schema():
     assert DEVICE["header_style"]["enum"] == list(STYLES)
+
+
+def test_icon_kinds_match_schema():
+    defs = json.loads((Path(__file__).parents[1] / "schema" / "scenario.schema.json").read_text())["$defs"]
+    assert defs["icon_kind"]["enum"] == list(KINDS)

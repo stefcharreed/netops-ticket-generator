@@ -287,7 +287,7 @@ def _check_E(spec: dict) -> list[dict]:
     for d in spec["topology"]["devices"]:
         declared |= {i[k].lower() for i in d.get("interfaces", []) for k in ("ip", "mac") if k in i}
     for ent in spec["topology"]["entities"].values():
-        declared |= {v.lower() for v in ent.values()}
+        declared |= {ent[k].lower() for k in ("ip", "mac") if k in ent}   # real values only, never `documented`
     for e in spec["events"]:
         for key, value in e["fields"].items():
             if key.lower().endswith(("ip", "mac")) and value.lower() not in declared:

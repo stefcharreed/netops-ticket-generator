@@ -9,7 +9,9 @@
     "utc": {"type": "string", "description": "ISO-8601 with Z or offset; naive times are rejected by validator T1"},
     "ref": {"type": "string", "pattern": "^(e|tm|cd|pk)\\d+$"},
     "event_ref": {"type": "string", "pattern": "^(e|tm|cd)\\d+$"},
-    "root_ref": {"type": "string", "pattern": "^(e|cd)\\d+$"}
+    "root_ref": {"type": "string", "pattern": "^(e|cd)\\d+$"},
+    "evidence_ref": {"type": "string", "pattern": "^((e|tm|cd|pk)\\d+|doc:[A-Za-z0-9-]+)$"},
+    "icon_kind": {"enum": ["cloud", "firewall", "router", "l3switch", "switch", "wlc", "ap", "server", "aaa", "pc", "printer", "phone", "host"]}
   },
   "properties": {
     "schema_version": {"const": 1},
@@ -52,7 +54,8 @@
           }
         },
         "allow_unverified": {"type": "boolean"},
-        "brief": {"type": "string", "minLength": 1}
+        "brief": {"type": "string", "minLength": 1},
+        "mac_table": {"type": "boolean", "description": "show the documented MAC table in NETWORK.md (L2 scenarios)"}
       }
     },
     "topology": {
@@ -71,6 +74,12 @@
               "tz_offset_min": {"type": "integer", "minimum": -720, "maximum": 840},
               "clock": {"enum": ["ntp", "unsynced"]},
               "skew_s": {"type": "integer"},
+              "icon": {"$ref": "#/$defs/icon_kind"},
+              "documented": {
+                "type": "object", "additionalProperties": false,
+                "description": "what the docs say when it differs from the gear (at most one override per spec, D1)",
+                "properties": {"mgmt_ip": {"type": "string"}}
+              },
               "interfaces": {
                 "type": "array",
                 "items": {
@@ -80,7 +89,11 @@
                     "name": {"type": "string", "minLength": 1},
                     "mac": {"type": "string"},
                     "ip": {"type": "string"},
-                    "vlan": {"type": "integer", "minimum": 1, "maximum": 4094}
+                    "vlan": {"type": "integer", "minimum": 1, "maximum": 4094},
+                    "documented": {
+                      "type": "object", "additionalProperties": false,
+                      "properties": {"ip": {"type": "string"}, "vlan": {"type": "integer", "minimum": 1, "maximum": 4094}}
+                    }
                   }
                 }
               }
@@ -91,13 +104,26 @@
         },
         "links": {
           "type": "array",
+          "description": "each end is HOST or HOST:IFNAME (the interface is a diagram label)",
           "items": {"type": "array", "items": {"type": "string"}, "minItems": 2, "maxItems": 2}
         },
         "entities": {
           "type": "object",
           "additionalProperties": {
             "type": "object", "additionalProperties": false,
-            "properties": {"mac": {"type": "string"}, "ip": {"type": "string"}}
+            "properties": {
+              "mac": {"type": "string"}, "ip": {"type": "string"},
+              "kind": {"$ref": "#/$defs/icon_kind"},
+              "attached": {
+                "type": "object", "additionalProperties": false, "required": ["device"],
+                "properties": {"device": {"type": "string"}, "interface": {"type": "string"},
+                               "vlan": {"type": "integer", "minimum": 1, "maximum": 4094}}
+              },
+              "documented": {
+                "type": "object", "additionalProperties": false,
+                "properties": {"mac": {"type": "string"}, "ip": {"type": "string"}}
+              }
+            }
           }
         }
       }
@@ -207,6 +233,15 @@
         "chain": {"type": "array", "items": {"$ref": "#/$defs/ref"}, "minItems": 1},
         "fix": {"type": "string", "minLength": 1},
         "root_cause_terms": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "doc_mismatch": {
+          "type": "object", "additionalProperties": false, "required": ["ref", "kind", "note"],
+          "description": "the one documented value that differs from the gear, and what role it plays (D2, D4)",
+          "properties": {
+            "ref": {"type": "string", "pattern": "^doc:[A-Za-z0-9-]+$"},
+            "kind": {"enum": ["red_herring", "cause"]},
+            "note": {"type": "string", "minLength": 1}
+          }
+        },
         "rubric": {
           "type": "array", "minItems": 1,
           "items": {
@@ -216,7 +251,7 @@
               "id": {"type": "string"},
               "weight": {"type": "integer", "minimum": 1},
               "criterion": {"type": "string", "minLength": 1},
-              "evidence_refs": {"type": "array", "items": {"$ref": "#/$defs/ref"}, "minItems": 1}
+              "evidence_refs": {"type": "array", "items": {"$ref": "#/$defs/evidence_ref"}, "minItems": 1}
             }
           }
         }

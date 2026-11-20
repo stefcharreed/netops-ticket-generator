@@ -13,6 +13,7 @@ from jsonschema import Draft202012Validator
 from packetgen.capture_kinds import KINDS, span_s
 from packetgen.findings import finding
 from packetgen.timebase import parse_utc
+from packetgen.topology import link_ends
 
 _DEAD, _ALIVE = "IOS:RADIUS-4-RADIUS_DEAD", "IOS:RADIUS-4-RADIUS_ALIVE"
 _DEAD_LEAD = timedelta(seconds=30)  # a switch marks a server dead ~30 s after the first unanswered request
@@ -120,7 +121,7 @@ def _check_pk1(spec: dict, cap: dict) -> list[dict]:
         elif ifname not in ifaces[dev]:
             out.append(finding("PK1", f"capture: {dev} has no interface {ifname}",
                                f"declare it under {dev}'s interfaces[]"))
-    pairs = [frozenset(link) for link in spec["topology"]["links"]]
+    pairs = [frozenset((a, b)) for a, _, b, _ in link_ends(spec)]  # ends may be HOST or HOST:IFNAME
     if frozenset((cap["device"], cap["peer"])) not in pairs:
         out.append(finding("PK1", f"capture: {cap['device']} and {cap['peer']} are not linked",
                            "add the pair to topology.links"))
