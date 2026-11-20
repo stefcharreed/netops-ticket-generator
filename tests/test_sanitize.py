@@ -186,15 +186,20 @@ def test_ipv6_at_sentence_end_or_after_a_period_is_still_caught():
     assert checks(f"see.{PUBLIC_V6} now") == ["Z1"]
 
 
-def test_deny_path_prefers_this_checkouts_own_list(tmp_path):
+def test_worktree_list_adds_to_main_list_never_replaces_it(tmp_path):
+    from packetgen.sanitize import deny_terms
     root = _repo(tmp_path)
     (root / "a.txt").write_text("x")
     _git(root, "add", "a.txt")
     _git(root, "commit", "-q", "-m", "init")
     wt = tmp_path / "wt"
     _git(root, "worktree", "add", "-q", str(wt))
-    (wt / ".sanitize-deny").write_text("Acme\n")
-    assert deny_path(wt).resolve() == (wt / ".sanitize-deny").resolve()
+    (root / ".sanitize-deny").write_text("Acme Corp\n")
+    (wt / ".sanitize-deny").write_text("# empty on purpose\n")
+    assert deny_terms(wt) == ["Acme Corp"]                 # an empty worktree list can't shadow the main one
+    (wt / ".sanitize-deny").write_text("Widget Lab\nAcme Corp\n")
+    assert deny_terms(wt) == ["Acme Corp", "Widget Lab"]   # it can only add terms
+    assert deny_path(wt).resolve() == (root / ".sanitize-deny").resolve()
 
 
 def test_symlink_is_scanned_as_its_target_text_not_followed(tmp_path):

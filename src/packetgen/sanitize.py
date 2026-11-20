@@ -45,17 +45,29 @@ _HOME_PATH = re.compile(
     r"(?<![\w.~-])(?:/(?:Users|home)/" + _STOP + r"|[A-Za-z]:\\{1,2}Users\\{1,2}" + _STOP + r")")
 
 
-def deny_path(cwd: Path = Path(".")) -> Path:
-    """Where the .sanitize-deny list is: this checkout's own top level first, then the main checkout (found
-    through git's common dir, so linked worktrees share it). If neither exists, the main checkout's path, so a
-    missing-list error names the place the list belongs. Outside a git repo: `cwd/.sanitize-deny`."""
+def _deny_candidates(cwd: Path) -> tuple[Path, Path]:
+    """(main checkout's list, this checkout's list). The main one is found through git's common dir, so linked
+    worktrees share it. Outside a git repo both are `cwd/.sanitize-deny`."""
     try:
         out = subprocess.run(["git", "rev-parse", "--path-format=absolute", "--show-toplevel", "--git-common-dir"],
                              cwd=cwd, capture_output=True, text=True, check=True).stdout.split("\n")
     except (OSError, subprocess.CalledProcessError):
-        return cwd / ".sanitize-deny"
-    candidates = [Path(out[0]) / ".sanitize-deny", Path(out[1]).parent / ".sanitize-deny"]
-    return next((c for c in candidates if c.is_file()), candidates[1])
+        return cwd / ".sanitize-deny", cwd / ".sanitize-deny"
+    return Path(out[1]).parent / ".sanitize-deny", Path(out[0]) / ".sanitize-deny"
+
+
+def deny_path(cwd: Path = Path(".")) -> Path:
+    """The main checkout's .sanitize-deny: the list that must exist when packetgen.requireDeny is set."""
+    return _deny_candidates(cwd)[0]
+
+
+def deny_terms(cwd: Path = Path(".")) -> list[str]:
+    """Main checkout's terms, plus any extra terms in this checkout's own list. A worktree list only ever adds
+    terms; it can't replace or empty the main one."""
+    out: list[str] = []
+    for path in dict.fromkeys(p.resolve() for p in _deny_candidates(cwd)):
+        out += [t for t in load_denylist(path) if t not in out]
+    return out
 
 
 def deny_required(cwd: Path = Path(".")) -> bool:
@@ -136,7 +148,7 @@ def main(argv: list[str]) -> int:
         print(f"sanitize: {path.name} is missing but packetgen.requireDeny is set; refusing to scan without it",
               file=sys.stderr)
         return 1
-    deny = load_denylist(path)
+    deny = deny_terms()
     found = []
     for name in argv:
         found += file_findings(Path(name), deny)
