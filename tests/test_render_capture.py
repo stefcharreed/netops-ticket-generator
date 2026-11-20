@@ -531,3 +531,28 @@ def test_dhcp_storm_under_cap(spec):
          params={"outcome": "no_offer", "retries": 5, "copies": 50})
     frames, pk = build_frames(spec)
     assert len(pk["pk9"]) == 300 and len(frames) < MAX_CAPTURE_FRAMES
+
+
+def test_frames_stop_at_err_disable(spec):
+    spec["events"].append({"id": "e9", "t": "2026-10-20T14:05:00Z", "device": "ACC-SW1",
+                           "format_id": "IOS:PM-4-ERR_DISABLE",
+                           "fields": {"cause": "psecure-violation", "interface": "GigabitEthernet1/0/48",
+                                      "interface_2": "GigabitEthernet1/0/48"},
+                           "label": "noise", "caused_by": None, "signal": None})
+    cut = parse_utc("2026-10-20T14:05:00Z").timestamp()
+    frames, pk = build_frames(spec)
+    assert frames and all(ts < cut for ts, _ in frames)
+    assert "pk3" not in pk  # the 14:05:10 DNS lookup never reaches the analyzer
+
+
+def test_access_port_noise_unicast_only_for_port_hosts(spec):
+    spec["topology"]["entities"]["pc-18"]["attached"] = {"device": "ACC-SW1", "interface": "Gi1/0/48"}
+    spec["capture"]["peer"] = "pc-18"
+    del spec["capture"]["peer_interface"]
+    spec["capture"]["noise"] = "high"
+    frames, pk = build_frames(spec)
+    owned = {n for nums in pk.values() for n in nums}
+    noise = [b for n, (_, b) in enumerate(frames, 1) if n not in owned and b[12:14] == b"\x08\x06"]
+    replies = [b for b in noise if dpkt.ethernet.Ethernet(b).data.op == dpkt.arp.ARP_OP_REPLY]
+    assert any(b[:6] == b"\xff" * 6 for b in noise)  # broadcasts still flood to the port
+    assert all(b[:6] == bytes.fromhex("00005e005380") for b in replies)  # unicast only toward pc-18

@@ -242,3 +242,9 @@ def test_allows_cisco_l2_control_multicast():
     assert sanitize_findings("dst 01:00:0c:cc:cc:cc and 01:00:0c:cc:cc:cd", "t") == []
     other = ":".join(["01", "00", "0c", "12", "34", "56"])  # assembled so this file passes the gate
     assert sanitize_findings(f"src {other}", "t") != []  # only the cc:cc:cX control groups
+
+
+def test_allows_hsrp_virtual_mac():
+    assert sanitize_findings("src 00:00:0c:07:ac:0a", "t") == []  # HSRPv1 virtual MAC (RFC 2281)
+    other = ":".join(["00", "00", "0c", "12", "34", "56"])  # assembled so this file passes the gate
+    assert sanitize_findings(f"src {other}", "t") != []

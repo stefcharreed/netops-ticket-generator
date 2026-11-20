@@ -39,7 +39,9 @@ _MAC = re.compile(r"(?<![0-9a-f:.-])(?:(?:[0-9a-f]{2}[:-]){5}[0-9a-f]{2}|"
                   r"[0-9a-f]{4}\.[0-9a-f]{4}\.[0-9a-f]{4})(?![0-9a-f:.-])", re.IGNORECASE)
 # RFC 7042 doc range, STP/LLDP multicast, Cisco CDP/VTP/DTP + PVST+ SSTP multicast (01:00:0c:cc:cc:cX),
 # IPv4 multicast, broadcast, all-zero placeholder. All are protocol constants, never a device's identity.
-_ALLOWED_MAC_PREFIXES = ("00005e0053", "0180c20000", "01000ccccc", "01005e", "ffffffffffff", "000000000000")
+# HSRPv1 virtual MAC 00:00:0c:07:ac:GG (RFC 2281) is a protocol constant too.
+_ALLOWED_MAC_PREFIXES = ("00005e0053", "0180c20000", "01000ccccc", "00000c07ac", "01005e", "ffffffffffff",
+                         "000000000000")
 # macOS, Linux and Windows home directories (bare, `\\`-escaped too); "~/" paths and URLs are fine.
 _STOP = r"[^/\\\s`'\")\]]+"
 _HOME_PATH = re.compile(

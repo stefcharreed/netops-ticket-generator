@@ -14,7 +14,9 @@ from typing import NamedTuple
 
 import dpkt
 
-from packetgen.capture import capture_filename, parse_mac, peer_allowed_vlans, peer_native_vlan, resolve_endpoint
+from packetgen.capture import (capture_filename, parse_mac, peer_allowed_vlans, peer_native_vlan, port_down_at,
+                               resolve_endpoint)
+from packetgen.topology import short_if
 from packetgen.capture_views import flow_class, flow_vlan, keeps, sender_native, tagged
 from packetgen.timebase import parse_utc
 
@@ -307,6 +309,7 @@ def _noise_frames(ctx: _Ctx, cap: dict, lo: float, hi: float) -> list[_Frame]:
     out: list[tuple[float, bytes, int, str, int]] = []  # (ts, frame, vlan, fclass, sender native)
     topo = ctx.spec["topology"]
     peer = next((d for d in topo["devices"] if d["hostname"] == cap["peer"]), None)
+    access = peer is None  # an entity peer: the monitored port is an access port
     if level in ("medium", "high") and peer is not None:  # an entity peer (a PC, a hub) sends no BPDUs
         pmac = mac_bytes(next(i for i in peer["interfaces"] if i["name"] == cap["peer_interface"])["mac"])
         vlans = cap.get("span", {}).get("trunk_vlans", [native])
@@ -347,9 +350,17 @@ def _noise_frames(ctx: _Ctx, cap: dict, lo: float, hi: float) -> list[_Frame]:
             continue  # a VLAN the far end pruned can't carry a request and its answer across the trunk
         out.append((t, _eth(BCAST, am, _ETH_ARP, _arp(dpkt.arp.ARP_OP_REQUEST, am, a["ip"], b"\x00" * 6, b["ip"])),
                     vlan, "data", native))
+        if access and not _on_port(a, cap):
+            continue  # an access port sees the broadcast, but the unicast answer goes to a host elsewhere
         out.append((t + rng.uniform(0.0005, 0.005),
                     _eth(am, bm, _ETH_ARP, _arp(dpkt.arp.ARP_OP_REPLY, bm, b["ip"], am, a["ip"])), vlan, "data", native))
     return [_Frame(ts, (1, 0, n), buf, None, vlan, fc, nat) for n, (ts, buf, vlan, fc, nat) in enumerate(out)]
+
+
+def _on_port(h: dict, cap: dict) -> bool:
+    """Whether a host (entity) is attached to the monitored port."""
+    att = h.get("attached") or {}
+    return att.get("device") == cap["device"] and short_if(att.get("interface")) == short_if(cap["interface"])
 
 
 def _host_vlan(h: dict) -> int | None:
@@ -391,7 +402,9 @@ def build_frames(spec: dict) -> tuple[list[tuple[float, bytes]], dict[str, list[
     allf += _noise_frames(ctx, cap, lo, hi)
     allf = [f._replace(ts=round(f.ts, 6)) for f in allf]  # pcap has microsecond resolution
     allf.sort(key=lambda f: (f.ts, f.tb))
-    kept = [f for f in allf if keeps(cap, f.fclass)]  # stage 2: what this capture method can see
+    down = port_down_at(spec)  # an err-disabled source port carries nothing more
+    cut = down.timestamp() if down else float("inf")
+    kept = [f for f in allf if keeps(cap, f.fclass) and f.ts < cut]  # stage 2: what this capture method can see
     seq = random.Random(f"{ctx.meta_id}:erspan").randrange(2**32)
     out: list[tuple[float, bytes]] = []
     pk_map: dict[str, list[int]] = {}

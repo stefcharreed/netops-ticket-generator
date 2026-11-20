@@ -139,6 +139,15 @@ def peer_native_vlan(spec: dict, t: datetime) -> int | None:
     return int(found[-1]) if found else 1
 
 
+def port_down_at(spec: dict) -> datetime | None:
+    """When the monitored port went err-disabled (earliest IOS:PM-4-ERR_DISABLE for it on capture.device), or None."""
+    cap = spec["capture"]
+    times = [parse_utc(e["t"]) for e in spec.get("events", [])
+             if e["format_id"] == "IOS:PM-4-ERR_DISABLE" and e["device"] == cap["device"]
+             and short_if(e["fields"].get("interface")) == short_if(cap["interface"])]
+    return min(times, default=None)
+
+
 # --- validation (PK1-PK5) -----------------------------------------------------------------
 
 def check_capture(spec: dict) -> list[dict]:
