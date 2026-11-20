@@ -7,5 +7,5 @@ PY=.venv/bin/python; [ -x "$PY" ] || PY=python3
 tmp=$(mktemp -d "$(git rev-parse --absolute-git-dir)/sanitize.XXXXXX") || exit 1
 trap 'rm -rf "$tmp"' EXIT
 git diff --cached --name-only -z --diff-filter=ACMR | git checkout-index --prefix="$tmp/" -z --stdin
-find "$tmp" -type f -print0 | PYTHONPATH=src xargs -0 "$PY" -m packetgen.sanitize || {
+find "$tmp" \( -type f -o -type l \) -print0 | PYTHONPATH=src xargs -0 "$PY" -m packetgen.sanitize || {
   echo "pre-commit: sanitize gate failed (see findings above)"; exit 1; }

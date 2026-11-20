@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import ipaddress
 import json
+import os
 import re
 import subprocess
 import sys
@@ -27,10 +28,11 @@ _ALLOWED_NETS6 = [ipaddress.ip_network(n) for n in (
     "fe80::/10", "fc00::/7",                      # link-local, unique local (IPv6's RFC 1918)
     "ff00::/8", "::1/128", "::/128",              # multicast, loopback, unspecified
 )]
-# Hex groups joined by 2-7 colons, at least one hex digit, not touching more hex/colons/dots. Candidates that
+# Hex groups joined by 2-7 colons, at least one hex digit, not touching more hex/colons, and not glued to a
+# digit-dot (so a sentence's full stop doesn't hide an address, but "12:00:01.5" isn't split). Candidates that
 # don't parse as IPv6 (MACs, clock times like 12:00:01) are dropped by _ip6_ok, so the regex can stay loose.
-_IPV6 = re.compile(r"(?<![0-9A-Fa-f:.])(?=[0-9A-Fa-f:]*[0-9A-Fa-f])(?:[0-9A-Fa-f]{0,4}:){2,7}[0-9A-Fa-f]{0,4}"
-                   r"(?![0-9A-Fa-f:.])")
+_IPV6 = re.compile(r"(?<![0-9A-Fa-f:])(?<!\d\.)(?=[0-9A-Fa-f:]*[0-9A-Fa-f])(?:[0-9A-Fa-f]{0,4}:){2,7}[0-9A-Fa-f]{0,4}"
+                   r"(?![0-9A-Fa-f:]|\.\d)")
 # Not preceded by a digit/dot, not followed by more dotted digits (keeps "17.9.4" out).
 _IPV4 = re.compile(r"(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?!\.?\d)")
 _MAC = re.compile(r"(?<![0-9a-f:.-])(?:(?:[0-9a-f]{2}[:-]){5}[0-9a-f]{2}|"
@@ -44,14 +46,16 @@ _HOME_PATH = re.compile(
 
 
 def deny_path(cwd: Path = Path(".")) -> Path:
-    """The main checkout's .sanitize-deny, found through git's common dir so worktrees use it too.
-    Outside a git repo it falls back to `cwd/.sanitize-deny`."""
+    """Where the .sanitize-deny list is: this checkout's own top level first, then the main checkout (found
+    through git's common dir, so linked worktrees share it). If neither exists, the main checkout's path, so a
+    missing-list error names the place the list belongs. Outside a git repo: `cwd/.sanitize-deny`."""
     try:
-        common = subprocess.run(["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
-                                cwd=cwd, capture_output=True, text=True, check=True).stdout.strip()
+        out = subprocess.run(["git", "rev-parse", "--path-format=absolute", "--show-toplevel", "--git-common-dir"],
+                             cwd=cwd, capture_output=True, text=True, check=True).stdout.split("\n")
     except (OSError, subprocess.CalledProcessError):
         return cwd / ".sanitize-deny"
-    return Path(common).parent / ".sanitize-deny"
+    candidates = [Path(out[0]) / ".sanitize-deny", Path(out[1]).parent / ".sanitize-deny"]
+    return next((c for c in candidates if c.is_file()), candidates[1])
 
 
 def deny_required(cwd: Path = Path(".")) -> bool:
@@ -118,6 +122,8 @@ BLOCKED_SUFFIXES = (".xlsx", ".pdf", ".pcap", ".pcapng")
 
 
 def file_findings(path: Path, deny: Sequence[str] = ()) -> list[dict]:
+    if path.is_symlink():  # a staged symlink's content is its target path: scan that text, never follow it
+        return sanitize_findings(os.readlink(path), f"{path} (symlink target)", deny)
     if path.suffix.lower() in BLOCKED_SUFFIXES:
         return [finding("Z3", f"{path}: {path.suffix} files can't be scanned and are blocked",
                         "keep binary artifacts out of git; commit their text sources instead")]

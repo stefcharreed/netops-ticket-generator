@@ -178,3 +178,47 @@ def test_hook_scans_staged_content_not_working_tree(tmp_path):
     _git(root, "add", "notes.md")
     good = subprocess.run(["git", "commit", "-q", "-m", "good"], cwd=root, capture_output=True, text=True, env=env)
     assert good.returncode == 0, good.stdout + good.stderr
+
+
+# ---- security review of 49f14ec ----
+def test_ipv6_at_sentence_end_or_after_a_period_is_still_caught():
+    assert checks(f"dns server {PUBLIC_V6}.") == ["Z1"]
+    assert checks(f"see.{PUBLIC_V6} now") == ["Z1"]
+
+
+def test_deny_path_prefers_this_checkouts_own_list(tmp_path):
+    root = _repo(tmp_path)
+    (root / "a.txt").write_text("x")
+    _git(root, "add", "a.txt")
+    _git(root, "commit", "-q", "-m", "init")
+    wt = tmp_path / "wt"
+    _git(root, "worktree", "add", "-q", str(wt))
+    (wt / ".sanitize-deny").write_text("Acme\n")
+    assert deny_path(wt).resolve() == (wt / ".sanitize-deny").resolve()
+
+
+def test_symlink_is_scanned_as_its_target_text_not_followed(tmp_path):
+    from packetgen.sanitize import file_findings
+    secret = tmp_path / "secret.txt"
+    secret.write_text(f"peer {PUBLIC_IP}")
+    link = tmp_path / "link"
+    link.symlink_to("/" + "Users/alice/notes")
+    assert [f["check"] for f in file_findings(link)] == ["Z4"]
+    link2 = tmp_path / "link2"
+    link2.symlink_to(secret)
+    assert all(f["check"] != "Z1" for f in file_findings(link2))   # the target file is never read
+
+
+def test_hook_scans_staged_symlinks(tmp_path):
+    root = _repo(tmp_path)
+    (root / "scripts").mkdir()
+    shutil.copy(REPO / "scripts" / "pre-commit", root / "scripts" / "pre-commit")
+    (root / "src").symlink_to(REPO / "src")
+    if (REPO / ".venv").exists():
+        (root / ".venv").symlink_to(REPO / ".venv")
+    (root / ".gitignore").write_text("src\n.venv\n")
+    _git(root, "config", "core.hooksPath", "scripts")
+    (root / "notes").symlink_to("/" + "Users/alice/private")
+    _git(root, "add", "notes", ".gitignore")
+    bad = subprocess.run(["git", "commit", "-q", "-m", "bad"], cwd=root, capture_output=True, text=True)
+    assert bad.returncode != 0, bad.stdout + bad.stderr
