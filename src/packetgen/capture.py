@@ -164,7 +164,7 @@ def check_capture(spec: dict) -> list[dict]:
         out += pk4 + _check_pk3(spec, fl, kind) + _check_pk5_symptom(fl, kind)
         if pk4:
             continue  # params aren't schema-valid: span_s and timing checks would be guesses
-        out += _check_pk2_flow(cap, fl) + _check_pk5_radius(spec, fl) + _check_pk5_arp(spec, fl)
+        out += _check_pk2_flow(cap, fl) + _check_pk5_radius(spec, fl) + _check_pk5_arp(spec, fl) + _check_pk5_l2(spec, fl)
         out += _check_pk8(spec, fl) + _check_pk9_vlan(spec, fl)
     return out
 
@@ -328,9 +328,29 @@ def _check_pk5_symptom(fl: dict, kind: dict) -> list[dict]:
     return []
 
 
+def _events(spec: dict, fmt: str, device: str | None = None) -> list[dict]:
+    return [e for e in spec.get("events", []) if e["format_id"] == fmt and (device is None or e["device"] == device)]
+
+
+def _within(e: dict, t: datetime, after_s: float) -> bool:
+    return t <= parse_utc(e["t"]) <= t + timedelta(seconds=after_s)
+
+
+def _psecure_ok(spec: dict, fl: dict) -> bool:
+    """A second MAC on a port-security port: src is attached to the monitored port and is logged as the violator."""
+    cap = spec["capture"]
+    att = (spec["topology"].get("entities", {}).get(fl["src"]) or {}).get("attached") or {}
+    if att.get("device") != cap["device"] or short_if(att.get("interface")) != short_if(cap["interface"]):
+        return False
+    mac, t = parse_mac((resolve_endpoint(spec, fl["src"]) or {}).get("mac") or ""), parse_utc(fl["t"])
+    return any(parse_mac(e["fields"].get("mac", "")) == mac and _within(e, t, 5)
+               and short_if(e["fields"].get("interface")) == short_if(cap["interface"])
+               for e in _events(spec, "IOS:PORT_SECURITY-2-PSECURE_VIOLATION", cap["device"]))
+
+
 def _check_pk5_arp(spec: dict, fl: dict) -> list[dict]:
-    """An ARP symptom is an unanswered request whose VLAN the far end's trunk no longer allows."""
-    if fl["kind"] != "arp" or fl["label"] != "symptom":
+    """An ARP symptom is the port-security violator's frame, or an unanswered request on a VLAN the far end pruned."""
+    if fl["kind"] != "arp" or fl["label"] != "symptom" or _psecure_ok(spec, fl):
         return []
     if fl["params"]["outcome"] != "no_reply":
         return [finding("PK5", f"{fl['id']}: only an unanswered ARP can be a symptom", "use outcome no_reply")]
@@ -343,11 +363,62 @@ def _check_pk5_arp(spec: dict, fl: dict) -> list[dict]:
     return []
 
 
+_BPDU_LINE = re.compile(r"^\s*spanning-tree bpdu(filter|guard)\b", re.MULTILINE)
+_PK5_FIX = {
+    "stp_bpdu": "add the guard-to-filter edit on {dev} {ifn} (spanning-tree bpdufilter enable) to config_diffs",
+    "dhcp": "log ISCDHCPD:no-free-leases for the client's MAC within 30 s, or make it the port-security violator",
+    "cdp": "announce a native VLAN unlike the near end's, and log IOS:CDP-4-NATIVE_VLAN_MISMATCH on {dev} within 60 s",
+    "hsrp_hello": "log IOS:HSRP-5-STATECHANGE to this state on the sender for that group before the hello",
+}
+
+
+def _l2_symptom_ok(spec: dict, fl: dict) -> bool:
+    cap, p, t = spec["capture"], fl["params"], parse_utc(fl["t"])
+    kind = fl["kind"]
+    if kind == "stp_bpdu":  # BPDUs arriving on an edge port that no longer guards against them
+        after = stanza_decision(spec, t, cap["device"], cap["interface"], _BPDU_LINE)
+        return after is not None and re.search(r"^\s*spanning-tree bpdufilter enable", after, re.MULTILINE) is not None
+    if kind == "dhcp":
+        if p["outcome"] != "no_offer":
+            return False
+        mac = parse_mac((resolve_endpoint(spec, fl["src"]) or {}).get("mac") or "")
+        return _psecure_ok(spec, fl) or any(
+            parse_mac(e["fields"].get("mac", "")) == mac and _within(e, t, span_s(fl) + 30)
+            for e in _events(spec, "ISCDHCPD:no-free-leases"))
+    if kind == "cdp":
+        near = (cap.get("span") or {}).get("native_vlan", 1)
+        return p["native_vlan"] != near and any(
+            e["fields"].get("neighbor_vlan") == str(p["native_vlan"]) and e["fields"].get("local_vlan") == str(near)
+            and _within(e, t, 60) for e in _events(spec, "IOS:CDP-4-NATIVE_VLAN_MISMATCH", cap["device"]))
+    if kind == "hsrp_hello":  # the hello's state is the sender's latest logged state for that group
+        host, _, ifn = fl["src"].partition(":")
+        changes = sorted((parse_utc(e["t"]), e["fields"].get("new_state", "")) for e in
+                         _events(spec, "IOS:HSRP-5-STATECHANGE", host)
+                         if e["fields"].get("group") == str(p["group"])
+                         and short_if(e["fields"].get("interface")) == short_if(ifn) and parse_utc(e["t"]) <= t)
+        return bool(changes) and changes[-1][1].lower() == p["outcome"]
+    return True
+
+
+def _check_pk5_l2(spec: dict, fl: dict) -> list[dict]:
+    if fl["label"] != "symptom" or fl["kind"] not in _PK5_FIX or _l2_symptom_ok(spec, fl):
+        return []
+    cap = spec["capture"]
+    return [finding("PK5", f"{fl['id']}: the {fl['kind']} symptom at {fl['t']} isn't backed by the logs or configs",
+                    _PK5_FIX[fl["kind"]].format(dev=cap["device"], ifn=cap["interface"]))]
+
+
 def _check_pk8(spec: dict, fl: dict) -> list[dict]:
     cap = spec["capture"]
-    if fl["label"] == "symptom" and not keeps(cap, flow_class(spec, fl)):
+    if fl["label"] != "symptom":
+        return []
+    if not keeps(cap, flow_class(spec, fl)):
         return [finding("PK8", f"{fl['id']}: {method_label(cap)} on {cap['device']} can't see {fl['kind']} frames",
                         "pick a capture method that sees them")]
+    down = port_down_at(spec)
+    if down is not None and parse_utc(fl["t"]) >= down:
+        return [finding("PK8", f"{fl['id']}: the monitored port is err-disabled from {down:%H:%M:%S}; nothing after "
+                               "it is captured", "move the flow before the err-disable, or capture elsewhere")]
     return []
 
 

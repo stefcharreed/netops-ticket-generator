@@ -416,3 +416,158 @@ def test_pk8_bpdu_symptom_on_native_span():
     add_flow(s, kind="stp_bpdu", src="DIST-SW1:Gi1/0/1", dst="ACC-SW1:Gi1/0/48", params={"outcome": "bpdu"},
              label="symptom", caused_by="e1")
     assert "PK8" in errors(s)
+
+
+# --- phase 2 PK5 rules ----------------------------------------------------------------------
+
+def add_event(s: dict, eid: str, t: str, device: str, fmt: str, **fields) -> dict:
+    e = {"id": eid, "t": t, "device": device, "format_id": fmt, "fields": fields,
+         "label": "noise", "caused_by": None, "signal": None}
+    s["events"].append(e)
+    return e
+
+
+def replicate(s: dict, vlans=(1,)) -> dict:
+    s["capture"]["span"] = {"encapsulation": "replicate", "trunk_vlans": list(vlans)}
+    return s
+
+
+def symptom(s: dict, **kw) -> dict:
+    return add_flow(s, label="symptom", caused_by="e1", **kw)
+
+
+FILTER = {"id": "cd5", "device": "ACC-SW1", "t_change": "2026-10-20T14:06:00Z",
+          "before": "interface GigabitEthernet1/0/48\n spanning-tree bpduguard enable\n",
+          "after": "interface GigabitEthernet1/0/48\n spanning-tree bpdufilter enable\n", "note": None}
+
+
+def stp_spec() -> dict:
+    s = replicate(spec())
+    symptom(s, kind="stp_bpdu", src="DIST-SW1:Gi1/0/1", dst="ACC-SW1:Gi1/0/48", params={"outcome": "bpdu"})
+    return s
+
+
+def test_pk5_stp_needs_bpdufilter():
+    s = stp_spec()
+    assert "PK5" in errors(s)
+    s["config_diffs"].append(dict(FILTER))
+    assert {"PK5", "PK8"} & errors(s) == set()
+
+
+def test_pk5_stp_guard_restored_fails():
+    s = stp_spec()
+    s["config_diffs"] += [dict(FILTER), {**FILTER, "id": "cd6", "t_change": "2026-10-20T14:06:30Z",
+                                         "before": FILTER["after"], "after": FILTER["before"]}]
+    assert "PK5" in errors(s)
+
+
+def dhcp_server(s: dict) -> dict:
+    s["topology"]["devices"].append({"hostname": "DHCP01", "role": "dhcp-server", "header_style": "bsd",
+                                     "mgmt_ip": "10.20.0.67", "tz_offset_min": 0, "clock": "ntp"})
+    return s
+
+
+def test_pk5_dhcp_no_free_leases():
+    s = dhcp_server(spec())
+    symptom(s, kind="dhcp", src="pc-18", dst="dns-1", via="DIST-SW1:Vlan100", params={"outcome": "no_offer"})
+    assert "PK5" in errors(s)
+    add_event(s, "e9", "2026-10-20T14:07:01Z", "DHCP01", "ISCDHCPD:no-free-leases", pid="3044",
+              mac="00:00:5e:00:53:80", iface_or_relay="10.10.100.1", shared_network="10.10.100.0/24")
+    assert "PK5" not in errors(s)
+
+
+def test_pk5_dhcp_ack_symptom_fails():
+    s = dhcp_server(spec())
+    symptom(s, kind="dhcp", src="pc-18", dst="dns-1", via="DIST-SW1:Vlan100", params={"outcome": "ack"})
+    add_event(s, "e9", "2026-10-20T14:07:01Z", "DHCP01", "ISCDHCPD:no-free-leases", pid="3044",
+              mac="00:00:5e:00:53:80", iface_or_relay="10.10.100.1", shared_network="10.10.100.0/24")
+    assert "PK5" in errors(s)
+
+
+def cdp_spec(native: int) -> dict:
+    s = replicate(spec(), (1, 99))
+    symptom(s, kind="cdp", src="DIST-SW1:Gi1/0/1", dst="ACC-SW1:Gi1/0/48",
+            params={"outcome": "announce", "native_vlan": native, "device_id": "DIST-SW1", "port_id": "Gi1/0/1"})
+    add_event(s, "e9", "2026-10-20T14:07:01Z", "ACC-SW1", "IOS:CDP-4-NATIVE_VLAN_MISMATCH",
+              local_interface="GigabitEthernet1/0/48", local_vlan="1", neighbor_host="DIST-SW1",
+              neighbor_interface="GigabitEthernet1/0/1", neighbor_vlan=str(native))
+    return s
+
+
+def test_pk5_cdp_mismatch_event():
+    assert {"PK5", "PK8"} & errors(cdp_spec(99)) == set()
+    s = cdp_spec(99)
+    s["events"][-1]["t"] = "2026-10-20T14:08:30Z"  # more than 60 s after the announcement
+    assert "PK5" in errors(s)
+
+
+def test_pk5_cdp_same_native_fails():
+    assert "PK5" in errors(cdp_spec(1))
+
+
+def hsrp_spec(state: str, group_field: str = "10") -> dict:
+    s = spec()
+    symptom(s, kind="hsrp_hello", src="DIST-SW1:Vlan100", dst="ACC-SW1:Vlan100",
+            params={"outcome": "active", "group": 10, "vip": "10.10.100.254"})
+    add_event(s, "e9", "2026-10-20T14:06:55Z", "DIST-SW1", "IOS:HSRP-5-STATECHANGE",
+              interface="Vlan100", group=group_field, old_state="Standby", new_state=state)
+    return s
+
+
+def test_pk5_hsrp_state_matches_log():
+    assert {"PK5", "PK8"} & errors(hsrp_spec("Active")) == set()
+
+
+def test_pk5_hsrp_group_and_ifname_normalized():
+    assert "PK5" in errors(hsrp_spec("Active", group_field="11"))
+    s = hsrp_spec("Active")
+    s["events"][-1]["device"] = "ACC-SW1"  # a state change on some other router doesn't count
+    assert "PK5" in errors(s)
+
+
+def test_pk5_hsrp_wrong_state_fails():
+    s = hsrp_spec("Active")
+    add_event(s, "e10", "2026-10-20T14:06:58Z", "DIST-SW1", "IOS:HSRP-5-STATECHANGE",
+              interface="Vlan100", group="10", old_state="Active", new_state="Speak")
+    assert "PK5" in errors(s)
+
+
+def dock(s: dict) -> dict:
+    s["topology"]["entities"]["dock-48"] = {"mac": "00:00:5e:00:53:83", "ip": "10.10.100.83",
+                                            "attached": {"device": "ACC-SW1", "interface": "Gi1/0/48"}}
+    return s
+
+
+def violation(s: dict, iface: str = "GigabitEthernet1/0/48") -> None:
+    add_event(s, "e9", "2026-10-20T14:07:00.400Z", "ACC-SW1", "IOS:PORT_SECURITY-2-PSECURE_VIOLATION",
+              mac="0000.5e00.5383", interface=iface)
+
+
+def test_pk5_arp_psecure():
+    s = dock(spec())
+    symptom(s, kind="arp", src="dock-48", dst="DIST-SW1:Vlan100", params={"outcome": "reply"})
+    assert "PK5" in errors(s)
+    violation(s)
+    assert "PK5" not in errors(s)
+
+
+def test_pk5_dhcp_psecure():
+    s = dock(spec())
+    symptom(s, kind="dhcp", src="dock-48", dst="dns-1", via="DIST-SW1:Vlan100", params={"outcome": "no_offer"})
+    violation(s)
+    assert "PK5" not in errors(s)
+
+
+def test_pk5_arp_psecure_wrong_port_fails():
+    s = dock(spec())
+    symptom(s, kind="arp", src="dock-48", dst="DIST-SW1:Vlan100", params={"outcome": "reply"})
+    violation(s, iface="GigabitEthernet1/0/7")
+    assert "PK5" in errors(s)
+
+
+def test_pk8_symptom_after_err_disable():
+    s = hsrp_spec("Active")
+    assert "PK8" not in errors(s)
+    add_event(s, "e10", "2026-10-20T14:06:00Z", "ACC-SW1", "IOS:PM-4-ERR_DISABLE",
+              cause="psecure-violation", interface="Gi1/0/48", interface_2="Gi1/0/48")
+    assert "PK8" in errors(s)
