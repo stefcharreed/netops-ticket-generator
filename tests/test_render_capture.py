@@ -20,6 +20,24 @@ def spec():
     return json.loads(FIXTURE.read_text())
 
 
+@pytest.fixture
+def rep(spec):
+    """The fixture as a replicate SPAN: BPDUs reach the analyzer."""
+    spec["capture"]["span"] = {"encapsulation": "replicate", "trunk_vlans": [1]}
+    return spec
+
+
+def _erspan_spec(spec, via=True):
+    spec["topology"]["entities"]["analyzer-1"] = {"ip": "10.30.0.5", "mac": "00:00:5e:00:53:30"}
+    cap = spec["capture"]
+    cap["method"] = "erspan"
+    del cap["span"]
+    cap["erspan"] = {"origin_ip": "10.10.100.2", "analyzer": "analyzer-1", "session": 1, "erspan_id": 100}
+    if via:
+        cap["erspan"]["via"] = "DIST-SW1:Vlan100"
+    return spec
+
+
 def _udp(buf):
     eth = dpkt.ethernet.Ethernet(buf)
     return eth, eth.data, eth.data.data
@@ -71,12 +89,18 @@ def _bpdu_times(spec):
     return [ts for ts, b in frames if b[:6] == STP], frames
 
 
-def test_noise_medium_has_bpdus(spec):
+def test_native_span_drops_bpdus(spec):
     times, _ = _bpdu_times(spec)
+    assert times == []
+
+
+def test_noise_medium_has_bpdus(rep):
+    times, _ = _bpdu_times(rep)
     assert abs(len(times) - 300) <= 1  # 600 s at 2 s, less the seeded phase offset
 
 
-def test_bpdu_phase_and_jitter(spec):
+def test_bpdu_phase_and_jitter(rep):
+    spec = rep
     times, _ = _bpdu_times(spec)
     lo = parse_utc(spec["capture"]["start"]).timestamp()
     assert 0.0 <= times[0] - lo < 2.01
@@ -88,8 +112,8 @@ def test_bpdu_phase_and_jitter(spec):
     assert (_bpdu_times(spec2)[0][0] - lo) != (times[0] - lo)  # phase is seeded per packet id
 
 
-def test_bpdu_bridge_priority_includes_vlan1_ext(spec):
-    _, frames = _bpdu_times(spec)
+def test_bpdu_bridge_priority_includes_vlan1_ext(rep):
+    _, frames = _bpdu_times(rep)
     bpdu = next(b for _, b in frames if b[:6] == STP)
     assert bpdu[22:24] == bytes.fromhex("8001") and bpdu[34:36] == bytes.fromhex("8001")
 
@@ -106,9 +130,9 @@ def test_noise_arp_is_jittered(spec):
     assert any(abs(ts - round(ts)) > 0.05 for ts in reqs)  # sub-second offsets
 
 
-def test_noise_low_has_no_bpdus(spec):
-    spec["capture"]["noise"] = "low"
-    frames, _ = build_frames(spec)
+def test_noise_low_has_no_bpdus(rep):
+    rep["capture"]["noise"] = "low"
+    frames, _ = build_frames(rep)
     assert not any(b[:6] == STP for _, b in frames)
 
 
@@ -237,3 +261,66 @@ def test_dns_ok_gratuitous_timeout(spec, tmp_path):
     assert arp.spa == arp.tpa
     assert len(pk["pk5"]) == 2
     render_capture(spec, tmp_path)
+
+
+def test_replicate_tags_flow_vlan(spec):
+    spec["capture"]["span"] = {"encapsulation": "replicate", "trunk_vlans": [1, 100]}
+    next(f for f in spec["capture"]["flows"] if f["id"] == "pk3")["vlan"] = 100
+    frames, pk = build_frames(spec)
+    for n in pk["pk3"]:
+        eth = dpkt.ethernet.Ethernet(frames[n - 1][1])
+        assert eth.vlan_tags[0].id == 100
+        assert isinstance(eth.data, dpkt.ip.IP)
+    for n in pk["pk4"]:  # native VLAN 1: untagged
+        assert frames[n - 1][1][12:14] == b"\x08\x06"
+
+
+def test_replicate_unresolved_vlan_untagged(spec):
+    spec["capture"]["span"] = {"encapsulation": "replicate", "trunk_vlans": [1, 100]}
+    frames, pk = build_frames(spec)  # no endpoint declares a VLAN
+    assert all(frames[n - 1][1][12:14] != b"\x81\x00" for nums in pk.values() for n in nums)
+
+
+def _erspan_parts(buf):
+    eth = dpkt.ethernet.Ethernet(buf)
+    ip = eth.data
+    gre = bytes(ip.data)
+    return eth, ip, gre[:4], int.from_bytes(gre[4:8], "big"), gre[8:16], gre[16:]
+
+
+def test_erspan_wrap(spec):
+    native = build_frames(copy.deepcopy(spec))[0]
+    frames, pk = build_frames(_erspan_spec(spec))
+    assert len(frames) == len(native)
+    seqs = []
+    for (ts, buf), (nts, nbuf) in zip(frames, native):
+        eth, ip, gre, seq, hdr, inner = _erspan_parts(buf)
+        assert ts == nts
+        assert eth.dst == bytes.fromhex("00005e005330") and eth.src == bytes.fromhex("00005e005302")
+        assert ip.p == 47 and str(ipaddress.IPv4Address(ip.dst)) == "10.30.0.5" and ip.ttl == 254
+        assert str(ipaddress.IPv4Address(ip.src)) == "10.10.100.2"
+        assert gre == bytes.fromhex("100088be")
+        assert hdr[0] >> 4 == 1 and int.from_bytes(hdr[2:4], "big") & 0x3FF == 100
+        assert inner == nbuf
+        seqs.append(seq)
+    assert all(b == (a + 1) % 2**32 for a, b in zip(seqs, seqs[1:]))
+    assert pk == build_frames(copy.deepcopy(spec))[1]
+
+
+def test_erspan_no_via(spec):
+    frames, _ = build_frames(_erspan_spec(spec, via=False))
+    eth, ip, *_ = _erspan_parts(frames[0][1])
+    assert eth.src == bytes.fromhex("00005e005301") and ip.ttl == 255
+
+
+def test_erspan_deterministic(spec):
+    s = _erspan_spec(spec)
+    assert build_frames(s) == build_frames(copy.deepcopy(s))
+
+
+def test_pk_map_counts_kept_frames_only(spec):
+    frames, pk = build_frames(spec)
+    assert max(n for nums in pk.values() for n in nums) <= len(frames)
+    for n in pk["pk1"]:
+        _, ip, udp = _udp(frames[n - 1][1])
+        assert udp.dport == 1812

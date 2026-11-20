@@ -9,10 +9,12 @@ import ipaddress
 import random
 import struct
 from pathlib import Path
+from typing import NamedTuple
 
 import dpkt
 
 from packetgen.capture import capture_filename, parse_mac, resolve_endpoint
+from packetgen.capture_views import flow_class, flow_vlan, keeps, tagged
 from packetgen.timebase import parse_utc
 
 BCAST = b"\xff" * 6
@@ -21,8 +23,16 @@ _ETH_IP, _ETH_ARP = 0x0800, 0x0806
 _MIN_FRAME = 60
 _NOISE_ARP_S = {"low": 30.0, "medium": 10.0, "high": 3.0}
 
-# (ts, tiebreak, frame_bytes, pk_id or None); tiebreak = (group, flow index, sequence)
-_Frame = tuple[float, tuple[int, int, int], bytes, "str | None"]
+
+
+class _Frame(NamedTuple):
+    """A stage-1 frame: untagged bytes plus what the per-method view needs. tb = (group, flow index, sequence)."""
+    ts: float
+    tb: tuple[int, int, int]
+    buf: bytes
+    pk: str | None
+    vlan: int
+    fclass: str
 
 
 def mac_bytes(text: str) -> bytes:
@@ -171,7 +181,8 @@ def _flow_frames(ctx: _Ctx, fl: dict, idx: int) -> list[_Frame]:
                 resp = bytes(dpkt.dns.DNS(id=txid, op=dpkt.dns.DNS_QR | dpkt.dns.DNS_RD | dpkt.dns.DNS_RA,
                                           rcode=rcode, qd=qd, an=an))
                 out = [(t0, fwd(sport, 53, q)), (t0 + rng.uniform(0.002, 0.040), back(53, sport, resp))]
-    return [(ts, (0, idx, n), buf, fl["id"]) for n, (ts, buf) in enumerate(out)]
+    vlan, fclass = flow_vlan(ctx.spec, fl), flow_class(ctx.spec, fl)
+    return [_Frame(ts, (0, idx, n), buf, fl["id"], vlan, fclass) for n, (ts, buf) in enumerate(out)]
 
 
 def _bridge_id(mac: bytes) -> bytes:
@@ -190,14 +201,15 @@ def _bpdu(mac: bytes) -> bytes:
 def _noise_frames(ctx: _Ctx, cap: dict, lo: float, hi: float) -> list[_Frame]:
     level = cap.get("noise", "medium")
     rng = random.Random(f"{ctx.meta_id}:noise")
-    out: list[tuple[float, bytes]] = []
+    native = cap.get("span", {}).get("native_vlan", 1)
+    out: list[tuple[float, bytes, int, str]] = []  # (ts, frame, vlan, fclass)
     topo = ctx.spec["topology"]
     if level in ("medium", "high"):
         peer = next(d for d in topo["devices"] if d["hostname"] == cap["peer"])
         pmac = mac_bytes(next(i for i in peer["interfaces"] if i["name"] == cap["peer_interface"])["mac"])
         phase, k = rng.uniform(0.0, 2.0), 0
         while lo + phase + 2.0 * k < hi - 0.01:  # margin keeps the +-5 ms jitter inside the window
-            out.append((max(lo, lo + phase + 2.0 * k + rng.uniform(-0.005, 0.005)), _bpdu(pmac)))
+            out.append((max(lo, lo + phase + 2.0 * k + rng.uniform(-0.005, 0.005)), _bpdu(pmac), native, "l2_control"))
             k += 1
     # ARP pairs among declared hosts in a /24 that the capture device or its peer sits in.
     # Ceiling: the pair choice ignores which side of the SPAN port each host sits on.
@@ -211,14 +223,44 @@ def _noise_frames(ctx: _Ctx, cap: dict, lo: float, hi: float) -> list[_Frame]:
     while len(hosts) >= 2 and lo + phase + step * (k - 0.4) < hi - 0.01:
         a, b = rng.sample(hosts, 2)
         am, bm = mac_bytes(a["mac"]), mac_bytes(b["mac"])
+        vlan = _host_vlan(a) or native
         t = lo + phase + step * k + rng.uniform(-0.4, 0.4) * step
         k += 1
         if t >= hi - 0.01:  # jitter pushed it past the window end: skip this tick
             continue
-        out.append((t, _eth(BCAST, am, _ETH_ARP, _arp(dpkt.arp.ARP_OP_REQUEST, am, a["ip"], b"\x00" * 6, b["ip"]))))
+        out.append((t, _eth(BCAST, am, _ETH_ARP, _arp(dpkt.arp.ARP_OP_REQUEST, am, a["ip"], b"\x00" * 6, b["ip"])),
+                    vlan, "data"))
         out.append((t + rng.uniform(0.0005, 0.005),
-                    _eth(am, bm, _ETH_ARP, _arp(dpkt.arp.ARP_OP_REPLY, bm, b["ip"], am, a["ip"]))))
-    return [(ts, (1, 0, n), buf, None) for n, (ts, buf) in enumerate(out)]
+                    _eth(am, bm, _ETH_ARP, _arp(dpkt.arp.ARP_OP_REPLY, bm, b["ip"], am, a["ip"])), vlan, "data"))
+    return [_Frame(ts, (1, 0, n), buf, None, vlan, fc) for n, (ts, buf, vlan, fc) in enumerate(out)]
+
+
+def _host_vlan(h: dict) -> int | None:
+    """An entity's attached VLAN or an interface's VLAN."""
+    return (h.get("attached") or {}).get("vlan") or h.get("vlan")
+
+
+def _dot1q(buf: bytes, vlan: int) -> bytes:
+    """Insert an 802.1Q tag (TPID 0x8100, PCP 0) after the MAC addresses."""
+    return buf[:12] + struct.pack(">HH", 0x8100, vlan & 0xFFF) + buf[12:]
+
+
+def _erspan(ctx: _Ctx, cap: dict, buf: bytes, vlan: int, seq: int) -> bytes:
+    """ERSPAN type II: outer Ethernet / IPv4 proto 47 / GRE (S bit, 0x88BE) / 8-byte ERSPAN header / inner frame."""
+    e = cap["erspan"]
+    ana = ctx.ep(e["analyzer"])
+    if "via" in e:
+        src_mac = _need_mac(ctx.ep(e["via"]), e["via"])
+    else:
+        dev = next(d for d in ctx.spec["topology"]["devices"] if d["hostname"] == cap["device"])
+        src_mac = mac_bytes(next(i for i in dev["interfaces"] if i.get("ip") == e["origin_ip"])["mac"])
+    # version 1 | VLAN; COS 0, En 00 (untagged inner frame, assumed), T 0 | session id; reserved + index 0
+    hdr = struct.pack(">HHI", (1 << 12) | (vlan & 0xFFF), e["erspan_id"] & 0x3FF, 0)
+    gre = struct.pack(">HHI", 0x1000, 0x88BE, seq) + hdr + buf
+    ttl = 254 if "via" in e else 255  # ceiling: one routed hop when via is set
+    ip = dpkt.ip.IP(src=_ip4(e["origin_ip"]), dst=_ip4(ana["ip"]), p=47, ttl=ttl, id=ctx.ipid(cap["device"]),
+                    len=20 + len(gre), data=gre)
+    return _eth(_need_mac(ana, e["analyzer"]), src_mac, _ETH_IP, bytes(ip))
 
 
 def build_frames(spec: dict) -> tuple[list[tuple[float, bytes]], dict[str, list[int]]]:
@@ -230,13 +272,21 @@ def build_frames(spec: dict) -> tuple[list[tuple[float, bytes]], dict[str, list[
     for idx, fl in enumerate(cap["flows"]):
         allf += _flow_frames(ctx, fl, idx)
     allf += _noise_frames(ctx, cap, lo, hi)
-    allf = [(round(ts, 6), tb, buf, pk) for ts, tb, buf, pk in allf]  # pcap has microsecond resolution
-    allf.sort(key=lambda f: (f[0], f[1]))
+    allf = [f._replace(ts=round(f.ts, 6)) for f in allf]  # pcap has microsecond resolution
+    allf.sort(key=lambda f: (f.ts, f.tb))
+    kept = [f for f in allf if keeps(cap, f.fclass)]  # stage 2: what this capture method can see
+    seq = random.Random(f"{ctx.meta_id}:erspan").randrange(2**32)
+    out: list[tuple[float, bytes]] = []
     pk_map: dict[str, list[int]] = {}
-    for n, (_, _, _, pk) in enumerate(allf, start=1):
-        if pk is not None:
-            pk_map.setdefault(pk, []).append(n)
-    return [(ts, buf) for ts, _, buf, _ in allf], pk_map
+    for n, f in enumerate(kept, start=1):
+        if cap["method"] == "erspan":
+            buf = _erspan(ctx, cap, f.buf, f.vlan, (seq + n - 1) % 2**32)
+        else:
+            buf = _dot1q(f.buf, f.vlan) if tagged(cap, f.vlan) else f.buf
+        out.append((f.ts, buf))
+        if f.pk is not None:
+            pk_map.setdefault(f.pk, []).append(n)
+    return out, pk_map
 
 
 def render_capture(spec: dict, out: Path) -> dict[str, list[int]]:
