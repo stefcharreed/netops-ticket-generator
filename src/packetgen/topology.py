@@ -60,6 +60,18 @@ def link_ends(spec: dict) -> list[tuple[str, str | None, str, str | None]]:
     return out
 
 
+_SHORT = (("TenGigabitEthernet", "Te"), ("TwentyFiveGigE", "Twe"), ("FortyGigabitEthernet", "Fo"),
+          ("HundredGigE", "Hu"), ("GigabitEthernet", "Gi"), ("FastEthernet", "Fa"), ("Port-channel", "Po"),
+          ("Ethernet", "Eth"))
+
+
+def short_if(name: str | None) -> str:
+    """GigabitEthernet1/0/49 -> Gi1/0/49 (the way diagrams label ports)."""
+    if not name:
+        return ""
+    return next((short + name[len(long):] for long, short in _SHORT if name.startswith(long)), name)
+
+
 def slug(text: str) -> str:
     return re.sub(r"[^A-Za-z0-9-]+", "-", text).strip("-")
 
@@ -93,7 +105,7 @@ def doc_rows(spec: dict) -> list[dict]:
             continue
         ip, overridden = _pick(e["ip"], e.get("documented", {}), "ip")
         att = e.get("attached", {})
-        port = ":".join(p for p in (att.get("device"), att.get("interface")) if p)
+        port = " ".join(p for p in (att.get("device"), short_if(att.get("interface"))) if p)
         rows.append({"id": f"doc:{slug(name)}", "device": name, "interface": port, "ip": ip,
                      "vlan": att.get("vlan"), "documented": overridden})
     return rows
