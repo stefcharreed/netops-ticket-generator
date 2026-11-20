@@ -119,3 +119,44 @@ def test_cli_exit_codes(tmp_path):
     fail = subprocess.run(env_py + ["validate", str(bad), "--registry", str(ROOT / "registry")],
                           capture_output=True, text=True, cwd=ROOT, env={"PYTHONPATH": str(ROOT / "src")})
     assert fail.returncode == 1 and "S0" in fail.stdout
+
+
+# ---- network docs (NETWORK.md + topology.png) ----
+def test_build_writes_network_docs(tmp_path):
+    out, spec_path = setup_out(tmp_path)
+    result = build_packet(spec_path, out, ROOT / "registry", DAY)
+    assert result["ok"], result["findings"]
+    packet = out / "2026-10-22-pkt-0a1b2c"
+    assert (packet / "NETWORK.md").exists() and (packet / "topology.png").exists()
+    brief = (packet / "BRIEF.md").read_text()
+    assert "- NETWORK.md" in brief and "- topology.png" in brief
+    manifest = json.loads((out / "Keys" / "pkt-0a1b2c.manifest.json").read_text())
+    assert "doc:ACC-SW1-mgmt" in manifest["NETWORK.md"]
+
+
+def test_rubric_can_cite_a_doc_row(tmp_path):
+    out, spec_path = setup_out(tmp_path)
+    data = json.loads(spec_path.read_text())
+    data["answer"]["rubric"][0]["evidence_refs"].append("doc:ACC-SW1-mgmt")
+    spec_path.write_text(json.dumps(data))
+    result = build_packet(spec_path, out, ROOT / "registry", DAY)
+    assert result["ok"], result["findings"]
+
+
+def test_documented_public_address_fails_the_build(tmp_path):
+    out, spec_path = setup_out(tmp_path)
+    data = json.loads(spec_path.read_text())
+    public = ".".join(["8"] * 4)          # built at runtime: the gate scans this file too
+    data["topology"]["entities"]["dhcp-relay"]["documented"] = {"ip": public}
+    data["answer"]["doc_mismatch"] = {"ref": "doc:dhcp-relay", "kind": "red_herring", "note": "old docs"}
+    spec_path.write_text(json.dumps(data))
+    result = build_packet(spec_path, out, ROOT / "registry", DAY)
+    assert not result["ok"]
+    assert any(f["check"] == "Z1" and "NETWORK.md" in f["message"] for f in result["findings"])
+
+
+def test_cli_icons_reports_fallback(tmp_path):
+    r = subprocess.run([sys.executable, "-m", "packetgen", "icons"], capture_output=True, text=True, cwd=ROOT,
+                       env={"PYTHONPATH": str(ROOT / "src"), "PACKETGEN_ICONS": str(tmp_path)})
+    assert r.returncode == 0, r.stderr
+    assert "router" in r.stdout and "built-in" in r.stdout

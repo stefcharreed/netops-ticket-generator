@@ -18,10 +18,12 @@ from openpyxl.cell.cell import Cell
 from packetgen import capture_kinds, tshark
 from packetgen.capture import capture_filename, capture_text
 from packetgen.findings import finding, has_errors
+from packetgen.icons import icons_dir
 from packetgen.registry import load_registry
 from packetgen.render.brief import render_brief
 from packetgen.render.configs import render_configs
 from packetgen.render.logs import render_logs
+from packetgen.render.network import render_network
 from packetgen.render.telemetry import render_telemetry
 from packetgen.render.ticket import render_ticket
 from packetgen.sanitize import sanitize_findings
@@ -50,7 +52,7 @@ def _postchecks(spec: dict, tmp: Path, manifest: dict) -> list[dict]:
             out.append(finding("X1", f"logs.xlsx row {r}: received_utc is not a date cell",
                                "write datetime objects, not floats or strings"))
         out += sanitize_findings(str(ws.cell(row=r, column=4).value), f"logs.xlsx row {r}")
-    for name in ("config_diffs.txt", "TICKET.md", "BRIEF.md"):
+    for name in ("config_diffs.txt", "TICKET.md", "BRIEF.md", "NETWORK.md"):  # NETWORK.md holds every diagram label
         if (tmp / name).exists():
             out += sanitize_findings((tmp / name).read_text(), name)
     return out
@@ -119,6 +121,7 @@ def build_packet(spec_path: Path, out_root: Path, registry_dir: Path, today: dat
                     "telemetry": render_telemetry(spec, tmp),
                     "config_diffs.txt": render_configs(spec, tmp),
                     "TICKET.md": render_ticket(spec, tmp)}
+        manifest |= render_network(spec, tmp, icons_dir())   # NETWORK.md rows are citable (K3); png has no refs
         tshark_ran = False
         if spec.get("capture"):
             cap_findings, tshark_ran = _capture_checks(spec, tmp, manifest, use_tshark)

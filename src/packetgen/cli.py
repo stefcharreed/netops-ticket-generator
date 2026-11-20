@@ -32,7 +32,16 @@ def main(argv: list[str] | None = None) -> int:
     t.add_argument("--show-capture", metavar="ID", help="print a pattern's capture hint as JSON")
     t.add_argument("--file", type=Path, default=DEFAULT_PATTERNS)
     t.add_argument("--registry", type=Path, default=DEFAULT_REGISTRY)
+    sub.add_parser("icons", help="show which device icons come from a local Cisco icon folder and which are built in")
     args = p.parse_args(argv)
+
+    if args.cmd == "icons":
+        from packetgen.icons import icon_report, icons_dir
+        folder = icons_dir()
+        print(f"icon folder: {folder}" + ("" if folder.is_dir() else " (missing: every icon is built in)"))
+        for kind, source in icon_report(folder).items():
+            print(f"  {kind:9} {source}")
+        return 0
 
     if args.cmd == "patterns":
         from packetgen.patterns import CERTS, TOPICS, capture_hint, check_patterns, load_patterns, select_patterns
