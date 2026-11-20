@@ -64,7 +64,8 @@ before grading.
 git config core.hooksPath scripts   # pre-commit sanitize gate
 ```
 The gate rejects real-looking IPs, MACs, home paths, your own deny terms, and binary files (xlsx/pdf/pcap). To also block your own terms, put
-one per line in a gitignored `.sanitize-deny` file at the repo root.
+one per line in a gitignored `.sanitize-deny` file at the repo root. Worktrees use the main checkout's list.
+Run `git config packetgen.requireDeny true` to make a missing list stop the commit instead of skipping Z5.
 
 The first `.venv/bin/pyright` run downloads Node and needs network access.
 

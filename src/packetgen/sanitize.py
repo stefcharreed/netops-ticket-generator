@@ -1,6 +1,6 @@
 """Sanitize gate: only documentation/private IPs and documentation MACs may appear.
 
-Checks: Z1 non-documentation IP, Z2 non-documentation MAC, Z3 blocked binary suffix,
+Checks: Z1 non-documentation IP (IPv4 and IPv6), Z2 non-documentation MAC, Z3 blocked binary suffix,
 Z4 personal home path, Z5 local deny term (from the gitignored .sanitize-deny file).
 
 Used on rendered packets (post-render check) and by scripts/pre-commit.
@@ -10,6 +10,7 @@ from __future__ import annotations
 import ipaddress
 import json
 import re
+import subprocess
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -21,6 +22,15 @@ _ALLOWED_NETS = [ipaddress.ip_network(n) for n in (
     "192.0.2.0/24", "198.51.100.0/24", "203.0.113.0/24",       # RFC 5737
     "127.0.0.0/8", "224.0.0.0/4", "0.0.0.0/8", "255.0.0.0/8",  # loopback, multicast, masks
 )]
+_ALLOWED_NETS6 = [ipaddress.ip_network(n) for n in (
+    "2001:db8::/32", "3fff::/20",                 # documentation (RFC 3849, RFC 9637)
+    "fe80::/10", "fc00::/7",                      # link-local, unique local (IPv6's RFC 1918)
+    "ff00::/8", "::1/128", "::/128",              # multicast, loopback, unspecified
+)]
+# Hex groups joined by 2-7 colons, at least one hex digit, not touching more hex/colons/dots. Candidates that
+# don't parse as IPv6 (MACs, clock times like 12:00:01) are dropped by _ip6_ok, so the regex can stay loose.
+_IPV6 = re.compile(r"(?<![0-9A-Fa-f:.])(?=[0-9A-Fa-f:]*[0-9A-Fa-f])(?:[0-9A-Fa-f]{0,4}:){2,7}[0-9A-Fa-f]{0,4}"
+                   r"(?![0-9A-Fa-f:.])")
 # Not preceded by a digit/dot, not followed by more dotted digits (keeps "17.9.4" out).
 _IPV4 = re.compile(r"(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?!\.?\d)")
 _MAC = re.compile(r"(?<![0-9a-f:.-])(?:(?:[0-9a-f]{2}[:-]){5}[0-9a-f]{2}|"
@@ -31,6 +41,27 @@ _ALLOWED_MAC_PREFIXES = ("00005e0053", "0180c20000", "01005e", "ffffffffffff", "
 _STOP = r"[^/\\\s`'\")\]]+"
 _HOME_PATH = re.compile(
     r"(?<![\w.~-])(?:/(?:Users|home)/" + _STOP + r"|[A-Za-z]:\\{1,2}Users\\{1,2}" + _STOP + r")")
+
+
+def deny_path(cwd: Path = Path(".")) -> Path:
+    """The main checkout's .sanitize-deny, found through git's common dir so worktrees use it too.
+    Outside a git repo it falls back to `cwd/.sanitize-deny`."""
+    try:
+        common = subprocess.run(["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
+                                cwd=cwd, capture_output=True, text=True, check=True).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return cwd / ".sanitize-deny"
+    return Path(common).parent / ".sanitize-deny"
+
+
+def deny_required(cwd: Path = Path(".")) -> bool:
+    """True when this clone says a deny list must exist (`git config packetgen.requireDeny true`)."""
+    try:
+        out = subprocess.run(["git", "config", "--type=bool", "--get", "packetgen.requireDeny"],
+                             cwd=cwd, capture_output=True, text=True).stdout.strip()
+    except OSError:
+        return False
+    return out == "true"
 
 
 def load_denylist(path: Path) -> list[str]:
@@ -48,12 +79,26 @@ def _ip_ok(text: str) -> bool:
     return any(addr in net for net in _ALLOWED_NETS)
 
 
+def _ip6_ok(text: str) -> bool:
+    try:
+        addr = ipaddress.IPv6Address(text)
+    except ValueError:
+        return True  # a MAC, a clock time or another colon string: not an address
+    if addr.ipv4_mapped:
+        return _ip_ok(str(addr.ipv4_mapped))
+    return any(addr in net for net in _ALLOWED_NETS6)
+
+
 def sanitize_findings(text: str, where: str, deny: Sequence[str] = ()) -> list[dict]:
     out = []
     for m in _IPV4.finditer(text):
         if not _ip_ok(m.group()):
             out.append(finding("Z1", f"{where}: non-documentation IP {m.group()}",
                                "use RFC 5737 (192.0.2.0/24 ...) or RFC 1918 space"))
+    for m in _IPV6.finditer(text):
+        if not _ip6_ok(m.group()):
+            out.append(finding("Z1", f"{where}: non-documentation IPv6 {m.group()}",
+                               "use 2001:db8::/32 (RFC 3849), link-local or ULA space"))
     for m in _MAC.finditer(text):
         hexes = re.sub(r"[^0-9a-f]", "", m.group().lower())
         if not hexes.startswith(_ALLOWED_MAC_PREFIXES):
@@ -80,7 +125,12 @@ def file_findings(path: Path, deny: Sequence[str] = ()) -> list[dict]:
 
 
 def main(argv: list[str]) -> int:
-    deny = load_denylist(Path(".sanitize-deny"))
+    path = deny_path()
+    if not path.is_file() and deny_required():
+        print(f"sanitize: {path.name} is missing but packetgen.requireDeny is set; refusing to scan without it",
+              file=sys.stderr)
+        return 1
+    deny = load_denylist(path)
     found = []
     for name in argv:
         found += file_findings(Path(name), deny)

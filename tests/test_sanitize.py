@@ -96,3 +96,85 @@ def test_main_uses_local_denylist(tmp_path, monkeypatch):
     assert main(["a.md"]) == 1
     (tmp_path / ".sanitize-deny").write_text("# none\n")
     assert main(["a.md"]) == 0
+
+
+# ---- leak gate fixes (review 2026-11-09, findings 1-3) ----
+import os
+import shutil
+import subprocess
+from pathlib import Path
+
+from packetgen.sanitize import deny_path
+
+REPO = Path(__file__).resolve().parents[1]
+# Built at runtime, like PUBLIC_IP: a global-unicast IPv6 address outside every allowed range.
+PUBLIC_V6 = ":".join(["2606", "4700", "4700"]) + "::" + "1111"
+
+
+def test_flags_public_ipv6():
+    assert checks(f"dns server {PUBLIC_V6} unreachable") == ["Z1"]
+
+
+def test_allows_doc_link_local_ula_and_multicast_ipv6():
+    text = ("2001:db8:acad:1::1/64 3fff:0:1::5 fe80::a00:27ff:fe5d:6d6%11 fe80::1 "
+            "fd00:10::1 ff02::1 ff02::1:2 ::1 ::")
+    assert checks(text) == []
+
+
+def test_ipv6_regex_ignores_macs_times_and_versions():
+    text = "00:00:5e:00:53:0a at 12:00:01.123 on 17.9.4, uptime 1:02:03"
+    assert checks(text) == []
+
+
+def _git(cwd, *args):
+    return subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True).stdout.strip()
+
+
+def _repo(tmp_path):
+    root = tmp_path / "repo"
+    root.mkdir()
+    _git(root, "init", "-q", "-b", "main")
+    _git(root, "config", "user.email", "t@example.com")
+    _git(root, "config", "user.name", "t")
+    return root
+
+
+def test_deny_path_resolves_to_main_checkout_from_a_worktree(tmp_path):
+    root = _repo(tmp_path)
+    (root / "a.txt").write_text("x")
+    _git(root, "add", "a.txt")
+    _git(root, "commit", "-q", "-m", "init")
+    wt = tmp_path / "wt"
+    _git(root, "worktree", "add", "-q", str(wt))
+    assert deny_path(wt).resolve() == (root / ".sanitize-deny").resolve()
+    assert deny_path(root).resolve() == (root / ".sanitize-deny").resolve()
+
+
+def test_missing_denylist_fails_when_required(tmp_path, monkeypatch):
+    root = _repo(tmp_path)
+    (root / "a.md").write_text("plain text")
+    monkeypatch.chdir(root)
+    assert main(["a.md"]) == 0                       # strangers' clones: no list, no failure
+    _git(root, "config", "packetgen.requireDeny", "true")
+    assert main(["a.md"]) == 1                       # a clone that sets requireDeny: missing list = loud stop
+
+
+def test_hook_scans_staged_content_not_working_tree(tmp_path):
+    root = _repo(tmp_path)
+    (root / "scripts").mkdir()
+    shutil.copy(REPO / "scripts" / "pre-commit", root / "scripts" / "pre-commit")
+    (root / "src").symlink_to(REPO / "src")
+    if (REPO / ".venv").exists():
+        (root / ".venv").symlink_to(REPO / ".venv")
+    (root / ".gitignore").write_text("src\n.venv\n")
+    _git(root, "config", "core.hooksPath", "scripts")
+    env = {**os.environ, "GIT_AUTHOR_DATE": "2026-01-01T00:00:00", "GIT_COMMITTER_DATE": "2026-01-01T00:00:00"}
+    f = root / "notes.md"
+    f.write_text(f"peer {PUBLIC_IP}\n")
+    _git(root, "add", "notes.md", ".gitignore")
+    f.write_text("peer 192.0.2.1\n")                 # clean working copy, dirty staged blob
+    bad = subprocess.run(["git", "commit", "-q", "-m", "bad"], cwd=root, capture_output=True, text=True, env=env)
+    assert bad.returncode != 0, bad.stdout + bad.stderr
+    _git(root, "add", "notes.md")
+    good = subprocess.run(["git", "commit", "-q", "-m", "good"], cwd=root, capture_output=True, text=True, env=env)
+    assert good.returncode == 0, good.stdout + good.stderr

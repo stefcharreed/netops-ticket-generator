@@ -19,7 +19,7 @@ Short and honest; revisit before the first public push and whenever a new input 
 |---|---|
 | Registry/scenario text → model context | Treated as data, never instructions (stated in every SKILL.md). |
 | Model-written spec → files on disk | `validate()` must return zero errors; rendering happens in a temp dir and moves into the output directory only after post-render checks pass. |
-| Repo → public GitHub | `scripts/pre-commit` sanitize gate (checks Z1-Z5: RFC 5737/1918 IPs, RFC 7042 MACs only, no home paths, local deny terms); CI `permissions: contents: read`, pinned actions. |
+| Repo → public GitHub | `scripts/pre-commit` sanitize gate on the **staged** content (checks Z1-Z5: RFC 5737/1918 IPv4 and documentation/link-local/ULA IPv6 only, RFC 7042 MACs only, no home paths, local deny terms found from the main checkout even inside worktrees; `packetgen.requireDeny` makes a missing list a hard stop); CI `permissions: contents: read`, pinned actions. |
 | Build → tshark | tshark is an external GPL program run with a fixed argv on files we generated. Spec text never reaches the filter or argv: display filters come from catalog constants in code. |
 | Build → existing packets | Refuses to overwrite an existing packet folder unless `--force`. |
 
@@ -28,6 +28,10 @@ Short and honest; revisit before the first public push and whenever a new input 
   source code or parser fixtures, not captured from gear. Mitigation: `verified` flag per format;
   README states it; gear captures replace entries over time.
 - **2026-11-02:** CI installs the newest dependency versions allowed by `pyproject.toml` (no lockfile), so a new upstream release can change CI results without a repo change.
+- **2026-11-20:** The gate allows private address space through: RFC 1918 IPv4 and ULA IPv6 (fc00::/7), as
+  well as link-local. Real scenarios use private space, so blocking it would force unrealistic addressing. Cost:
+  a real internal address from someone's network would pass the gate. Mitigation: scenarios are written
+  synthetic, and the Z5 deny list covers known-sensitive terms.
 - **2026-11-04:** Captures are synthetic and not gear-validated: frames come from a renderer, not from a
   real SPAN port. Mitigation: tshark read-back (dissectors must agree with the renderer, and its dump goes
   through the sanitize gate) and a README statement.

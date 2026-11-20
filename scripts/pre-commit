@@ -1,7 +1,11 @@
 #!/bin/sh
-# Sanitize gate: block commits with non-documentation IPs/MACs (Z1/Z2), xlsx/pdf/pcap (Z3), home paths (Z4)
-# and local deny terms (Z5).
-# Wired up via `git config core.hooksPath scripts`.
+# Sanitize gate: block commits with non-documentation IPs/MACs (Z1/Z2, IPv4 and IPv6), xlsx/pdf/pcap (Z3),
+# home paths (Z4) and local deny terms (Z5).
+# Scans what is STAGED (copied out of the index), not the working tree: a file cleaned after `git add`
+# can't sneak its staged contents past the gate. Wired up via `git config core.hooksPath scripts`.
 PY=.venv/bin/python; [ -x "$PY" ] || PY=python3
-git diff --cached --name-only -z --diff-filter=ACMR | PYTHONPATH=src xargs -0 "$PY" -m packetgen.sanitize || {
+tmp=$(mktemp -d "$(git rev-parse --absolute-git-dir)/sanitize.XXXXXX") || exit 1
+trap 'rm -rf "$tmp"' EXIT
+git diff --cached --name-only -z --diff-filter=ACMR | git checkout-index --prefix="$tmp/" -z --stdin
+find "$tmp" -type f -print0 | PYTHONPATH=src xargs -0 "$PY" -m packetgen.sanitize || {
   echo "pre-commit: sanitize gate failed (see findings above)"; exit 1; }
