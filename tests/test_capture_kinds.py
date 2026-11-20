@@ -49,14 +49,14 @@ def test_every_outcome_has_a_filter():
 
 
 def test_resolve_entity():
-    assert capture.resolve_endpoint(SPEC, "ise-a") == {"mac": "00:00:5e:00:53:20", "ip": "10.20.0.10"}
-    assert capture.resolve_endpoint(SPEC, "old-nas") == {"mac": None, "ip": "10.10.100.99"}
+    assert capture.resolve_endpoint(SPEC, "ise-a") == {"mac": "00:00:5e:00:53:20", "ip": "10.20.0.10", "vlan": None}
+    assert capture.resolve_endpoint(SPEC, "old-nas") == {"mac": None, "ip": "10.10.100.99", "vlan": None}
 
 
 def test_resolve_host_if():
     r = capture.resolve_endpoint(SPEC, "ACC-SW1:Vlan100")
-    assert r == {"mac": "00:00:5e:00:53:01", "ip": "10.10.100.2"}
-    assert capture.resolve_endpoint(SPEC, "ACC-SW1:Gi1/0/48") == {"mac": "00:00:5e:00:53:11", "ip": None}
+    assert r == {"mac": "00:00:5e:00:53:01", "ip": "10.10.100.2", "vlan": None}
+    assert capture.resolve_endpoint(SPEC, "ACC-SW1:Gi1/0/48") == {"mac": "00:00:5e:00:53:11", "ip": None, "vlan": None}
 
 
 def test_resolve_ambiguous_device_none():
@@ -74,7 +74,7 @@ def test_resolve_single_interface_device():
 def test_resolve_entity_wins_over_device():
     s = copy.deepcopy(SPEC)
     s["topology"]["entities"]["ACC-SW1"] = {"ip": "192.0.2.1"}
-    assert capture.resolve_endpoint(s, "ACC-SW1") == {"mac": None, "ip": "192.0.2.1"}
+    assert capture.resolve_endpoint(s, "ACC-SW1") == {"mac": None, "ip": "192.0.2.1", "vlan": None}
 
 
 def test_resolve_unknown_none():
@@ -144,3 +144,11 @@ def test_parse_mac(text, want):
 ])
 def test_nas_port_schema(nas_port, ok):
     assert (not _errs("radius_request", {**_RAD, "nas_port": nas_port})) is ok
+
+
+def test_resolve_vlan_from_attached_and_interface():
+    s = copy.deepcopy(SPEC)
+    s["topology"]["entities"]["pc-18"]["attached"] = {"device": "ACC-SW1", "interface": "Gi1/0/18", "vlan": 100}
+    s["topology"]["devices"][0]["interfaces"][0]["vlan"] = 100
+    assert capture.resolve_endpoint(s, "pc-18")["vlan"] == 100
+    assert capture.resolve_endpoint(s, "ACC-SW1:Vlan100")["vlan"] == 100

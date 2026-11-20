@@ -37,7 +37,7 @@ def _is_ipv4(text: str) -> bool:
 
 
 def resolve_endpoint(spec: dict, name: str) -> dict | None:
-    """Resolve an endpoint name to {"mac", "ip"} (either may be None), or None.
+    """Resolve an endpoint name to {"mac", "ip", "vlan"} (any may be None), or None.
 
     Order: topology entity `name`; `HOST:IFNAME` device interface; `HOST` when the
     device has exactly one interface.
@@ -45,7 +45,7 @@ def resolve_endpoint(spec: dict, name: str) -> dict | None:
     topo = spec.get("topology", {})
     ent = topo.get("entities", {}).get(name)
     if ent is not None:
-        return {"mac": ent.get("mac"), "ip": ent.get("ip")}
+        return {"mac": ent.get("mac"), "ip": ent.get("ip"), "vlan": (ent.get("attached") or {}).get("vlan")}
     host, sep, ifname = name.partition(":")
     for dev in topo.get("devices", []):
         if dev.get("hostname") != host:
@@ -56,7 +56,7 @@ def resolve_endpoint(spec: dict, name: str) -> dict | None:
         else:
             match = ifaces if len(ifaces) == 1 else []
         if match:
-            return {"mac": match[0].get("mac"), "ip": match[0].get("ip")}
+            return {"mac": match[0].get("mac"), "ip": match[0].get("ip"), "vlan": match[0].get("vlan")}
     return None
 
 
