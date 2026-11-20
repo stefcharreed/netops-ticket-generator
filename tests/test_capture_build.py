@@ -278,3 +278,60 @@ def test_pk6_filter_gets_encapsulation_suffix(tmp_path, monkeypatch, need_tshark
     out, spec_path = setup(tmp_path, _radius_erspan())
     build_packet(spec_path, out, ROOT / "registry", DAY)
     assert seen["pk1"] == "(radius.code == 1 && !radius.rspframe) && erspan"
+
+
+# --- phase 2 pattern fixtures ---------------------------------------------------------------
+
+L2 = {  # fixture -> (symptom pk, spot-check filter, the pk ids that filter must match)
+    "loop_bpdufilter": ("pk1", "stp && eth.src == 00:00:5e:00:53:16", ["pk1"]),
+    "port_security": ("pk3", "arp && eth.src == 00:00:5e:00:53:85", ["pk3"]),
+    "native_vlan": ("pk2", "cdp.native_vlan == 99 && vlan.id == 1", ["pk2"]),
+    "hsrp_flap": ("pk3", "hsrp.state == 16 && eth.src == 00:00:0c:07:ac:0a", ["pk3", "pk5"]),
+}
+
+
+def _fixture(name: str) -> dict:
+    return json.loads((ROOT / "tests" / "fixtures" / f"{name}_capture.json").read_text())
+
+
+@pytest.mark.parametrize("name", list(L2))
+def test_l2_fixture_validates_clean(name):
+    from packetgen.registry import load_registry
+    from packetgen.validate import validate
+    found = validate(_fixture(name), load_registry(ROOT / "registry"))
+    assert [f for f in found if f["severity"] == "error"] == []
+
+
+@pytest.mark.parametrize("name", list(L2))
+def test_build_l2_fixture_tshark(tmp_path, need_tshark, name):
+    from packetgen.capture import capture_filename
+    from packetgen.capture_views import filter_suffix
+    spec = _fixture(name)
+    out, spec_path = setup(tmp_path, spec)
+    result = build_packet(spec_path, out, ROOT / "registry", DAY)
+    assert result["ok"], result["findings"]
+    assert "PK6" not in checks(result)
+    pcap = next(out.glob(f"*/{capture_filename(spec)}"))
+    frames = json.loads(spec_path.with_suffix(".manifest.json").read_text())[pcap.name]
+    symptoms = {fl["id"]: fl for fl in spec["capture"]["flows"] if fl["label"] == "symptom"}
+    sym, spot, spot_pks = L2[name]
+    filters = {fid: f"({capture_kinds.expected_filter(fl)}){filter_suffix(spec, fl)}" for fid, fl in symptoms.items()}
+    rb = tshark.read_back(pcap, {**filters, "spot": spot})
+    assert rb["bad_frames"] == []
+    for fid in symptoms:
+        assert set(frames[fid]) <= set(rb["matches"][fid]), fid
+    assert sym in symptoms and all(set(frames[p]) <= set(rb["matches"]["spot"]) for p in spot_pks)
+
+
+def test_port_security_capture_goes_silent(tmp_path):
+    pytest.importorskip("dpkt")
+    import dpkt
+    from packetgen.capture import capture_filename
+    from packetgen.render.capture import render_capture
+    from packetgen.timebase import parse_utc
+    spec = _fixture("port_security")
+    render_capture(spec, tmp_path)
+    cut = parse_utc(next(e["t"] for e in spec["events"] if e["id"] == "e3")).timestamp()
+    with (tmp_path / capture_filename(spec)).open("rb") as f:
+        times = [ts for ts, _ in dpkt.pcap.Reader(f)]
+    assert times and max(times) < cut

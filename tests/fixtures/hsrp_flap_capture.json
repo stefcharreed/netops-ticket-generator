@@ -1,0 +1,429 @@
+{
+  "schema_version": 1,
+  "meta": {
+    "id": "pkt-4d00e4",
+    "style": "multi-source",
+    "window": {
+      "start": "2026-10-25T13:55:00Z",
+      "end": "2026-10-25T14:25:00Z"
+    },
+    "difficulty": {
+      "min_noise": 2,
+      "show_diff_notes": false,
+      "shuffle_rows": 0
+    },
+    "allow_unverified": false,
+    "brief": "Synthetic reference scenario. Users on one VLAN report drops and slow connections every few minutes. You have the syslog export from both distribution switches and a SPAN capture of one affected user's port. Find what happened."
+  },
+  "topology": {
+    "devices": [
+      {
+        "hostname": "ACC-SW1",
+        "role": "access-switch",
+        "header_style": "ios",
+        "mgmt_ip": "10.0.0.11",
+        "tz_offset_min": 0,
+        "clock": "ntp",
+        "interfaces": [
+          {
+            "name": "Gi1/0/10",
+            "mac": "00:00:5e:00:53:10"
+          },
+          {
+            "name": "Gi1/0/47",
+            "mac": "00:00:5e:00:53:17"
+          },
+          {
+            "name": "Gi1/0/48",
+            "mac": "00:00:5e:00:53:11"
+          }
+        ]
+      },
+      {
+        "hostname": "DIST-SW1",
+        "role": "distribution-switch",
+        "header_style": "ios",
+        "mgmt_ip": "10.0.0.1",
+        "tz_offset_min": 0,
+        "clock": "ntp",
+        "interfaces": [
+          {
+            "name": "Vlan10",
+            "ip": "10.10.10.2",
+            "mac": "00:00:5e:00:53:02",
+            "vlan": 10
+          },
+          {
+            "name": "Gi1/0/1",
+            "mac": "00:00:5e:00:53:12"
+          },
+          {
+            "name": "Te1/1/1",
+            "mac": "00:00:5e:00:53:1a"
+          }
+        ]
+      },
+      {
+        "hostname": "DIST-SW2",
+        "role": "distribution-switch",
+        "header_style": "ios",
+        "mgmt_ip": "10.0.0.2",
+        "tz_offset_min": 0,
+        "clock": "ntp",
+        "interfaces": [
+          {
+            "name": "Vlan10",
+            "ip": "10.10.10.3",
+            "mac": "00:00:5e:00:53:03",
+            "vlan": 10
+          },
+          {
+            "name": "Gi1/0/1",
+            "mac": "00:00:5e:00:53:13"
+          }
+        ]
+      }
+    ],
+    "links": [
+      [
+        "ACC-SW1",
+        "DIST-SW1"
+      ],
+      [
+        "ACC-SW1",
+        "DIST-SW2"
+      ]
+    ],
+    "entities": {
+      "pc-10": {
+        "ip": "10.10.10.50",
+        "mac": "00:00:5e:00:53:80",
+        "attached": {
+          "device": "ACC-SW1",
+          "interface": "Gi1/0/10",
+          "vlan": 10
+        }
+      }
+    }
+  },
+  "events": [
+    {
+      "id": "e1",
+      "t": "2026-10-25T14:03:00Z",
+      "device": "DIST-SW1",
+      "format_id": "IOS:LINEPROTO-5-UPDOWN",
+      "fields": {
+        "interface": "TenGigabitEthernet1/1/1",
+        "state": "down"
+      },
+      "label": "root_cause",
+      "caused_by": null,
+      "signal": null
+    },
+    {
+      "id": "e2",
+      "t": "2026-10-25T14:03:00.500Z",
+      "device": "DIST-SW1",
+      "format_id": "IOS:TRACK-6-STATE",
+      "fields": {
+        "object": "1",
+        "type": "interface",
+        "param": "TenGigabitEthernet1/1/1 line-protocol",
+        "old_state": "Up",
+        "new_state": "Down"
+      },
+      "label": "symptom",
+      "caused_by": "e1",
+      "signal": null
+    },
+    {
+      "id": "e3",
+      "t": "2026-10-25T14:03:01Z",
+      "device": "DIST-SW1",
+      "format_id": "IOS:HSRP-5-STATECHANGE",
+      "fields": {
+        "interface": "Vlan10",
+        "group": "10",
+        "old_state": "Active",
+        "new_state": "Speak"
+      },
+      "label": "symptom",
+      "caused_by": "e2",
+      "signal": null
+    },
+    {
+      "id": "e4",
+      "t": "2026-10-25T14:03:01.200Z",
+      "device": "DIST-SW2",
+      "format_id": "IOS:HSRP-5-STATECHANGE",
+      "fields": {
+        "interface": "Vlan10",
+        "group": "10",
+        "old_state": "Standby",
+        "new_state": "Active"
+      },
+      "label": "symptom",
+      "caused_by": "e3",
+      "signal": null
+    },
+    {
+      "id": "e5",
+      "t": "2026-10-25T14:05:00Z",
+      "device": "DIST-SW1",
+      "format_id": "IOS:LINEPROTO-5-UPDOWN",
+      "fields": {
+        "interface": "TenGigabitEthernet1/1/1",
+        "state": "up"
+      },
+      "label": "symptom",
+      "caused_by": "e1",
+      "signal": null
+    },
+    {
+      "id": "e6",
+      "t": "2026-10-25T14:05:00.500Z",
+      "device": "DIST-SW1",
+      "format_id": "IOS:TRACK-6-STATE",
+      "fields": {
+        "object": "1",
+        "type": "interface",
+        "param": "TenGigabitEthernet1/1/1 line-protocol",
+        "old_state": "Down",
+        "new_state": "Up"
+      },
+      "label": "symptom",
+      "caused_by": "e5",
+      "signal": null
+    },
+    {
+      "id": "e7",
+      "t": "2026-10-25T14:05:01Z",
+      "device": "DIST-SW1",
+      "format_id": "IOS:HSRP-5-STATECHANGE",
+      "fields": {
+        "interface": "Vlan10",
+        "group": "10",
+        "old_state": "Speak",
+        "new_state": "Active"
+      },
+      "label": "symptom",
+      "caused_by": "e6",
+      "signal": null
+    },
+    {
+      "id": "e8",
+      "t": "2026-10-25T14:05:01.200Z",
+      "device": "DIST-SW2",
+      "format_id": "IOS:HSRP-5-STATECHANGE",
+      "fields": {
+        "interface": "Vlan10",
+        "group": "10",
+        "old_state": "Active",
+        "new_state": "Speak"
+      },
+      "label": "symptom",
+      "caused_by": "e7",
+      "signal": null
+    },
+    {
+      "id": "e9",
+      "t": "2026-10-25T14:01:10Z",
+      "device": "ACC-SW1",
+      "format_id": "IOS:LINK-3-UPDOWN",
+      "fields": {
+        "interface": "GigabitEthernet1/0/22",
+        "state": "down"
+      },
+      "label": "noise",
+      "caused_by": null,
+      "signal": null
+    },
+    {
+      "id": "e10",
+      "t": "2026-10-25T14:01:11Z",
+      "device": "ACC-SW1",
+      "format_id": "IOS:LINEPROTO-5-UPDOWN",
+      "fields": {
+        "interface": "GigabitEthernet1/0/22",
+        "state": "down"
+      },
+      "label": "noise",
+      "caused_by": null,
+      "signal": null
+    }
+  ],
+  "telemetry": [],
+  "config_diffs": [],
+  "capture": {
+    "method": "span",
+    "reason": "Local SPAN on ACC-SW1 Gi1/0/10: an affected user's port, where both gateways' hellos arrive in the user VLAN.",
+    "span": {
+      "encapsulation": "native"
+    },
+    "device": "ACC-SW1",
+    "interface": "Gi1/0/10",
+    "peer": "pc-10",
+    "direction": "both",
+    "start": "2026-10-25T14:00:00Z",
+    "end": "2026-10-25T14:10:00Z",
+    "noise": "medium",
+    "flows": [
+      {
+        "id": "pk1",
+        "kind": "hsrp_hello",
+        "t": "2026-10-25T14:00:01Z",
+        "src": "DIST-SW1:Vlan10",
+        "dst": "pc-10",
+        "via": null,
+        "params": {
+          "outcome": "active",
+          "group": 10,
+          "vip": "10.10.10.1",
+          "count": 60,
+          "priority": 110
+        },
+        "label": "noise",
+        "caused_by": null
+      },
+      {
+        "id": "pk2",
+        "kind": "hsrp_hello",
+        "t": "2026-10-25T14:00:02Z",
+        "src": "DIST-SW2:Vlan10",
+        "dst": "pc-10",
+        "via": null,
+        "params": {
+          "outcome": "standby",
+          "group": 10,
+          "vip": "10.10.10.1",
+          "count": 60
+        },
+        "label": "noise",
+        "caused_by": null
+      },
+      {
+        "id": "pk3",
+        "kind": "hsrp_hello",
+        "t": "2026-10-25T14:03:02Z",
+        "src": "DIST-SW2:Vlan10",
+        "dst": "pc-10",
+        "via": null,
+        "params": {
+          "outcome": "active",
+          "group": 10,
+          "vip": "10.10.10.1",
+          "count": 39
+        },
+        "label": "symptom",
+        "caused_by": "e4"
+      },
+      {
+        "id": "pk4",
+        "kind": "hsrp_hello",
+        "t": "2026-10-25T14:03:03Z",
+        "src": "DIST-SW1:Vlan10",
+        "dst": "pc-10",
+        "via": null,
+        "params": {
+          "outcome": "speak",
+          "group": 10,
+          "vip": "10.10.10.1",
+          "count": 39,
+          "priority": 100
+        },
+        "label": "symptom",
+        "caused_by": "e3"
+      },
+      {
+        "id": "pk5",
+        "kind": "hsrp_hello",
+        "t": "2026-10-25T14:05:02Z",
+        "src": "DIST-SW1:Vlan10",
+        "dst": "pc-10",
+        "via": null,
+        "params": {
+          "outcome": "active",
+          "group": 10,
+          "vip": "10.10.10.1",
+          "count": 99,
+          "priority": 110
+        },
+        "label": "symptom",
+        "caused_by": "e7"
+      },
+      {
+        "id": "pk6",
+        "kind": "hsrp_hello",
+        "t": "2026-10-25T14:05:03Z",
+        "src": "DIST-SW2:Vlan10",
+        "dst": "pc-10",
+        "via": null,
+        "params": {
+          "outcome": "speak",
+          "group": 10,
+          "vip": "10.10.10.1",
+          "count": 99
+        },
+        "label": "symptom",
+        "caused_by": "e8"
+      }
+    ]
+  },
+  "answer": {
+    "root_cause_id": "e1",
+    "chain": [
+      "e1",
+      "e2",
+      "e3",
+      "e4",
+      "pk3",
+      "e7",
+      "pk5"
+    ],
+    "fix": "Add 'standby 10 preempt delay minimum 60' on DIST-SW1 Vlan10 and fix the Te1/1/1 uplink it tracks, so the Active role stops flipping back on every recovery.",
+    "root_cause_terms": [
+      "preempt delay",
+      "flapping uplink"
+    ],
+    "rubric": [
+      {
+        "id": "r1",
+        "weight": 4,
+        "criterion": "Names DIST-SW1's tracked uplink Te1/1/1 going down and up (e1, e5; tracked by e2) as what drives the gateway changes",
+        "evidence_refs": [
+          "e1",
+          "e2"
+        ]
+      },
+      {
+        "id": "r2",
+        "weight": 3,
+        "criterion": "Reads the user-port SPAN: group 10 hellos from the virtual MAC come from DIST-SW2 after 14:03 and from DIST-SW1 again after 14:05, with the other router hello-ing in Speak",
+        "evidence_refs": [
+          "pk3",
+          "pk5"
+        ]
+      },
+      {
+        "id": "r3",
+        "weight": 2,
+        "criterion": "Reads the state-change logs on both routers as the same flip",
+        "evidence_refs": [
+          "e3",
+          "e4",
+          "e7",
+          "e8"
+        ]
+      },
+      {
+        "id": "r4",
+        "weight": 1,
+        "criterion": "Treats the Gi1/0/22 flap as unrelated",
+        "evidence_refs": [
+          "e9",
+          "e10"
+        ]
+      }
+    ]
+  }
+}

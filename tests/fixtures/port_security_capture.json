@@ -1,0 +1,279 @@
+{
+  "schema_version": 1,
+  "meta": {
+    "id": "pkt-2b00c2",
+    "style": "multi-source",
+    "window": {
+      "start": "2026-10-23T13:55:00Z",
+      "end": "2026-10-23T14:25:00Z"
+    },
+    "difficulty": {
+      "min_noise": 2,
+      "show_diff_notes": false,
+      "shuffle_rows": 0
+    },
+    "allow_unverified": false,
+    "brief": "Synthetic reference scenario. A user says their desk jack stopped working this morning; it worked yesterday. You have the syslog export and a SPAN capture of that desk's switch port. Find what happened."
+  },
+  "topology": {
+    "devices": [
+      {
+        "hostname": "ACC-SW1",
+        "role": "access-switch",
+        "header_style": "ios",
+        "mgmt_ip": "10.0.0.11",
+        "tz_offset_min": 0,
+        "clock": "ntp",
+        "interfaces": [
+          {
+            "name": "Vlan10",
+            "ip": "10.10.10.2",
+            "mac": "00:00:5e:00:53:01",
+            "vlan": 10
+          },
+          {
+            "name": "Gi1/0/14",
+            "mac": "00:00:5e:00:53:14"
+          },
+          {
+            "name": "Gi1/0/48",
+            "mac": "00:00:5e:00:53:11"
+          }
+        ]
+      },
+      {
+        "hostname": "DIST-SW1",
+        "role": "distribution-switch",
+        "header_style": "ios",
+        "mgmt_ip": "10.0.0.1",
+        "tz_offset_min": 0,
+        "clock": "ntp",
+        "interfaces": [
+          {
+            "name": "Vlan10",
+            "ip": "10.10.10.1",
+            "mac": "00:00:5e:00:53:02",
+            "vlan": 10
+          },
+          {
+            "name": "Gi1/0/1",
+            "mac": "00:00:5e:00:53:12"
+          }
+        ]
+      }
+    ],
+    "links": [
+      [
+        "ACC-SW1",
+        "DIST-SW1"
+      ]
+    ],
+    "entities": {
+      "dns-1": {
+        "ip": "10.20.0.53",
+        "mac": "00:00:5e:00:53:22"
+      },
+      "pc-14": {
+        "ip": "10.10.10.54",
+        "mac": "00:00:5e:00:53:84",
+        "attached": {
+          "device": "ACC-SW1",
+          "interface": "Gi1/0/14",
+          "vlan": 10
+        }
+      },
+      "dock-14": {
+        "ip": "10.10.10.55",
+        "mac": "0000.5e00.5385",
+        "attached": {
+          "device": "ACC-SW1",
+          "interface": "Gi1/0/14",
+          "vlan": 10
+        }
+      }
+    }
+  },
+  "events": [
+    {
+      "id": "e1",
+      "t": "2026-10-23T14:04:58Z",
+      "device": "ACC-SW1",
+      "format_id": "IOS:LINEPROTO-5-UPDOWN",
+      "fields": {
+        "interface": "GigabitEthernet1/0/14",
+        "state": "up"
+      },
+      "label": "root_cause",
+      "caused_by": null,
+      "signal": null
+    },
+    {
+      "id": "e2",
+      "t": "2026-10-23T14:05:00.400Z",
+      "device": "ACC-SW1",
+      "format_id": "IOS:PORT_SECURITY-2-PSECURE_VIOLATION",
+      "fields": {
+        "mac": "0000.5e00.5385",
+        "interface": "GigabitEthernet1/0/14"
+      },
+      "label": "symptom",
+      "caused_by": "e1",
+      "signal": null
+    },
+    {
+      "id": "e3",
+      "t": "2026-10-23T14:05:00.410Z",
+      "device": "ACC-SW1",
+      "format_id": "IOS:PM-4-ERR_DISABLE",
+      "fields": {
+        "cause": "psecure-violation",
+        "interface": "Gi1/0/14",
+        "interface_2": "Gi1/0/14"
+      },
+      "label": "symptom",
+      "caused_by": "e2",
+      "signal": null
+    },
+    {
+      "id": "e4",
+      "t": "2026-10-23T14:05:01Z",
+      "device": "ACC-SW1",
+      "format_id": "IOS:LINEPROTO-5-UPDOWN",
+      "fields": {
+        "interface": "GigabitEthernet1/0/14",
+        "state": "down"
+      },
+      "label": "symptom",
+      "caused_by": "e3",
+      "signal": null
+    },
+    {
+      "id": "e5",
+      "t": "2026-10-23T14:02:10Z",
+      "device": "ACC-SW1",
+      "format_id": "IOS:LINK-3-UPDOWN",
+      "fields": {
+        "interface": "GigabitEthernet1/0/22",
+        "state": "down"
+      },
+      "label": "noise",
+      "caused_by": null,
+      "signal": null
+    },
+    {
+      "id": "e6",
+      "t": "2026-10-23T14:02:11Z",
+      "device": "ACC-SW1",
+      "format_id": "IOS:LINEPROTO-5-UPDOWN",
+      "fields": {
+        "interface": "GigabitEthernet1/0/22",
+        "state": "down"
+      },
+      "label": "noise",
+      "caused_by": null,
+      "signal": null
+    }
+  ],
+  "telemetry": [],
+  "config_diffs": [],
+  "capture": {
+    "method": "span",
+    "reason": "Local SPAN on ACC-SW1 Gi1/0/14: the user's desk port, mirrored on the access switch it plugs into.",
+    "span": {
+      "encapsulation": "native"
+    },
+    "device": "ACC-SW1",
+    "interface": "Gi1/0/14",
+    "peer": "pc-14",
+    "direction": "both",
+    "start": "2026-10-23T14:00:00Z",
+    "end": "2026-10-23T14:10:00Z",
+    "noise": "medium",
+    "flows": [
+      {
+        "id": "pk1",
+        "kind": "dns_query",
+        "t": "2026-10-23T14:02:30Z",
+        "src": "pc-14",
+        "dst": "dns-1",
+        "via": "DIST-SW1:Vlan10",
+        "params": {
+          "outcome": "ok",
+          "name": "intranet.corp.example.com",
+          "answer": "dns-1"
+        },
+        "label": "noise",
+        "caused_by": null
+      },
+      {
+        "id": "pk2",
+        "kind": "arp",
+        "t": "2026-10-23T14:03:00Z",
+        "src": "pc-14",
+        "dst": "DIST-SW1:Vlan10",
+        "via": null,
+        "params": {
+          "outcome": "reply"
+        },
+        "label": "noise",
+        "caused_by": null
+      },
+      {
+        "id": "pk3",
+        "kind": "arp",
+        "t": "2026-10-23T14:05:00Z",
+        "src": "dock-14",
+        "dst": "DIST-SW1:Vlan10",
+        "via": null,
+        "params": {
+          "outcome": "no_reply"
+        },
+        "label": "symptom",
+        "caused_by": "e1"
+      }
+    ]
+  },
+  "answer": {
+    "root_cause_id": "e1",
+    "chain": [
+      "e1",
+      "pk3",
+      "e2",
+      "e3"
+    ],
+    "fix": "Raise 'switchport port-security maximum' to 2 on ACC-SW1 Gi1/0/14 (or keep the dock's NIC off the port), then bounce the port with 'shutdown' / 'no shutdown' to clear the err-disable.",
+    "root_cause_terms": [
+      "second MAC",
+      "maximum 1"
+    ],
+    "rubric": [
+      {
+        "id": "r1",
+        "weight": 4,
+        "criterion": "Names the new device behind the desk port (0000.5e00.5385, logged by e2) tripping port security on Gi1/0/14 as the cause",
+        "evidence_refs": [
+          "e1",
+          "e2"
+        ]
+      },
+      {
+        "id": "r2",
+        "weight": 3,
+        "criterion": "Reads the desk-port SPAN: a frame from a new source MAC 00:00:5e:00:53:85 at 14:05:00, then nothing at all from the port",
+        "evidence_refs": [
+          "pk3",
+          "e3"
+        ]
+      },
+      {
+        "id": "r3",
+        "weight": 1,
+        "criterion": "Treats the Gi1/0/22 flap as unrelated",
+        "evidence_refs": [
+          "e5",
+          "e6"
+        ]
+      }
+    ]
+  }
+}

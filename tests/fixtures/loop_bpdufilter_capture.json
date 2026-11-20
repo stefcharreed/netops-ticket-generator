@@ -1,0 +1,299 @@
+{
+  "schema_version": 1,
+  "meta": {
+    "id": "pkt-1a00b1",
+    "style": "multi-source",
+    "window": {
+      "start": "2026-10-22T13:55:00Z",
+      "end": "2026-10-22T14:25:00Z"
+    },
+    "difficulty": {
+      "min_noise": 2,
+      "show_diff_notes": false,
+      "shuffle_rows": 0
+    },
+    "allow_unverified": false,
+    "brief": "Synthetic reference scenario. Since mid-morning, users on the second floor say they can't get on the network, and what does work is crawling. You have the syslog export, the change record and a SPAN capture from the conference room port on the floor switch. Find what happened."
+  },
+  "topology": {
+    "devices": [
+      {
+        "hostname": "ACC-SW1",
+        "role": "access-switch",
+        "header_style": "ios",
+        "mgmt_ip": "10.0.0.11",
+        "tz_offset_min": 0,
+        "clock": "ntp",
+        "interfaces": [
+          {
+            "name": "Vlan20",
+            "ip": "10.10.20.2",
+            "mac": "00:00:5e:00:53:01",
+            "vlan": 20
+          },
+          {
+            "name": "Gi1/0/5",
+            "mac": "00:00:5e:00:53:15"
+          },
+          {
+            "name": "Gi1/0/6",
+            "mac": "00:00:5e:00:53:16"
+          },
+          {
+            "name": "Gi1/0/48",
+            "mac": "00:00:5e:00:53:11"
+          }
+        ]
+      },
+      {
+        "hostname": "DIST-SW1",
+        "role": "distribution-switch",
+        "header_style": "ios",
+        "mgmt_ip": "10.0.0.1",
+        "tz_offset_min": 0,
+        "clock": "ntp",
+        "interfaces": [
+          {
+            "name": "Vlan20",
+            "ip": "10.10.20.1",
+            "mac": "00:00:5e:00:53:02",
+            "vlan": 20
+          },
+          {
+            "name": "Gi1/0/1",
+            "mac": "00:00:5e:00:53:12"
+          }
+        ]
+      },
+      {
+        "hostname": "DHCP01",
+        "role": "dhcp-server",
+        "header_style": "bsd",
+        "mgmt_ip": "10.20.0.67",
+        "tz_offset_min": 0,
+        "clock": "ntp",
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "10.20.0.67",
+            "mac": "00:00:5e:00:53:67"
+          }
+        ]
+      }
+    ],
+    "links": [
+      [
+        "ACC-SW1",
+        "DIST-SW1"
+      ]
+    ],
+    "entities": {
+      "conf-sw": {
+        "mac": "00:00:5e:00:53:90",
+        "attached": {
+          "device": "ACC-SW1",
+          "interface": "Gi1/0/5",
+          "vlan": 20
+        }
+      },
+      "pc-20": {
+        "ip": "10.10.20.50",
+        "mac": "00:00:5e:00:53:80",
+        "attached": {
+          "device": "ACC-SW1",
+          "interface": "Gi1/0/20",
+          "vlan": 20
+        }
+      },
+      "pc-21": {
+        "ip": "10.10.20.51",
+        "mac": "00:00:5e:00:53:81",
+        "attached": {
+          "device": "ACC-SW1",
+          "interface": "Gi1/0/21",
+          "vlan": 20
+        }
+      }
+    }
+  },
+  "events": [
+    {
+      "id": "e1",
+      "t": "2026-10-22T14:01:02Z",
+      "device": "ACC-SW1",
+      "format_id": "IOS:SYS-5-CONFIG_I",
+      "fields": {
+        "source": "console",
+        "who": "vty0 (192.0.2.50)"
+      },
+      "label": "symptom",
+      "caused_by": "cd1",
+      "signal": null
+    },
+    {
+      "id": "e2",
+      "t": "2026-10-22T14:02:05Z",
+      "device": "ACC-SW1",
+      "format_id": "IOS:SPANTREE-5-TOPOTRAP",
+      "fields": {
+        "stp_type": "Rapid-PVST",
+        "instance": "VLAN0020"
+      },
+      "label": "symptom",
+      "caused_by": "cd1",
+      "signal": null
+    },
+    {
+      "id": "e3",
+      "t": "2026-10-22T14:04:02Z",
+      "device": "DHCP01",
+      "format_id": "ISCDHCPD:no-free-leases",
+      "fields": {
+        "pid": "3044",
+        "mac": "00:00:5e:00:53:80",
+        "iface_or_relay": "10.10.20.1",
+        "shared_network": "10.10.20.0/24"
+      },
+      "label": "symptom",
+      "caused_by": "cd1",
+      "signal": null
+    },
+    {
+      "id": "e4",
+      "t": "2026-10-22T14:01:30Z",
+      "device": "ACC-SW1",
+      "format_id": "IOS:LINK-3-UPDOWN",
+      "fields": {
+        "interface": "GigabitEthernet1/0/7",
+        "state": "down"
+      },
+      "label": "noise",
+      "caused_by": null,
+      "signal": null
+    },
+    {
+      "id": "e5",
+      "t": "2026-10-22T14:01:31Z",
+      "device": "ACC-SW1",
+      "format_id": "IOS:LINEPROTO-5-UPDOWN",
+      "fields": {
+        "interface": "GigabitEthernet1/0/7",
+        "state": "down"
+      },
+      "label": "noise",
+      "caused_by": null,
+      "signal": null
+    }
+  ],
+  "telemetry": [],
+  "config_diffs": [
+    {
+      "id": "cd1",
+      "device": "ACC-SW1",
+      "t_change": "2026-10-22T14:01:00Z",
+      "before": "interface GigabitEthernet1/0/5\n switchport access vlan 20\n switchport mode access\n spanning-tree portfast\n spanning-tree bpduguard enable\n",
+      "after": "interface GigabitEthernet1/0/5\n switchport access vlan 20\n switchport mode access\n spanning-tree portfast\n spanning-tree bpdufilter enable\n",
+      "note": "Conference room switch kept err-disabling this port; swapped guard for filter."
+    }
+  ],
+  "capture": {
+    "method": "span",
+    "reason": "Local SPAN with encapsulation replicate on ACC-SW1 Gi1/0/5: the conference room port, with replicate so control frames are copied too.",
+    "span": {
+      "encapsulation": "replicate",
+      "native_vlan": 20,
+      "trunk_vlans": [
+        20
+      ]
+    },
+    "device": "ACC-SW1",
+    "interface": "Gi1/0/5",
+    "peer": "conf-sw",
+    "direction": "both",
+    "start": "2026-10-22T14:00:00Z",
+    "end": "2026-10-22T14:10:00Z",
+    "noise": "medium",
+    "flows": [
+      {
+        "id": "pk1",
+        "kind": "stp_bpdu",
+        "t": "2026-10-22T14:02:00Z",
+        "src": "ACC-SW1:Gi1/0/6",
+        "dst": "ACC-SW1:Gi1/0/5",
+        "via": null,
+        "params": {
+          "outcome": "bpdu",
+          "count": 60
+        },
+        "label": "symptom",
+        "caused_by": "cd1"
+      },
+      {
+        "id": "pk2",
+        "kind": "dhcp",
+        "t": "2026-10-22T14:04:00Z",
+        "src": "pc-20",
+        "dst": "DHCP01",
+        "via": "DIST-SW1:Vlan20",
+        "params": {
+          "outcome": "no_offer",
+          "copies": 12
+        },
+        "label": "symptom",
+        "caused_by": "cd1"
+      }
+    ]
+  },
+  "answer": {
+    "root_cause_id": "cd1",
+    "chain": [
+      "cd1",
+      "pk1",
+      "pk2",
+      "e3"
+    ],
+    "fix": "Put 'spanning-tree bpduguard enable' back on ACC-SW1 Gi1/0/5 in place of the filter, remove the second cable from the conference room switch, then clear the DHCP pool's stale leases.",
+    "root_cause_terms": [
+      "bpdufilter",
+      "bridging loop"
+    ],
+    "rubric": [
+      {
+        "id": "r1",
+        "weight": 4,
+        "criterion": "Names the guard-to-filter edit on ACC-SW1 Gi1/0/5 (cd1, logged by e1) as what let the conference room switch close a loop",
+        "evidence_refs": [
+          "cd1",
+          "e1"
+        ]
+      },
+      {
+        "id": "r2",
+        "weight": 3,
+        "criterion": "Reads the conference-port SPAN: ACC-SW1's own BPDUs (bridge ID from Gi1/0/6) arrive on Gi1/0/5 every 2 s, and each DHCP DISCOVER from pc-20 shows up a dozen times within milliseconds",
+        "evidence_refs": [
+          "pk1",
+          "pk2"
+        ]
+      },
+      {
+        "id": "r3",
+        "weight": 2,
+        "criterion": "Ties the topology-change trap and the exhausted pool to the loop",
+        "evidence_refs": [
+          "e2",
+          "e3"
+        ]
+      },
+      {
+        "id": "r4",
+        "weight": 1,
+        "criterion": "Treats the Gi1/0/7 flap as unrelated",
+        "evidence_refs": [
+          "e4",
+          "e5"
+        ]
+      }
+    ]
+  }
+}
