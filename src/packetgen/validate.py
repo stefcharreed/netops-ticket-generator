@@ -17,6 +17,7 @@ from packetgen.registry import compile_pattern, render_message
 from packetgen.spec import schema_findings
 from packetgen.ticket import check_ticket
 from packetgen.timebase import parse_utc
+from packetgen.topology import doc_rows, mac_rows, overrides
 
 _NAME = re.compile(r"\{(\w+)\}")
 _OPTIONAL = re.compile(r"\[\[(.*?)\]\]")
@@ -40,7 +41,7 @@ def validate(spec: dict, registry: dict[str, dict]) -> list[dict]:
     times = _times(spec)
     for check in (_check_T2, _check_T3, _check_T4, _check_C, _check_S):
         found += check(spec, times)
-    found += _check_E(spec) + _check_K(spec) + _check_L1(spec) + _check_N1(spec)
+    found += _check_E(spec) + _check_K(spec) + _check_L1(spec) + _check_N1(spec) + _check_D(spec)
     found += check_capture(spec)
     found += check_ticket(spec)
     found += _check_Q1(spec, registry)
@@ -296,10 +297,54 @@ def _check_E(spec: dict) -> list[dict]:
     return out
 
 
+# --- D: network docs (documented values vs the gear) ----------------------------------
+def _check_D(spec: dict) -> list[dict]:
+    out = []
+    ovr = overrides(spec)
+    mm = spec["answer"].get("doc_mismatch")
+    if len(ovr) > 1:
+        out.append(finding("D1", f"{len(ovr)} documented overrides ({', '.join(o[0] for o in ovr)}); at most one",
+                           "keep one documented value that differs from the gear"))
+    if ovr and not mm:
+        out.append(finding("D2", f"{ovr[0][0]} documents {ovr[0][2]} but the gear has {ovr[0][3]}, and "
+                                 "answer.doc_mismatch is missing", "add answer.doc_mismatch (ref, kind, note)"))
+    if mm and not ovr:
+        out.append(finding("D2", f"answer.doc_mismatch cites {mm['ref']} but no documented value differs "
+                                 "from the gear", "add the `documented` override, or drop doc_mismatch"))
+    if mm and ovr and mm["ref"] not in {o[0] for o in ovr}:
+        out.append(finding("D2", f"answer.doc_mismatch cites {mm['ref']}, the override is on {ovr[0][0]}",
+                           "point doc_mismatch.ref at the overridden row"))
+    devices = {d["hostname"] for d in spec["topology"]["devices"]}
+    for name, e in spec["topology"]["entities"].items():
+        att = e.get("attached")
+        if att and att["device"] not in devices:
+            out.append(finding("D3", f"entity {name} is attached to {att['device']}, which is not in topology",
+                               "use a topology device hostname"))
+    if mm and mm["kind"] == "cause" and ovr:
+        value = str(next((o[2] for o in ovr if o[0] == mm["ref"]), ovr[0][2]))
+        if not re.search(rf"(?<![\w.:]){re.escape(value)}(?![\w.:])", _root_text(spec)):
+            out.append(finding("D4", f"doc_mismatch kind=cause, but the documented value {value} isn't in the root "
+                                     f"cause {spec['answer']['root_cause_id']}",
+                               "show the documented value being configured in the root cause, or use red_herring"))
+    return out
+
+
+def _root_text(spec: dict) -> str:
+    rid = spec["answer"]["root_cause_id"]
+    for e in spec["events"]:
+        if e["id"] == rid:
+            return " ".join(str(v) for v in e["fields"].values())
+    for c in spec["config_diffs"]:
+        if c["id"] == rid:
+            return c["after"]  # configured = what the change put in place
+    return ""
+
+
 def _check_K(spec: dict) -> list[dict]:
     out = []
     ids = {e["id"] for e in spec["events"]} | {c["id"] for c in spec["config_diffs"]}
     ids |= {s["id"] for s in spec["telemetry"]} | {f["id"] for f in _flows(spec)}
+    ids |= {r["id"] for r in doc_rows(spec) + mac_rows(spec)}
     rubric = spec["answer"]["rubric"]
     for item in rubric:
         out += [finding("K1", f"rubric {item['id']}: evidence {ref} doesn't exist", "cite a real event/series/diff id")
