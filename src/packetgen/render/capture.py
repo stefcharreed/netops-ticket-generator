@@ -334,10 +334,12 @@ def _noise_frames(ctx: _Ctx, cap: dict, lo: float, hi: float) -> list[_Frame]:
     hosts += [i for dv in topo["devices"] for i in dv.get("interfaces", []) if i.get("mac") and i.get("ip")]
     anchors = {ipaddress.ip_network(f"{i['ip']}/24", strict=False) for dv in topo["devices"]
                if dv["hostname"] in (cap["device"], cap["peer"]) for i in dv.get("interfaces", []) if i.get("ip")}
-    hosts = [h for h in hosts if ipaddress.ip_network(f"{h['ip']}/24", strict=False) in anchors]
-    if access:  # a second device on the monitored port shows up only through its own flows (port security)
-        peer_ent = topo.get("entities", {}).get(cap["peer"])
-        hosts = [h for h in hosts if h is peer_ent or not _on_port(h, cap)]
+    if access:  # the port's VLAN only; a second device on the port shows up only through its own flows
+        peer_ent = topo.get("entities", {}).get(cap["peer"]) or {}
+        pv = _host_vlan(peer_ent) or native
+        hosts = [h for h in hosts if (_host_vlan(h) or native) == pv and (h is peer_ent or not _on_port(h, cap))]
+    else:
+        hosts = [h for h in hosts if ipaddress.ip_network(f"{h['ip']}/24", strict=False) in anchors]
     step = _NOISE_ARP_S[level]
     phase, k = rng.uniform(0.0, 1.0), 1
     while len(hosts) >= 2 and lo + phase + step * (k - 0.4) < hi - 0.01:
@@ -353,8 +355,8 @@ def _noise_frames(ctx: _Ctx, cap: dict, lo: float, hi: float) -> list[_Frame]:
             continue  # a VLAN the far end pruned can't carry a request and its answer across the trunk
         out.append((t, _eth(BCAST, am, _ETH_ARP, _arp(dpkt.arp.ARP_OP_REQUEST, am, a["ip"], b"\x00" * 6, b["ip"])),
                     vlan, "data", native))
-        if access and not _on_port(a, cap):
-            continue  # an access port sees the broadcast, but the unicast answer goes to a host elsewhere
+        if access and not (_on_port(a, cap) or _on_port(b, cap)):
+            continue  # an access port sees the broadcast; the unicast answer only if it starts or ends there
         out.append((t + rng.uniform(0.0005, 0.005),
                     _eth(am, bm, _ETH_ARP, _arp(dpkt.arp.ARP_OP_REPLY, bm, b["ip"], am, a["ip"])), vlan, "data", native))
     return [_Frame(ts, (1, 0, n), buf, None, vlan, fc, nat) for n, (ts, buf, vlan, fc, nat) in enumerate(out)]

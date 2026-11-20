@@ -486,6 +486,11 @@ def test_pk5_dhcp_ack_symptom_fails():
 
 def cdp_spec(native: int) -> dict:
     s = replicate(spec(), (1, 99))
+    if native != 1:  # the far end's trunk edit that makes it announce that VLAN (PK4)
+        s["config_diffs"].append({"id": "cd7", "device": "DIST-SW1", "t_change": "2026-10-20T14:06:00Z",
+                                  "before": "interface GigabitEthernet1/0/1\n switchport mode trunk\n",
+                                  "after": f"interface GigabitEthernet1/0/1\n switchport trunk native vlan {native}\n",
+                                  "note": None})
     symptom(s, kind="cdp", src="DIST-SW1:Gi1/0/1", dst="ACC-SW1:Gi1/0/48",
             params={"outcome": "announce", "native_vlan": native, "device_id": "DIST-SW1", "port_id": "Gi1/0/1"})
     add_event(s, "e9", "2026-10-20T14:07:01Z", "ACC-SW1", "IOS:CDP-4-NATIVE_VLAN_MISMATCH",
@@ -571,3 +576,17 @@ def test_pk8_symptom_after_err_disable():
     add_event(s, "e10", "2026-10-20T14:06:00Z", "ACC-SW1", "IOS:PM-4-ERR_DISABLE",
               cause="psecure-violation", interface="Gi1/0/48", interface_2="Gi1/0/48")
     assert "PK8" in errors(s)
+
+
+def _native() -> dict:
+    return json.loads((ROOT / "tests" / "fixtures" / "native_vlan_capture.json").read_text())
+
+
+def test_pk4_cdp_tlv_matches_sender_native():
+    s = _native()
+    assert "PK4" not in errors(s)
+    s["config_diffs"] = []  # no native change: DIST-SW1 can't announce 99
+    assert "PK4" in errors(s)
+    s = _native()
+    flow(s, "pk1")["t"] = "2026-10-24T14:04:00Z"  # announcing 1 after its native became 99
+    assert "PK4" in errors(s)

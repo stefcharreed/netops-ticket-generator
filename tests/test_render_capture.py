@@ -555,7 +555,8 @@ def test_access_port_noise_unicast_only_for_port_hosts(spec):
     noise = [b for n, (_, b) in enumerate(frames, 1) if n not in owned and b[12:14] == b"\x08\x06"]
     replies = [b for b in noise if dpkt.ethernet.Ethernet(b).data.op == dpkt.arp.ARP_OP_REPLY]
     assert any(b[:6] == b"\xff" * 6 for b in noise)  # broadcasts still flood to the port
-    assert all(b[:6] == bytes.fromhex("00005e005380") for b in replies)  # unicast only toward pc-18
+    pc18 = bytes.fromhex("00005e005380")
+    assert all(pc18 in (b[:6], b[6:12]) for b in replies)  # unicast only to or from the host on the port
 
 
 def test_access_port_noise_never_uses_other_port_devices():
@@ -565,3 +566,43 @@ def test_access_port_noise_never_uses_other_port_devices():
     owned = set(pk["pk3"])
     dock = bytes.fromhex("00005e005385")
     assert [n for n, (_, b) in enumerate(frames, 1) if dock in (b[:6], b[6:12]) and n not in owned] == []
+
+
+def _psec():
+    return json.loads((Path(__file__).parent / "fixtures" / "port_security_capture.json").read_text())
+
+
+def test_access_port_host_answers_offport_requesters():
+    spec = _psec()
+    spec["capture"]["noise"] = "high"
+    frames, pk = build_frames(spec)
+    owned = {n for nums in pk.values() for n in nums}
+    pc14 = bytes.fromhex("00005e005384")
+    replies = [b for n, (_, b) in enumerate(frames, 1) if n not in owned and b[12:14] == b"\x08\x06"
+               and b[6:12] == pc14 and dpkt.ethernet.Ethernet(b).data.op == dpkt.arp.ARP_OP_REPLY]
+    assert replies  # the host behind the port answers, and its reply comes in on the monitored port
+
+
+def test_access_port_noise_stays_in_the_access_vlan():
+    spec = _psec()
+    acc = spec["topology"]["devices"][0]
+    acc["interfaces"][0] = {"name": "Vlan99", "ip": "10.99.0.2", "mac": "00:00:5e:00:53:01", "vlan": 99}  # mgmt SVI only
+    spec["topology"]["entities"]["pc-15"] = {"ip": "10.10.10.56", "mac": "00:00:5e:00:53:86",
+                                             "attached": {"device": "ACC-SW1", "interface": "Gi1/0/15", "vlan": 10}}
+    spec["capture"]["noise"] = "high"
+    frames, pk = build_frames(spec)
+    owned = {n for nums in pk.values() for n in nums}
+    srcs = {b[6:12] for n, (_, b) in enumerate(frames, 1) if n not in owned and b[12:14] == b"\x08\x06"}
+    assert bytes.fromhex("00005e005301") not in srcs  # the VLAN 99 SVI never floods onto a VLAN 10 port
+    assert bytes.fromhex("00005e005386") in srcs or bytes.fromhex("00005e005302") in srcs
+
+
+def test_dhcp_storm_at_capture_end_stays_inside(spec):
+    from packetgen.capture_kinds import span_s
+    end = parse_utc(spec["capture"]["end"]).timestamp()
+    fl = _add(spec, kind="dhcp", src="pc-18", dst="dns-1", via="DIST-SW1:Vlan100",
+              params={"outcome": "no_offer", "retries": 5, "copies": 50})
+    from datetime import datetime, timezone
+    fl["t"] = datetime.fromtimestamp(end - span_s(fl), timezone.utc).isoformat().replace("+00:00", "Z")
+    frames, _ = build_frames(spec)
+    assert all(ts <= end for ts, _ in frames)

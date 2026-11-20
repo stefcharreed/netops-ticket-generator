@@ -245,3 +245,9 @@ def test_peer_native_vlan_time():
     s["config_diffs"].append({**NATIVE99, "id": "cd3", "t_change": "2026-10-21T14:06:00Z",
                               "before": NATIVE99["after"], "after": NATIVE99["before"]})
     assert capture.peer_native_vlan(s, parse_utc("2026-10-21T14:07:00Z")) == 1  # line removed: default 1
+
+
+def test_span_dhcp_counts_copies():
+    assert capture_kinds.span_s({"kind": "dhcp", "params": {"outcome": "no_offer", "retries": 5, "copies": 50}}) \
+        == pytest.approx(20.01 + 49 * 0.002)
+    assert capture_kinds.span_s({"kind": "dhcp", "params": {"outcome": "ack", "copies": 50}}) >= 0.045 + 49 * 0.002

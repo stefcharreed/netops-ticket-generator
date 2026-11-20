@@ -335,3 +335,13 @@ def test_port_security_capture_goes_silent(tmp_path):
     with (tmp_path / capture_filename(spec)).open("rb") as f:
         times = [ts for ts, _ in dpkt.pcap.Reader(f)]
     assert times and max(times) < cut
+
+
+def test_hsrp_fixture_speak_is_brief():
+    spec = _fixture("hsrp_flap")
+    for fl in spec["capture"]["flows"]:
+        if fl["params"]["outcome"] == "speak":  # with no other Standby, Speak ends when the 10 s hold runs out
+            assert capture_kinds.span_s(fl) <= 10, fl["id"]
+    standby = [e for e in spec["events"] if e["format_id"] == "IOS:HSRP-5-STATECHANGE"
+               and (e["fields"]["old_state"], e["fields"]["new_state"]) == ("Speak", "Standby")]
+    assert {e["device"] for e in standby} == {"DIST-SW1", "DIST-SW2"}

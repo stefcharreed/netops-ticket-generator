@@ -196,6 +196,21 @@
       "signal": null
     },
     {
+      "id": "e11",
+      "t": "2026-10-25T14:03:11Z",
+      "device": "DIST-SW1",
+      "format_id": "IOS:HSRP-5-STATECHANGE",
+      "fields": {
+        "interface": "Vlan10",
+        "group": "10",
+        "old_state": "Speak",
+        "new_state": "Standby"
+      },
+      "label": "symptom",
+      "caused_by": "e3",
+      "signal": null
+    },
+    {
       "id": "e7",
       "t": "2026-10-25T14:05:01Z",
       "device": "DIST-SW1",
@@ -203,7 +218,7 @@
       "fields": {
         "interface": "Vlan10",
         "group": "10",
-        "old_state": "Speak",
+        "old_state": "Standby",
         "new_state": "Active"
       },
       "label": "symptom",
@@ -223,6 +238,21 @@
       },
       "label": "symptom",
       "caused_by": "e7",
+      "signal": null
+    },
+    {
+      "id": "e12",
+      "t": "2026-10-25T14:05:11.200Z",
+      "device": "DIST-SW2",
+      "format_id": "IOS:HSRP-5-STATECHANGE",
+      "fields": {
+        "interface": "Vlan10",
+        "group": "10",
+        "old_state": "Speak",
+        "new_state": "Standby"
+      },
+      "label": "symptom",
+      "caused_by": "e8",
       "signal": null
     },
     {
@@ -328,11 +358,28 @@
           "outcome": "speak",
           "group": 10,
           "vip": "10.10.10.1",
-          "count": 39,
+          "count": 3,
           "priority": 100
         },
         "label": "symptom",
         "caused_by": "e3"
+      },
+      {
+        "id": "pk7",
+        "kind": "hsrp_hello",
+        "t": "2026-10-25T14:03:12Z",
+        "src": "DIST-SW1:Vlan10",
+        "dst": "pc-10",
+        "via": null,
+        "params": {
+          "outcome": "standby",
+          "group": 10,
+          "vip": "10.10.10.1",
+          "count": 36,
+          "priority": 100
+        },
+        "label": "symptom",
+        "caused_by": "e11"
       },
       {
         "id": "pk5",
@@ -362,10 +409,26 @@
           "outcome": "speak",
           "group": 10,
           "vip": "10.10.10.1",
-          "count": 99
+          "count": 3
         },
         "label": "symptom",
         "caused_by": "e8"
+      },
+      {
+        "id": "pk8",
+        "kind": "hsrp_hello",
+        "t": "2026-10-25T14:05:12Z",
+        "src": "DIST-SW2:Vlan10",
+        "dst": "pc-10",
+        "via": null,
+        "params": {
+          "outcome": "standby",
+          "group": 10,
+          "vip": "10.10.10.1",
+          "count": 96
+        },
+        "label": "symptom",
+        "caused_by": "e12"
       }
     ]
   },
@@ -398,7 +461,7 @@
       {
         "id": "r2",
         "weight": 3,
-        "criterion": "Reads the user-port SPAN: group 10 hellos from the virtual MAC come from DIST-SW2 after 14:03 and from DIST-SW1 again after 14:05, with the other router hello-ing in Speak",
+        "criterion": "Reads the user-port SPAN: group 10 hellos from the virtual MAC come from DIST-SW2 after 14:03 and from DIST-SW1 again after 14:05, with the other router dropping to Standby",
         "evidence_refs": [
           "pk3",
           "pk5"

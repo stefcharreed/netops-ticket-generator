@@ -155,7 +155,8 @@ def span_s(flow: dict) -> float:
         count, interval = _PERIODIC[flow["kind"]]
         return float(p.get("interval_s", interval) * (p.get("count", count) - 1))
     if flow["kind"] == "dhcp":
-        return 4.0 * p.get("retries", 3) + 0.01 if outcome == "no_offer" else 0.1
+        replay = (p.get("copies", 1) - 1) * 0.002  # each copy lands up to 2 ms after the one before
+        return (4.0 * p.get("retries", 3) + 0.01 if outcome == "no_offer" else 0.1) + replay
     if flow["kind"] == "radius_request":
         if outcome == "no_response":
             return float(p.get("timeout_s", 5) * p.get("retries", 3))

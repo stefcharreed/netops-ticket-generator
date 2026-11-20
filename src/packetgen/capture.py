@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from jsonschema import Draft202012Validator
 
 from packetgen.capture_kinds import KINDS, span_s
-from packetgen.capture_views import flow_class, flow_vlan, keeps, method_label
+from packetgen.capture_views import flow_class, flow_vlan, keeps, method_label, sender_native
 from packetgen.findings import finding
 from packetgen.timebase import parse_utc
 from packetgen.topology import link_ends, short_if
@@ -160,7 +160,7 @@ def check_capture(spec: dict) -> list[dict]:
         kind = KINDS.get(fl["kind"])
         if kind is None:
             continue
-        pk4 = _check_pk4(fl, kind)
+        pk4 = _check_pk4(spec, fl, kind)
         out += pk4 + _check_pk3(spec, fl, kind) + _check_pk5_symptom(fl, kind)
         if pk4:
             continue  # params aren't schema-valid: span_s and timing checks would be guesses
@@ -303,7 +303,7 @@ def _check_pk3_addresses(spec: dict) -> list[dict]:
     return out
 
 
-def _check_pk4(fl: dict, kind: dict) -> list[dict]:
+def _check_pk4(spec: dict, fl: dict, kind: dict) -> list[dict]:
     fid, params = fl["id"], fl["params"]
     errs = sorted(Draft202012Validator(kind["params"]).iter_errors(params), key=lambda e: list(map(str, e.path)))
     out = [finding("PK4", f"{fid}: {e.message}", f"fix params for {fl['kind']}") for e in errs]
@@ -313,6 +313,10 @@ def _check_pk4(fl: dict, kind: dict) -> list[dict]:
         out.append(finding("PK4", f"{fid}: gratuitous ARP must have dst == src", "set dst to the same endpoint as src"))
     if fl["kind"] == "cdp" and fl.get("vlan", 1) != 1:
         out.append(finding("PK4", f"{fid}: CDP rides VLAN 1", "drop the flow's vlan, or set it to 1"))
+    if fl["kind"] == "cdp" and params["native_vlan"] != sender_native(spec, fl):
+        out.append(finding("PK4", f"{fid}: CDP announces native VLAN {params['native_vlan']}, but the sender's trunk "
+                                  f"native VLAN at {fl['t']} is {sender_native(spec, fl)}",
+                           "announce the sender's native VLAN, or add the native-VLAN edit before the flow"))
     if fl["kind"] == "dns_query" and params["outcome"] == "ok":
         if "answer" not in params:
             out.append(finding("PK4", f"{fid}: outcome ok needs an answer", "add params.answer"))
