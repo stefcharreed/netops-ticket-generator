@@ -556,3 +556,12 @@ def test_access_port_noise_unicast_only_for_port_hosts(spec):
     replies = [b for b in noise if dpkt.ethernet.Ethernet(b).data.op == dpkt.arp.ARP_OP_REPLY]
     assert any(b[:6] == b"\xff" * 6 for b in noise)  # broadcasts still flood to the port
     assert all(b[:6] == bytes.fromhex("00005e005380") for b in replies)  # unicast only toward pc-18
+
+
+def test_access_port_noise_never_uses_other_port_devices():
+    spec = json.loads((Path(__file__).parent / "fixtures" / "port_security_capture.json").read_text())
+    spec["capture"]["noise"] = "high"
+    frames, pk = build_frames(spec)
+    owned = set(pk["pk3"])
+    dock = bytes.fromhex("00005e005385")
+    assert [n for n, (_, b) in enumerate(frames, 1) if dock in (b[:6], b[6:12]) and n not in owned] == []

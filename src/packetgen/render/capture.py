@@ -335,6 +335,9 @@ def _noise_frames(ctx: _Ctx, cap: dict, lo: float, hi: float) -> list[_Frame]:
     anchors = {ipaddress.ip_network(f"{i['ip']}/24", strict=False) for dv in topo["devices"]
                if dv["hostname"] in (cap["device"], cap["peer"]) for i in dv.get("interfaces", []) if i.get("ip")}
     hosts = [h for h in hosts if ipaddress.ip_network(f"{h['ip']}/24", strict=False) in anchors]
+    if access:  # a second device on the monitored port shows up only through its own flows (port security)
+        peer_ent = topo.get("entities", {}).get(cap["peer"])
+        hosts = [h for h in hosts if h is peer_ent or not _on_port(h, cap)]
     step = _NOISE_ARP_S[level]
     phase, k = rng.uniform(0.0, 1.0), 1
     while len(hosts) >= 2 and lo + phase + step * (k - 0.4) < hi - 0.01:
