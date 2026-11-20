@@ -21,6 +21,7 @@ Short and honest; revisit before the first public push and whenever a new input 
 | Model-written spec → files on disk | `validate()` must return zero errors; rendering happens in a temp dir and moves into the output directory only after post-render checks pass. |
 | Repo → public GitHub | `scripts/pre-commit` sanitize gate on the **staged** content (checks Z1-Z5: RFC 5737/1918 IPv4 and documentation/link-local/ULA IPv6 only, RFC 7042 MACs only, no home paths, local deny terms found from the main checkout even inside worktrees; `packetgen.requireDeny` makes a missing list a hard stop); CI `permissions: contents: read`, pinned actions. |
 | Build → tshark | tshark is an external GPL program run with a fixed argv on files we generated. Spec text never reaches the filter or argv: display filters come from catalog constants in code. |
+| Local icon folder → topology.png | Cisco's icons are read from a folder outside the repo and only scaled; tests always use built-in icons; the pre-commit gate blocks image files (Z3), so neither an icon nor a rendered packet can be committed. |
 | Build → existing packets | Refuses to overwrite an existing packet folder unless `--force`. |
 
 ## Accepted risks (dated)
@@ -28,6 +29,9 @@ Short and honest; revisit before the first public push and whenever a new input 
   source code or parser fixtures, not captured from gear. Mitigation: `verified` flag per format;
   README states it; gear captures replace entries over time.
 - **2026-11-02:** CI installs the newest dependency versions allowed by `pyproject.toml` (no lockfile), so a new upstream release can change CI results without a repo change.
+- **2026-11-20:** A packet built with the official Cisco icons embeds them in topology.png. Packets are
+  personal practice material kept outside the repo, so the icons aren't redistributed; anyone sharing a
+  packet should rebuild it with the built-in icons.
 - **2026-11-20:** The gate allows private address space through: RFC 1918 IPv4 and ULA IPv6 (fc00::/7), as
   well as link-local. Real scenarios use private space, so blocking it would force unrealistic addressing. Cost:
   a real internal address from someone's network would pass the gate. Mitigation: scenarios are written

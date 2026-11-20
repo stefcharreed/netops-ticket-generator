@@ -13,7 +13,9 @@ Schema: `<repo>/schema/scenario.schema.json`. Worked example (read it before wri
   {min_noise, show_diff_notes, shuffle_rows}`, `allow_unverified`, `brief` (the ask; never names the cause).
 - `topology`: `devices[]` (`hostname`, `role`, `header_style`, `mgmt_ip`, `tz_offset_min`, `clock`, `skew_s` if unsynced,
   optional `interfaces[]` of `{name, mac, ip?, vlan?}` for anything a capture endpoint or SPAN port uses),
-  `links`, `entities` (every MAC/IP that appears in a field must be declared here or be a mgmt IP).
+  `links` (pairs of `HOST` or `HOST:IFNAME`; the interface is the diagram's port label), `entities` (every MAC/IP that
+  appears in a field must be declared here or be a mgmt IP). Network-docs extras, all optional: device `icon`,
+  entity `kind` and `attached {device, interface?, vlan?}`, and one `documented` override (see Network docs).
 - `events[]`: `id` (`e1`…), `t`, `device`, `format_id` (registry id), `fields`, `label`
   (`root_cause|symptom|unrelated|noise`), `caused_by` (parent id or null), `signal` (`{series, op, value}` or null).
 - `telemetry[]`: `id` (`tm1`…), `device`, `metric`, `kind` (`gauge|rate|delta`), `unit`, `interval_s`, `points [[t, v]]`.
@@ -76,6 +78,25 @@ Schema: `<repo>/schema/scenario.schema.json`. Worked example (read it before wri
   (kinds, evidence kind, what the evidence should show). It is a seed, like the rest of the catalog.
 - Build without `--no-tshark` for anything you hand out; `--no-tshark` is for iterating only.
 
+## Network docs (NETWORK.md + topology.png)
+Every packet gets the network **as documented**: a Cisco-style diagram, a documented addressing table and, with
+`meta.mac_table: true`, a documented MAC table. They're drawn from `topology` only, so they never show the fault.
+- Name both ends of every link (`ACC-SW1:GigabitEthernet1/0/49`). Attach the clients and servers the story uses
+  (`attached`), so they sit under their switch; anything unattached goes in a side column.
+- Set `meta.mac_table: true` for Layer 2 stories: ARP, DHCP, 802.1X/RADIUS, port security, MAC flapping, STP.
+  MAC rows come from entities that have a `mac` and an `attached` port.
+- Icons come from `role` keywords (router, firewall/asa, core/distribution → L3 switch, access/switch, wlc, ap)
+  and entity names (ise/radius → AAA, dns/dhcp/ntp/nas → server, pc/client, printer, phone). Set `icon` or
+  `kind` when the guess is wrong.
+- **Docs mismatch (when the generate step asks for one):** at most one `documented` value that differs from the
+  gear: a device `documented.mgmt_ip`, an interface `documented.ip`/`vlan`, or an entity `documented.ip`/`mac`.
+  Logs, configs and the capture keep the real value. Add `answer.doc_mismatch {ref, kind, note}`, with `ref` the
+  row's `doc:<id>` (e.g. `doc:ACC-SW1-mgmt`, `doc:ise-a`, `doc:mac-pc-18`).
+  - `red_herring`: the docs are stale, and the cause is elsewhere. The documented value appears in no log or config.
+  - `cause`: someone configured what the docs said. The root cause's config diff `after` (or root event
+    fields) must contain the documented value (D4).
+  - Add a rubric item for it that cites the `doc:` row plus the log/config evidence showing the real value.
+
 ## Pattern catalog
 Each pattern in `<repo>/scenarios/starter.yaml` carries `topic` (stp, trunk, acl, aaa, ntp, ospf, eigrp, bgp, fhrp,
 port-security) and `cert` (`ENCOR`, `ENARSI` or `none`). `packetgen patterns` lists pattern ids and checks the
@@ -93,7 +114,8 @@ catalog first (filters: `--topic`, `--cert`, `--exclude ID...`; also `--file`, `
 | C5 | an id is used more than once across events, telemetry, config diffs and capture flows | give each its own id |
 | S1–S4 | uneven points / error counter not rate or negative / CPU 5 min peak above 1 min / signal not visible | regenerate the series |
 | E1–E2 | unknown device / undeclared MAC or IP | declare it in `topology` |
-| K1–K3 | evidence ref unknown / duplicate rubric id / ref not rendered | point at real ids |
+| K1–K3 | evidence ref unknown / duplicate rubric id / ref not rendered | point at real ids (`doc:<id>` rows count) |
+| D1–D4 | more than one documented override / override and `answer.doc_mismatch` don't match up / `attached.device` not in topology / `kind: cause` but the documented value isn't in the root cause | keep one override, point `doc_mismatch.ref` at its row, attach to a real device, put the documented value in the root cause or use `red_herring` |
 | L1 | a root-cause term leaks into id, brief, ticket text or a visible note | reword |
 | N1 / Q1 | too little noise / root is the loudest line (warning) | add noise; quieter root evidence |
 | TK1 | ticket names a device, IP or interface not in topology | name only known devices/addresses; an end_user shouldn't name gear at all; tokens like O365/M365, W10 or room numbers (B204) trip TK1, so spell them out (Office 365, Windows 10, room 204) |

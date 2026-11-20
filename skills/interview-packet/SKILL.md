@@ -42,6 +42,10 @@ tell the user the key will show in the transcript and ask before going on.
      real coin: `python3 -c "import random; print(random.random() < 0.5)"`; include a capture only on `True`.
      No hint (exit 1) means no capture. Exit 2 means the catalog is invalid: tell the user and stop, as for the
      other patterns commands.
+   - Docs mismatch: roll `python3 -c "import random; print(random.random() < 0.34)"`. On `True`, plant one
+     documented override (see **packet-builder**, Network docs), and flip a real coin for its kind
+     (`python3 -c "import random; print(random.choice(['red_herring', 'cause']))"`). Pick a `cause` only when the
+     pattern's root cause can be a config change that uses the wrong documented value; otherwise use `red_herring`.
 2. Make the id with `python3 -c "import secrets; print('pkt-' + secrets.token_hex(3))"`; never encode the answer.
 3. Write the spec to `<Keys>/pkt-xxxxxx.json`, using **log-formats** for message ids and **packet-builder** for
    the shape, times and clocks. Requirements: a brief written as a short case hand-off (who is asking, when the first complaint arrived, what
@@ -57,7 +61,8 @@ tell the user the key will show in the transcript and ask before going on.
    hand-write packet files. If the spec has a capture, read `<Keys>/pkt-xxxxxx.manifest.json`: if it says
    `"tshark_checked": false`, refuse to hand the packet over (report that and stop; install tshark 4.2+ and rebuild).
 5. Append `pkt-xxxxxx <pattern-id> <YYYY-MM-DD>` to `<Keys>/history.txt`.
-6. (Main conversation) Show the user `BRIEF.md`, `TICKET.md` and the file list. Both are written to be safe to show;
+6. (Main conversation) Show the user `BRIEF.md`, `TICKET.md` and the file list (it includes `NETWORK.md` and
+   `topology.png`; they never mark the mismatch, so they're safe to point at). Both are written to be safe to show;
    add nothing that hints at the cause. The misdirection is answer material, never shown before grading.
 
 ## Grade ("grade pkt-…")
@@ -67,9 +72,12 @@ tell the user the key will show in the transcript and ask before going on.
    Report the total as a percentage of the summed weights.
 3. For every miss, cite the evidence by location: `logs.xlsx row N`, `telemetry_<device>.png at HH:MM`,
    `config_diffs.txt line N`, `capture_<…>.pcap frame N` (use the manifest; its capture entry maps each `pk` id
-   to frame numbers). Accept a frame number the user cites as evidence when it lies in that flow's frame list.
+   to frame numbers), `NETWORK.md row <Ref>`. Accept a frame number the user cites as evidence when it lies in that
+   flow's frame list. With `answer.doc_mismatch`: credit spotting that the docs disagree with the gear; for a
+   `red_herring`, also credit not blaming it; for a `cause`, the fix must correct the config (and the docs).
 4. Write `GRADE.md` into the packet folder: score, per-item results, misses with citations, then the full key
-   (root cause, chain, fix, every event's label, and each planted misdirection with its `true_because`).
+   (root cause, chain, fix, every event's label, each planted misdirection with its `true_because`, and the docs
+   mismatch with its kind and note when there is one).
 5. Append a row to `<interview_prep_dir>/index.md` (create it with a table header if missing):
    `| date | packet | style | score | top miss |`.
 

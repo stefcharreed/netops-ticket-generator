@@ -10,11 +10,13 @@ cross-file consistency rules, then renders the files. Nothing is written unless 
 Current scenarios target CCNP Enterprise (ENCOR-level) topics; the log registry is multi-vendor.
 
 ## What is and is not verified
-- Fixture-tested: 273 tests.
+- Fixture-tested: 315 tests.
 - Live generation runs were built and leak-checked (no answer text in the packet).
 - Generated packets have not yet been graded against real attempts.
 - Captures: synthetic, protocol-checked and tshark-checked; not gear-validated. Only symptom flows are
   checked against their expected display filter; every frame is checked for malformed and expert errors.
+- Network docs (NETWORK.md + topology.png): drawn from the scenario's documented topology; fixture-tested.
+  A packet may deliberately document one value wrong (stale docs or the cause), and the key says which.
 - Gear-validated: none. Nothing here has been checked against real devices.
 - Log formats come from a registry checked against vendor documentation, upstream source code and
   parser fixtures. Each entry has a source URL and a `verified` flag.
@@ -56,6 +58,12 @@ before grading.
 `validate` checks a scenario spec, `build` validates and renders a packet into `OUT_DIR`
 (`--no-tshark` skips the capture read-back and warns), and `patterns` lists fault-pattern ids
 (`--show-capture` prints a pattern's capture hint). Run `--help` on any subcommand for options.
+
+## Network diagram icons
+Diagrams use built-in Cisco-style icons. To use Cisco's official topology icons on your own machine, download
+the JPG pack from Cisco's Network Topology Icons page and unzip it into `~/.config/packetgen/icons` (or set
+`PACKETGEN_ICONS`). `packetgen icons` shows which icons it found. Cisco's terms allow use in diagrams but not
+alteration; this tool only scales them. Keep them out of git: the pre-commit gate blocks image files.
 
 ## Develop
 ```bash

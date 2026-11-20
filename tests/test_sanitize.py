@@ -227,3 +227,11 @@ def test_hook_scans_staged_symlinks(tmp_path):
     _git(root, "add", "notes", ".gitignore")
     bad = subprocess.run(["git", "commit", "-q", "-m", "bad"], cwd=root, capture_output=True, text=True)
     assert bad.returncode != 0, bad.stdout + bad.stderr
+
+
+def test_blocks_images_so_cisco_icons_never_reach_the_repo(tmp_path):
+    from packetgen.sanitize import file_findings
+    for name in ("router.jpg", "topology.png", "icon.jpeg", "x.gif"):
+        path = tmp_path / name
+        path.write_bytes(b"x")
+        assert [f["check"] for f in file_findings(path)] == ["Z3"], name

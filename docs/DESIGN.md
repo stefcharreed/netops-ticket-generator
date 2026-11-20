@@ -69,7 +69,9 @@ fixed-shape object; only `topology.entities` names and event `fields` names are 
   (`min_noise`, default 3; `show_diff_notes`, default false; `shuffle_rows`, default 0),
   `allow_unverified`, `brief` (the ask shown to the candidate).
 - `topology`: `devices[]` (`hostname`, `role`, `header_style`, `mgmt_ip`, `tz_offset_min`, `clock`
-  `ntp|unsynced`, `skew_s` required when unsynced), `links` (hostname pairs), `entities` (named `{mac, ip}`).
+  `ntp|unsynced`, `skew_s` required when unsynced, optional `icon` and `documented.mgmt_ip`), `links` (pairs of
+  `HOST` or `HOST:IFNAME`), `entities` (named `{mac, ip}`, optional `kind`, `attached`, `documented`).
+- `meta.mac_table` (optional) and `answer.doc_mismatch` (optional): see Network docs.
 - `events[]` (`e1`...): `t`, `device`, `format_id` (registry id), `fields`, `label`, `caused_by`, `signal`.
 - `telemetry[]` (`tm1`...): `device`, `metric`, `kind` (`gauge|rate|delta`), `unit`, `interval_s`, `points [[t, v]]`.
 - `config_diffs[]` (`cd1`...): `device`, `t_change`, `before`, `after`, `note`.
@@ -333,3 +335,22 @@ tracked file, and `build.py` on rendered text (xlsx message column, `config_diff
 - Gear-validated: none. Nothing here has been checked against real devices.
 - Log formats come from a registry checked against vendor documentation, upstream source code and
   parser fixtures. Each entry has a source URL and a `verified` flag.
+
+## Network docs
+Every packet carries `NETWORK.md` and `topology.png`: the network as the team documented it.
+- **Source:** `topology` only (plus its `documented` overrides and `meta.mac_table`). Rendering never reads
+  events, telemetry or the answer, so the docs can't give the fault away, and nothing marks which value is
+  documented rather than real.
+- **Layout:** `render/network.py` `layout()` is pure. Tiers run top to bottom: cloud, firewall, router,
+  L3 switch/WLC, access switch, hosts. Hosts sit under the device they're `attached` to, unattached
+  entities go in a side column, and repeated links between one pair curve apart.
+- **Tables:** documented addressing (device mgmt, interfaces with an ip/vlan, entities with an ip) and, when
+  `meta.mac_table` is set, a documented MAC table (entities with a mac and an attachment). Each row has a ref,
+  cited as `doc:<Ref>` in rubric evidence (K1/K3).
+- **Docs vs gear:** at most one `documented` value may differ from the gear (D1). It pairs with
+  `answer.doc_mismatch` (D2). A `cause` mismatch must show up in the root cause, i.e. someone configured what
+  the docs said (D4). A `red_herring` is stale docs while the cause is elsewhere.
+- **Icons:** built-in Cisco-style drawings. If a local folder (`~/.config/packetgen/icons` or
+  `$PACKETGEN_ICONS`) holds Cisco's official topology icons, those are used per icon, only scaled, never
+  altered. They are never part of this repo, and the commit gate blocks image files (Z3).
+

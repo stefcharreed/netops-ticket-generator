@@ -130,7 +130,8 @@ def sanitize_findings(text: str, where: str, deny: Sequence[str] = ()) -> list[d
 
 
 # Binary artifacts can't be text-scanned.
-BLOCKED_SUFFIXES = (".xlsx", ".pdf", ".pcap", ".pcapng")
+BLOCKED_SUFFIXES = (".xlsx", ".pdf", ".pcap", ".pcapng",
+                    ".png", ".jpg", ".jpeg", ".gif")  # images: rendered packets and local Cisco icons stay out of git
 
 
 def file_findings(path: Path, deny: Sequence[str] = ()) -> list[dict]:
