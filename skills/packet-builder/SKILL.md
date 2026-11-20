@@ -74,7 +74,8 @@ Schema: `<repo>/schema/scenario.schema.json`. Worked example (read it before wri
   the symptom is not the only conversation. The renderer adds BPDUs (replicate SPAN only, one per trunk VLAN)
   and background ARP on its own.
 - An `arp` symptom (an unanswered gateway ARP on a pruned VLAN) needs a config diff on `capture.peer` before the
-  flow whose `after` has a plain `switchport trunk allowed vlan 1,10` list without the flow's VLAN (PK5), and the
+  flow whose `interface <peer_interface>` stanza has, in `after`, a plain `switchport trunk allowed vlan 1,10` list
+  without the flow's VLAN, and no later diff on that port that restores it (PK5), and the
   flow's VLAN in `span.trunk_vlans` (PK9). The renderer then stops that VLAN's BPDUs and ARP answers too.
 - Think like a SPAN port: it sits on `capture.interface`, so flows must plausibly cross that link. Put `via`
   on traffic that crosses the gateway; leave it null for same-subnet traffic.

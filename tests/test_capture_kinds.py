@@ -172,10 +172,50 @@ def test_peer_allowed_vlans_time():
     from packetgen.timebase import parse_utc
     s = copy.deepcopy(SPEC)
     s["config_diffs"] = [{"id": "cd1", "device": "DIST-SW1", "t_change": "2026-10-20T14:04:00Z",
-                          "before": " switchport trunk allowed vlan 1,10,30",
-                          "after": " switchport trunk allowed vlan 1,10", "note": None}]
+                          "before": "interface GigabitEthernet1/0/1\n switchport trunk allowed vlan 1,10,30",
+                          "after": "interface GigabitEthernet1/0/1\n switchport trunk allowed vlan 1,10", "note": None}]
     assert capture.peer_allowed_vlans(s, parse_utc("2026-10-20T14:03:59Z")) is None
     assert capture.peer_allowed_vlans(s, parse_utc("2026-10-20T14:04:00Z")) == {1, 10}
     assert capture.peer_allowed_vlans(s, parse_utc("2026-10-20T14:05:00Z")) == {1, 10}
     s["config_diffs"][0]["device"] = "ACC-SW1"  # not the peer
     assert capture.peer_allowed_vlans(s, parse_utc("2026-10-20T14:05:00Z")) is None
+
+
+def _trunk() -> dict:
+    return json.loads((ROOT / "tests" / "fixtures" / "trunk_pruned_capture.json").read_text())
+
+
+def test_peer_allowed_vlans_restore_wins():
+    from packetgen.timebase import parse_utc
+    s = _trunk()
+    s["config_diffs"].append({"id": "cd2", "device": "DIST-SW1", "t_change": "2026-10-21T14:04:30Z",
+                              "before": "interface GigabitEthernet1/0/1\n switchport trunk allowed vlan 1,10\n",
+                              "after": "interface GigabitEthernet1/0/1\n switchport mode trunk\n", "note": None})
+    assert capture.peer_allowed_vlans(s, parse_utc("2026-10-21T14:04:00Z")) == {1, 10}
+    assert capture.peer_allowed_vlans(s, parse_utc("2026-10-21T14:05:00Z")) is None  # no line = all allowed
+
+
+def test_peer_allowed_vlans_unreadable_newest_is_none():
+    from packetgen.timebase import parse_utc
+    s = _trunk()
+    s["config_diffs"].append({"id": "cd2", "device": "DIST-SW1", "t_change": "2026-10-21T14:04:30Z",
+                              "before": "interface GigabitEthernet1/0/1\n switchport trunk allowed vlan 1,10\n",
+                              "after": "interface GigabitEthernet1/0/1\n switchport trunk allowed vlan add 30\n",
+                              "note": None})
+    assert capture.peer_allowed_vlans(s, parse_utc("2026-10-21T14:05:00Z")) is None
+
+
+def test_peer_allowed_vlans_other_interface_ignored():
+    from packetgen.timebase import parse_utc
+    s = _trunk()
+    for side in ("before", "after"):
+        s["config_diffs"][0][side] = s["config_diffs"][0][side].replace("GigabitEthernet1/0/1\n", "GigabitEthernet1/0/2\n")
+    assert capture.peer_allowed_vlans(s, parse_utc("2026-10-21T14:05:00Z")) is None
+
+
+def test_peer_allowed_vlans_picks_the_monitored_stanza():
+    from packetgen.timebase import parse_utc
+    s = _trunk()
+    s["config_diffs"][0]["after"] = ("interface GigabitEthernet1/0/1\n switchport trunk allowed vlan 1,10\n"
+                                     "interface GigabitEthernet1/0/2\n switchport trunk allowed vlan 1,10,30\n")
+    assert capture.peer_allowed_vlans(s, parse_utc("2026-10-21T14:05:00Z")) == {1, 10}

@@ -14,7 +14,7 @@ from packetgen.capture_kinds import KINDS, span_s
 from packetgen.capture_views import flow_class, flow_vlan, keeps, method_label
 from packetgen.findings import finding
 from packetgen.timebase import parse_utc
-from packetgen.topology import link_ends
+from packetgen.topology import link_ends, short_if
 
 _DEAD, _ALIVE = "IOS:RADIUS-4-RADIUS_DEAD", "IOS:RADIUS-4-RADIUS_ALIVE"
 _DEAD_LEAD = timedelta(seconds=30)  # a switch marks a server dead ~30 s after the first unanswered request
@@ -72,10 +72,7 @@ _VLAN_LIST = re.compile(r"\d+(-\d+)?(,\d+(-\d+)?)*")
 
 
 def parse_allowed_vlans(text: str) -> set[int] | None:
-    """VLANs from the last `switchport trunk allowed vlan <list>` line, or None (no line, or add/remove/all/...).
-
-    Ceiling: assumes one interface stanza per config diff.
-    """
+    """VLANs from the last `switchport trunk allowed vlan <list>` line, or None (no line, or add/remove/all/...)."""
     lines = _ALLOWED.findall(text)
     if not lines or not _VLAN_LIST.fullmatch(lines[-1].replace(" ", "")):
         return None
@@ -86,15 +83,38 @@ def parse_allowed_vlans(text: str) -> set[int] | None:
     return out
 
 
+def _stanza(text: str, ifname: str) -> str | None:
+    """The `interface <ifname>` stanza of a config snippet (long or short names match), or None."""
+    out: list[str] | None = None
+    for line in text.splitlines():
+        if line.startswith("interface "):
+            if out is not None:
+                break
+            if short_if(line.split(None, 1)[1].strip()) == short_if(ifname):
+                out = []
+        elif out is not None and line[:1] not in (" ", "\t", ""):
+            break
+        elif out is not None:
+            out.append(line)
+    return None if out is None else "\n".join(out)
+
+
 def peer_allowed_vlans(spec: dict, t: datetime) -> set[int] | None:
-    """The capture peer's trunk allowed list in force at t (latest parseable diff at or before t), or None."""
-    peer = spec["capture"].get("peer")
-    diffs = sorted((parse_utc(c["t_change"]), c["after"]) for c in spec.get("config_diffs", [])
-                   if c["device"] == peer and parse_utc(c["t_change"]) <= t)
-    for _, after in reversed(diffs):
-        vlans = parse_allowed_vlans(after)
-        if vlans is not None:
-            return vlans
+    """The allowed list on the monitored trunk's far end (capture.peer peer_interface) in force at t, or None (all).
+
+    The newest diff at or before t whose stanza for that interface has an allowed-vlan line in before or after
+    decides: its after list, or None when after has no line (all VLANs) or a form this can't read (add/remove).
+    """
+    cap = spec["capture"]
+    ifname = cap.get("peer_interface")
+    if not ifname:
+        return None
+    diffs = sorted((parse_utc(c["t_change"]), i, c) for i, c in enumerate(spec.get("config_diffs", []))
+                   if c["device"] == cap.get("peer") and parse_utc(c["t_change"]) <= t)
+    for _, _, c in reversed(diffs):
+        before, after = _stanza(c["before"], ifname), _stanza(c["after"], ifname)
+        if any(x is not None and _ALLOWED.search(x) for x in (before, after)):
+            return parse_allowed_vlans(after or "")
     return None
 
 

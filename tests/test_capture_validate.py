@@ -362,3 +362,18 @@ def test_l1_reason_leak():
     s = spec()
     s["capture"]["reason"] = "Local SPAN on ACC-SW1 Gi1/0/48 to watch the RADIUS traffic."
     assert "L1" in errors(s)
+
+
+def test_pk5_arp_after_restore_fails():
+    s = json.loads((ROOT / "tests" / "fixtures" / "trunk_pruned_capture.json").read_text())
+    s["config_diffs"].append({"id": "cd2", "device": "DIST-SW1", "t_change": "2026-10-21T14:04:30Z",
+                              "before": "interface GigabitEthernet1/0/1\n switchport trunk allowed vlan 1,10\n",
+                              "after": "interface GigabitEthernet1/0/1\n switchport mode trunk\n", "note": None})
+    assert "PK5" in errors(s)
+
+
+def test_pk5_arp_edit_on_other_port_fails():
+    s = json.loads((ROOT / "tests" / "fixtures" / "trunk_pruned_capture.json").read_text())
+    for side in ("before", "after"):
+        s["config_diffs"][0][side] = s["config_diffs"][0][side].replace("GigabitEthernet1/0/1\n", "GigabitEthernet1/0/2\n")
+    assert "PK5" in errors(s)

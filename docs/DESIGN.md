@@ -303,10 +303,13 @@ The manifest also records `"tshark_checked"`: false under `--no-tshark`, or when
   `radius-server deadtime 0` (the default): the switch still tries the dead primary first on each new
   authentication, then fails over to the secondary, so an accept from the secondary should follow an
   unanswered attempt sequence to the primary. Not checked against gear.
-  An `arp` symptom must be `no_reply`, and its VLAN must be missing from the peer's `switchport trunk allowed
-  vlan` list in force at the flow's `t` (latest config diff on the peer with `t_change <= t` whose `after` has a
-  plain list such as `1,10` or `10-12,30`; `add`/`remove`/`all`/`none` forms are not read). The renderer keeps
-  that story whole: the pruned VLAN's BPDUs and ARP answers stop at the change.
+  An `arp` symptom must be `no_reply`, and its VLAN must be missing from the far end's `switchport trunk allowed
+  vlan` list in force at the flow's `t`. That list comes from the newest config diff on `capture.peer` with
+  `t_change <= t` whose `interface <peer_interface>` stanza (long or short name) has an allowed-vlan line in
+  `before` or `after`: its `after` plain list (`1,10`, `10-12,30`). No line in `after` means all VLANs (a
+  restore), and `add`/`remove`/`all`/`none` forms count as unknown, so neither satisfies PK5. Diffs on other
+  ports don't count. The renderer keeps the story whole: the pruned VLAN's BPDUs and ARP answers stop at the
+  change and come back if a later diff restores it.
 - **PK6** (error unless noted): the tshark read-back failed. tshark is missing or older than 4.2; a display
   filter or the `-V` dump failed or came back empty; tshark flags malformed or expert-error frames (any frame);
   tshark read a different frame count than the renderer wrote; or a symptom flow's expected filter matches

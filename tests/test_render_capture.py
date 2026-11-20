@@ -358,8 +358,8 @@ def test_pvst_bpdus_per_vlan(spec):
 def test_pruned_vlan_bpdus_stop(spec):
     spec = _pvst(spec, [1, 10, 30])
     spec["config_diffs"] = [{"id": "cd1", "device": "DIST-SW1", "t_change": "2026-10-20T14:04:00Z",
-                             "before": " switchport trunk allowed vlan 1,10,30",
-                             "after": " switchport trunk allowed vlan 1,10", "note": None}]
+                             "before": "interface GigabitEthernet1/0/1\n switchport trunk allowed vlan 1,10,30",
+                             "after": "interface GigabitEthernet1/0/1\n switchport trunk allowed vlan 1,10", "note": None}]
     cut = parse_utc("2026-10-20T14:04:00Z").timestamp()
     v30 = [ts for ts, b in build_frames(spec)[0] if b[:6] == SSTP and _sstp_vlan(b)[1] == 30]
     assert v30 and all(ts < cut for ts in v30)
