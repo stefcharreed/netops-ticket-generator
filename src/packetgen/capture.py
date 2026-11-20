@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from jsonschema import Draft202012Validator
 
 from packetgen.capture_kinds import KINDS, span_s
+from packetgen.capture_views import flow_class, flow_vlan, keeps, method_label
 from packetgen.findings import finding
 from packetgen.timebase import parse_utc
 from packetgen.topology import link_ends
@@ -104,7 +105,7 @@ def check_capture(spec: dict) -> list[dict]:
     cap = spec.get("capture")
     if not cap:
         return []
-    out = _check_pk1(spec, cap) + _check_pk2_window(spec, cap) + _check_pk3_addresses(spec)
+    out = _check_pk1(spec, cap) + _check_pk2_window(spec, cap) + _check_pk3_addresses(spec) + _check_pk9(spec, cap)
     for fl in cap["flows"]:
         kind = KINDS.get(fl["kind"])
         if kind is None:
@@ -113,15 +114,17 @@ def check_capture(spec: dict) -> list[dict]:
         out += pk4 + _check_pk3(spec, fl, kind) + _check_pk5_symptom(fl, kind)
         if pk4:
             continue  # params aren't schema-valid: span_s and timing checks would be guesses
-        out += _check_pk2_flow(cap, fl) + _check_pk5_radius(spec, fl)
+        out += _check_pk2_flow(cap, fl) + _check_pk5_radius(spec, fl) + _check_pk5_arp(spec, fl)
+        out += _check_pk8(spec, fl) + _check_pk9_vlan(spec, fl)
     return out
 
 
 def capture_strings(spec: dict) -> list[tuple[str, str]]:
     """(where, text) for every string param value of every flow, for the L1 answer-leak check."""
     cap = spec.get("capture") or {}
-    return [(f"{fl['id']} params.{k}", v)
-            for fl in cap.get("flows", []) for k, v in fl["params"].items() if isinstance(v, str)]
+    reason = [("capture.reason", cap["reason"])] if isinstance(cap.get("reason"), str) else []
+    return reason + [(f"{fl['id']} params.{k}", v)
+                     for fl in cap.get("flows", []) for k, v in fl["params"].items() if isinstance(v, str)]
 
 
 def capture_text(spec: dict) -> str:
@@ -145,6 +148,18 @@ def capture_text(spec: dict) -> str:
 def _check_pk1(spec: dict, cap: dict) -> list[dict]:
     out = []
     ifaces = {d["hostname"]: {i["name"] for i in d.get("interfaces", [])} for d in spec["topology"]["devices"]}
+    ent = spec["topology"].get("entities", {}).get(cap["peer"])
+    if cap["peer"] not in ifaces and ent is not None:  # a PC or hub on the monitored port
+        att = ent.get("attached") or {}
+        if att.get("device") != cap["device"] or att.get("interface", cap["interface"]) != cap["interface"]:
+            out.append(finding("PK1", f"capture: peer {cap['peer']} is not attached to {cap['device']} "
+                                      f"{cap['interface']}", "set the entity's attached device/interface"))
+        if cap["device"] not in ifaces:
+            out.append(finding("PK1", f"capture.device {cap['device']} is not in topology",
+                               "use a topology device hostname"))
+        return out
+    if "peer_interface" not in cap:
+        return [finding("PK1", "capture: a device peer needs peer_interface", "add capture.peer_interface")]
     for role, dev, ifname in (("device", cap["device"], cap["interface"]),
                               ("peer", cap["peer"], cap["peer_interface"])):
         if dev not in ifaces:
@@ -251,6 +266,63 @@ def _check_pk5_symptom(fl: dict, kind: dict) -> list[dict]:
         return [finding("PK5", f"{fl['id']}: {fl['kind']} has no symptom rule, so it can't be labelled symptom",
                         "label it noise/unrelated, or use a kind with a symptom rule")]
     return []
+
+
+def _check_pk5_arp(spec: dict, fl: dict) -> list[dict]:
+    """An ARP symptom is an unanswered request whose VLAN the far end's trunk no longer allows."""
+    if fl["kind"] != "arp" or fl["label"] != "symptom":
+        return []
+    if fl["params"]["outcome"] != "no_reply":
+        return [finding("PK5", f"{fl['id']}: only an unanswered ARP can be a symptom", "use outcome no_reply")]
+    peer, vlan = spec["capture"]["peer"], flow_vlan(spec, fl)
+    allowed = peer_allowed_vlans(spec, parse_utc(fl["t"]))
+    if allowed is None or vlan in allowed:
+        return [finding("PK5", f"{fl['id']}: no switchport trunk allowed vlan list on {peer} before {fl['t']} "
+                               f"drops VLAN {vlan}",
+                        f"add the trunk edit to config_diffs on {peer}, as a plain VLAN list")]
+    return []
+
+
+def _check_pk8(spec: dict, fl: dict) -> list[dict]:
+    cap = spec["capture"]
+    if fl["label"] == "symptom" and not keeps(cap, flow_class(spec, fl)):
+        return [finding("PK8", f"{fl['id']}: {method_label(cap)} on {cap['device']} can't see {fl['kind']} frames",
+                        "pick a capture method that sees them")]
+    return []
+
+
+def _check_pk9_vlan(spec: dict, fl: dict) -> list[dict]:
+    span = spec["capture"].get("span") or {}
+    if span.get("encapsulation") != "replicate":
+        return []
+    vlan = flow_vlan(spec, fl)
+    if vlan != span.get("native_vlan", 1) and vlan not in span["trunk_vlans"]:
+        return [finding("PK9", f"{fl['id']}: VLAN {vlan} is not in capture.span.trunk_vlans",
+                        "add it to trunk_vlans or fix the flow's VLAN")]
+    return []
+
+
+def _check_pk9(spec: dict, cap: dict) -> list[dict]:
+    """The reason names the capture device; an ERSPAN session's analyzer, origin and via exist."""
+    out = []
+    if cap["device"] not in cap["reason"]:
+        out.append(finding("PK9", f"capture.reason doesn't name {cap['device']}",
+                           "say where the capture runs, e.g. 'Local SPAN on <device> <interface>: ...'"))
+    e = cap.get("erspan")
+    if not e:
+        return out
+    ana = spec["topology"].get("entities", {}).get(e["analyzer"])
+    if ana is None or not ana.get("mac") or not ana.get("ip"):
+        out.append(finding("PK9", f"capture.erspan.analyzer {e['analyzer']!r} is not an entity with a mac and ip",
+                           "declare the analyzer under topology.entities with mac and ip"))
+    dev = next((d for d in spec["topology"]["devices"] if d["hostname"] == cap["device"]), {})
+    if e["origin_ip"] not in {i.get("ip") for i in dev.get("interfaces", [])}:
+        out.append(finding("PK9", f"capture.erspan.origin_ip {e['origin_ip']} is not an ip on {cap['device']}",
+                           f"use an interface ip of {cap['device']}"))
+    if "via" in e and not (resolve_endpoint(spec, e["via"]) or {}).get("mac"):
+        out.append(finding("PK9", f"capture.erspan.via {e['via']!r} doesn't resolve to an endpoint with a mac",
+                           "use the gateway in front of the analyzer, e.g. HOST:IFNAME"))
+    return out
 
 
 def _check_pk5_radius(spec: dict, fl: dict) -> list[dict]:

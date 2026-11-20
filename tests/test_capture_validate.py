@@ -240,3 +240,125 @@ def test_pk3_unparsable_interface_mac_used_by_noise():
     s = spec()
     s["topology"]["devices"][1]["interfaces"][1]["mac"] = "nonsense"
     assert "PK3" in errors(s)
+
+
+# --- capture methods: PK1 entity peer, PK5 ARP, PK8, PK9, K4, L1 reason -------------------------
+
+PRUNE = {"id": "cd1", "device": "DIST-SW1", "t_change": "2026-10-20T14:04:00Z",
+         "before": "interface Gi1/0/1\n switchport trunk allowed vlan 1,10,30",
+         "after": "interface Gi1/0/1\n switchport trunk allowed vlan 1,10", "note": None}
+
+
+def arp_symptom(t: str = "2026-10-20T14:06:20Z", pruned: bool = True) -> dict:
+    """pk4 (unanswered ARP) as a VLAN-30 symptom on a replicate SPAN, with DIST-SW1's trunk edit."""
+    s = spec()
+    s["capture"]["span"] = {"encapsulation": "replicate", "trunk_vlans": [1, 10, 30]}
+    fl = flow(s, "pk4")
+    fl.update(label="symptom", caused_by="e1", vlan=30, t=t)
+    if pruned:
+        s["config_diffs"] = [dict(PRUNE)]
+    return s
+
+
+def test_pk1_entity_peer_on_port():
+    s = spec()
+    s["topology"]["entities"]["pc-18"]["attached"] = {"device": "ACC-SW1", "interface": "Gi1/0/48"}
+    s["capture"]["peer"] = "pc-18"
+    del s["capture"]["peer_interface"]
+    assert "PK1" not in errors(s)
+    s["topology"]["entities"]["pc-18"]["attached"]["interface"] = "Gi1/0/7"
+    assert "PK1" in errors(s)
+
+
+def test_pk1_device_peer_needs_interface():
+    s = spec()
+    del s["capture"]["peer_interface"]
+    assert "PK1" in errors(s)
+
+
+def test_pk5_arp_pruned_ok():
+    assert {"PK5", "PK8", "PK9"} & errors(arp_symptom()) == set()
+
+
+def test_pk5_arp_symptom_needs_no_reply():
+    s = arp_symptom()
+    flow(s, "pk4")["params"]["outcome"] = "reply"
+    s["topology"]["entities"]["old-nas"]["mac"] = "00:00:5e:00:53:99"
+    assert "PK5" in errors(s)
+
+
+def test_pk5_arp_vlan_not_pruned():
+    assert "PK5" in errors(arp_symptom(pruned=False))
+    s = arp_symptom()
+    s["config_diffs"][0]["after"] = "interface Gi1/0/1\n switchport trunk allowed vlan 1,10,30"
+    assert "PK5" in errors(s)
+
+
+def test_pk5_arp_at_t_change_boundary():
+    assert "PK5" not in errors(arp_symptom(t="2026-10-20T14:04:00Z"))
+    assert "PK5" in errors(arp_symptom(t="2026-10-20T14:03:59Z"))
+
+
+def test_pk8_invisible_symptom(monkeypatch):
+    from packetgen import capture
+    monkeypatch.setattr(capture, "flow_class", lambda s, fl: "l2_control")
+    assert "PK8" in errors(spec())
+
+
+def test_pk9_reason_names_device():
+    s = spec()
+    s["capture"]["reason"] = "Local SPAN on the access uplink so both sides show up."
+    assert "PK9" in errors(s)
+
+
+def test_pk9_vlan_not_on_trunk():
+    s = arp_symptom()
+    s["capture"]["span"]["trunk_vlans"] = [1, 10]
+    assert "PK9" in errors(s)
+
+
+def _erspan(s: dict) -> dict:
+    s["topology"]["entities"]["analyzer-1"] = {"ip": "10.30.0.5", "mac": "00:00:5e:00:53:30"}
+    cap = s["capture"]
+    cap["method"] = "erspan"
+    del cap["span"]
+    cap["erspan"] = {"origin_ip": "10.10.100.2", "analyzer": "analyzer-1", "session": 1, "erspan_id": 100,
+                     "via": "DIST-SW1:Vlan100"}
+    return s
+
+
+def test_erspan_spec_validates_clean():
+    assert errors(_erspan(spec())) == set()
+
+
+def test_pk9_erspan_analyzer_missing():
+    s = _erspan(spec())
+    del s["topology"]["entities"]["analyzer-1"]["mac"]
+    assert "PK9" in errors(s)
+    s["capture"]["erspan"]["analyzer"] = "nope"
+    assert "PK9" in errors(s)
+
+
+def test_pk9_erspan_origin_ip_not_on_device():
+    s = _erspan(spec())
+    s["capture"]["erspan"]["origin_ip"] = "10.10.100.1"  # DIST-SW1's SVI
+    assert "PK9" in errors(s)
+
+
+def test_pk9_erspan_via_unresolved():
+    s = _erspan(spec())
+    s["capture"]["erspan"]["via"] = "DIST-SW1:Gi9/9"
+    assert "PK9" in errors(s)
+
+
+def test_k4_no_capture_rubric():
+    s = spec()
+    for item in s["answer"]["rubric"]:
+        item["evidence_refs"] = [r for r in item["evidence_refs"] if r != "pk1"]
+    assert "K4" in errors(s)
+
+
+def test_l1_reason_leak():
+    s = spec()
+    s["capture"]["reason"] = "Local SPAN on ACC-SW1 Gi1/0/48 to watch the RADIUS traffic."
+    assert "L1" in errors(s)

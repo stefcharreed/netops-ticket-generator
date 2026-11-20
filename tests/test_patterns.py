@@ -122,7 +122,7 @@ def test_p7_unknown_kind():
 
 def test_p7_evidence_without_rule():
     p = pats()
-    radius(p)["capture"]["evidence_kind"] = "arp"
+    radius(p)["capture"]["evidence_kind"] = "dns_query"  # arp gained a symptom rule in phase 1
     assert "P7" in checks(p)
 
 

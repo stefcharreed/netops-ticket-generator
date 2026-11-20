@@ -352,6 +352,10 @@ def _check_K(spec: dict) -> list[dict]:
     rubric_ids = [item["id"] for item in rubric]
     out += [finding("K2", f"rubric id {rid} is used more than once", "make rubric ids unique")
             for rid in sorted({r for r in rubric_ids if rubric_ids.count(r) > 1})]
+    symptom_pks = {f["id"] for f in _flows(spec) if f["label"] == "symptom"}
+    if spec.get("capture") and not any(set(item["evidence_refs"]) & symptom_pks for item in rubric):
+        out.append(finding("K4", "no rubric item cites a symptom capture flow",
+                           "add a rubric item about reading the frames, citing the symptom pk id"))
     return out
 
 

@@ -42,7 +42,7 @@ KINDS: dict[str, dict] = {
             },
         },
         "needs": {"src": ("mac", "ip"), "dst": ("ip",)},
-        "symptom_rule": False,
+        "symptom_rule": True,
         "filters": {
             "reply": "arp.opcode == 2",
             "no_reply": "arp.opcode == 1",
