@@ -406,3 +406,128 @@ def test_pvst_untagged_sstp_carries_peer_native(spec):
     cut = parse_utc("2026-10-20T14:04:00Z").timestamp()
     seen = {(ts >= cut, _sstp_vlan(b)) for ts, b in build_frames(spec)[0] if b[:6] == SSTP}
     assert seen == {(False, (None, 1)), (False, (99, 99)), (True, (None, 99)), (True, (1, 1))}
+
+
+# --- phase 2 frame builders ------------------------------------------------------------------
+
+def _add(spec, **kw):
+    fl = {"id": "pk9", "t": "2026-10-20T14:07:00Z", "via": None, "label": "noise", "caused_by": None, **kw}
+    spec["capture"]["flows"].append(fl)
+    return fl
+
+
+def _own(spec, fid="pk9"):
+    frames, pk = build_frames(spec)
+    return [frames[n - 1] for n in pk[fid]]
+
+
+def test_stp_bpdu_frames(rep):
+    _add(rep, kind="stp_bpdu", src="ACC-SW1:Gi1/0/48", dst="DIST-SW1:Gi1/0/1",
+         params={"outcome": "topology_change", "count": 5})
+    own = _own(rep)
+    assert len(own) == 5
+    t0 = parse_utc("2026-10-20T14:07:00Z").timestamp()
+    assert own[0][0] == t0
+    assert all(abs(ts - (t0 + 2 * i)) <= 0.005 for i, (ts, _) in enumerate(own))
+    for _, b in own:
+        assert b[:6] == STP and b[6:12] == bytes.fromhex("00005e005311")
+        assert b[14:17] == b"\x42\x42\x03" and b[17 + 4] & 0x01  # TC bit in the flags byte
+        assert b[17 + 5:17 + 7] == bytes.fromhex("8001")  # root id priority 32768 + VLAN 1
+
+
+def test_cdp_frames_decode(rep):
+    rep["capture"]["span"]["trunk_vlans"] = [1, 99]
+    _add(rep, kind="cdp", src="DIST-SW1:Gi1/0/1", dst="ACC-SW1:Gi1/0/48",
+         params={"outcome": "announce", "native_vlan": 99, "device_id": "DIST-SW1", "port_id": "GigabitEthernet1/0/1"})
+    (_, b), = _own(rep)
+    assert b[:6] == bytes.fromhex("01000ccccccc") and b[12:14] != b"\x81\x00"  # peer native 1: untagged
+    assert b[14:22] == bytes.fromhex("aaaa0300000c2000")
+    payload = b[22:14 + int.from_bytes(b[12:14], "big")]
+    cdp = dpkt.cdp.CDP(payload)
+    tlv = {t.type: t.data for t in map(dpkt.cdp.CDP.TLV, cdp.tlvs)}  # dpkt keeps decoded TLVs as bytes
+    assert cdp.version == 2 and cdp.ttl == 180
+    assert tlv[dpkt.cdp.CDP_DEVID] == b"DIST-SW1" and tlv[dpkt.cdp.CDP_NATIVE_VLAN] == (99).to_bytes(2, "big")
+    assert dpkt.in_cksum(payload) == 0  # the checksum covers the payload
+
+
+def test_cdp_from_peer_tagged_vlan1_when_peer_native_differs(rep):
+    rep["capture"]["span"]["trunk_vlans"] = [1, 99]
+    rep["config_diffs"] = [{"id": "cd1", "device": "DIST-SW1", "t_change": "2026-10-20T14:04:00Z",
+                            "before": "interface GigabitEthernet1/0/1\n switchport mode trunk\n",
+                            "after": "interface GigabitEthernet1/0/1\n switchport trunk native vlan 99\n",
+                            "note": None}]
+    _add(rep, kind="cdp", src="DIST-SW1:Gi1/0/1", dst="ACC-SW1:Gi1/0/48",
+         params={"outcome": "announce", "native_vlan": 99, "device_id": "DIST-SW1", "port_id": "GigabitEthernet1/0/1"})
+    (_, b), = _own(rep)
+    assert dpkt.ethernet.Ethernet(b).vlan_tags[0].id == 1
+
+
+def _hsrp(spec, outcome):
+    _add(spec, kind="hsrp_hello", src="DIST-SW1:Vlan100", dst="ACC-SW1:Vlan100",
+         params={"outcome": outcome, "group": 10, "vip": "10.10.100.254", "priority": 110, "count": 3})
+    return _own(spec)
+
+
+def test_hsrp_active_uses_virtual_mac(spec):
+    own = _hsrp(spec, "active")
+    assert len(own) == 3
+    for _, b in own:
+        eth = dpkt.ethernet.Ethernet(b)
+        ip, udp = eth.data, eth.data.data
+        assert eth.dst == bytes.fromhex("01005e000002") and eth.src == bytes.fromhex("00000c07ac0a")
+        assert str(ipaddress.IPv4Address(ip.dst)) == "224.0.0.2" and ip.ttl == 1
+        assert udp.sport == udp.dport == 1985
+        h = dpkt.hsrp.HSRP(udp.data)
+        assert (h.state, h.group, h.priority, h.hello, h.hold) == (16, 10, 110, 3, 10)
+        assert h.auth == b"cisco\x00\x00\x00" and str(ipaddress.IPv4Address(h.vip)) == "10.10.100.254"
+
+
+def test_hsrp_standby_uses_bia(spec):
+    (_, b), *_ = _hsrp(spec, "standby")
+    eth = dpkt.ethernet.Ethernet(b)
+    assert eth.src == bytes.fromhex("00005e005302") and dpkt.hsrp.HSRP(eth.data.data.data).state == 8
+
+
+def _dhcp(spec, outcome, **params):
+    _add(spec, kind="dhcp", src="pc-18", dst="dns-1", via="DIST-SW1:Vlan100", params={"outcome": outcome, **params})
+    return _own(spec)
+
+
+def _dhcp_type(b):
+    d = dpkt.dhcp.DHCP(dpkt.ethernet.Ethernet(b).data.data.data)
+    return dict(d.opts)[dpkt.dhcp.DHCP_OPT_MSGTYPE][0], d
+
+
+def test_dhcp_no_offer_retries(spec):
+    own = _dhcp(spec, "no_offer")
+    assert [round(ts - own[0][0], 6) for ts, _ in own] == [0.0, 4.0, 8.0, 12.0]
+    for _, b in own:
+        eth = dpkt.ethernet.Ethernet(b)
+        assert eth.dst == b"\xff" * 6 and eth.src == bytes.fromhex("00005e005380")
+        assert ipaddress.IPv4Address(eth.data.src) == ipaddress.IPv4Address("0.0.0.0")
+        mtype, d = _dhcp_type(b)
+        assert mtype == dpkt.dhcp.DHCPDISCOVER and d.chaddr[:6] == bytes.fromhex("00005e005380")
+    assert len({_dhcp_type(b)[1].xid for _, b in own}) == 1
+
+
+def test_dhcp_ack_dora_order(spec):
+    own = _dhcp(spec, "ack")
+    types = [_dhcp_type(b)[0] for _, b in own]
+    assert types == [dpkt.dhcp.DHCPDISCOVER, dpkt.dhcp.DHCPOFFER, dpkt.dhcp.DHCPREQUEST, dpkt.dhcp.DHCPACK]
+    offer = dpkt.ethernet.Ethernet(own[1][1])
+    assert offer.src == bytes.fromhex("00005e005302") and offer.dst == bytes.fromhex("00005e005380")
+    assert str(ipaddress.IPv4Address(dpkt.dhcp.DHCP(offer.data.data.data).yiaddr)) == "10.10.100.50"
+
+
+def test_dhcp_copies_repeat_within_2ms(spec):
+    own = _dhcp(spec, "no_offer", retries=0, copies=6)
+    assert len(own) == 6 and len({b for _, b in own}) == 1
+    assert own[-1][0] - own[0][0] <= 6 * 0.002
+
+
+def test_dhcp_storm_under_cap(spec):
+    from packetgen.build import MAX_CAPTURE_FRAMES
+    _add(spec, kind="dhcp", src="pc-18", dst="dns-1", via="DIST-SW1:Vlan100",
+         params={"outcome": "no_offer", "retries": 5, "copies": 50})
+    frames, pk = build_frames(spec)
+    assert len(pk["pk9"]) == 300 and len(frames) < MAX_CAPTURE_FRAMES

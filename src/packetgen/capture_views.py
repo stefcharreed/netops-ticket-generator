@@ -62,6 +62,8 @@ def keeps(cap: dict, fclass: str) -> bool:
 def flow_vlan(spec: dict, flow: dict) -> int:
     """flow.vlan, else the src endpoint's VLAN, else the native VLAN (1 outside a SPAN)."""
     from packetgen.capture import resolve_endpoint
+    if flow.get("kind") == "cdp":
+        return 1  # CDP rides VLAN 1 (tagged when the sender's native VLAN isn't 1)
     if "vlan" in flow:
         return flow["vlan"]
     src = resolve_endpoint(spec, flow["src"])

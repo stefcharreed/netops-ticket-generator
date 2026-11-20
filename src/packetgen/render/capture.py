@@ -22,6 +22,9 @@ BCAST = b"\xff" * 6
 STP_MC = bytes.fromhex("0180c2000000")
 SSTP_MC = bytes.fromhex("01000ccccccd")  # Cisco PVST+ shared spanning tree protocol
 _SNAP_PVST = bytes.fromhex("aaaa0300000c010b")
+CDP_MC = bytes.fromhex("01000ccccccc")
+_SNAP_CDP = bytes.fromhex("aaaa0300000c2000")
+HSRP_MC = bytes.fromhex("01005e000002")
 _ETH_IP, _ETH_ARP = 0x0800, 0x0806
 _MIN_FRAME = 60
 _NOISE_ARP_S = {"low": 30.0, "medium": 10.0, "high": 3.0}
@@ -129,6 +132,8 @@ def _flow_frames(ctx: _Ctx, fl: dict, idx: int) -> list[_Frame]:
 
     if fl["kind"] == "arp":  # link-local: via plays no part
         out = _arp_frames(ctx, fl, rng, t0)
+    elif fl["kind"] in _L2_BUILDERS:
+        out = _L2_BUILDERS[fl["kind"]](ctx, fl, rng, t0)
     else:
         s, d = ctx.ep(src), ctx.ep(dst)
         smac, dmac = _need_mac(s, src), _need_mac(d, dst)
@@ -194,22 +199,105 @@ def _bridge_id(mac: bytes, vlan: int = 1) -> bytes:
     return struct.pack(">H", 0x8000 + vlan) + mac  # priority 32768 + sys-id-ext (the VLAN)
 
 
-def _rstp_body(mac: bytes, vlan: int) -> bytes:
-    """RSTP BPDU body, version 2, root = this bridge."""
-    return struct.pack(">HBBB8sI8sHHHHH", 0, 2, 2, 0x3C, _bridge_id(mac, vlan), 0, _bridge_id(mac, vlan),
+def _rstp_body(mac: bytes, vlan: int, flags: int = 0x3C) -> bytes:
+    """RSTP BPDU body, version 2, root = this bridge. flags 0x3C: designated, learning, forwarding (+0x01 TC)."""
+    return struct.pack(">HBBB8sI8sHHHHH", 0, 2, 2, flags, _bridge_id(mac, vlan), 0, _bridge_id(mac, vlan),
                        0x8001, 0, 20 * 256, 2 * 256, 15 * 256) + b"\x00"
 
 
-def _bpdu(mac: bytes) -> bytes:
+def _bpdu(mac: bytes, vlan: int = 1, flags: int = 0x3C) -> bytes:
     """IEEE RSTP BPDU in 802.3 + LLC (42 42 03): the native VLAN's untagged copy."""
-    llc = b"\x42\x42\x03" + _rstp_body(mac, 1)
+    llc = b"\x42\x42\x03" + _rstp_body(mac, vlan, flags)
     return _pad(STP_MC + mac + struct.pack(">H", len(llc)) + llc)
 
 
-def _sstp(mac: bytes, vlan: int) -> bytes:
+def _sstp(mac: bytes, vlan: int, flags: int = 0x3C) -> bytes:
     """Rapid-PVST+ SSTP BPDU: 802.3 + LLC/SNAP (Cisco, PID 0x010b), RSTP body, PVID TLV."""
-    llc = _SNAP_PVST + _rstp_body(mac, vlan) + struct.pack(">HHH", 0, 2, vlan)
+    llc = _SNAP_PVST + _rstp_body(mac, vlan, flags) + struct.pack(">HHH", 0, 2, vlan)
     return _pad(SSTP_MC + mac + struct.pack(">H", len(llc)) + llc)
+
+
+def _periodic(fl: dict, rng: random.Random, t0: float, count: int, interval: int) -> list[float]:
+    """count send times interval_s apart; the first at exactly t, the rest with +-5 ms seeded jitter."""
+    p = fl["params"]
+    n, step = p.get("count", count), p.get("interval_s", interval)
+    return [t0] + [t0 + step * i + rng.uniform(-0.005, 0.005) for i in range(1, n)]
+
+
+def _stp_frames(ctx: _Ctx, fl: dict, rng: random.Random, t0: float) -> list[tuple[float, bytes]]:
+    smac, vlan = _need_mac(ctx.ep(fl["src"]), fl["src"]), flow_vlan(ctx.spec, fl)
+    flags = 0x3D if fl["params"]["outcome"] == "topology_change" else 0x3C
+    build = _sstp if fl["params"].get("proto", "ieee") == "pvst" else _bpdu
+    return [(ts, build(smac, vlan, flags)) for ts in _periodic(fl, rng, t0, 10, 2)]
+
+
+def _cdp_frames(ctx: _Ctx, fl: dict, rng: random.Random, t0: float) -> list[tuple[float, bytes]]:
+    p = fl["params"]
+    smac = _need_mac(ctx.ep(fl["src"]), fl["src"])
+    tlvs = [(dpkt.cdp.CDP_DEVID, p["device_id"].encode()), (dpkt.cdp.CDP_PORTID, p["port_id"].encode()),
+            (dpkt.cdp.CDP_CAPABILITIES, struct.pack(">I", 0x28)),  # switch, IGMP
+            (dpkt.cdp.CDP_NATIVE_VLAN, struct.pack(">H", p["native_vlan"]))]
+    body = b"".join(bytes(dpkt.cdp.CDP.TLV(type=t, len=4 + len(v), data=v)) for t, v in tlvs)
+    cdp = dpkt.cdp.CDP(version=2, ttl=180, data=body)  # dpkt 1.9.8 packs .data, not .tlvs
+    llc = _SNAP_CDP + bytes(cdp)  # dpkt fills the RFC 1071 checksum over the CDP payload
+    frame = _pad(CDP_MC + smac + struct.pack(">H", len(llc)) + llc)
+    return [(ts, frame) for ts in _periodic(fl, rng, t0, 1, 60)]
+
+
+def _hsrp_frames(ctx: _Ctx, fl: dict, rng: random.Random, t0: float) -> list[tuple[float, bytes]]:
+    p = fl["params"]
+    s = ctx.ep(fl["src"])
+    state = {"active": 16, "standby": 8, "speak": 4}[p["outcome"]]
+    # HSRPv1 (RFC 2281): the Active router sources hellos from the group's virtual MAC.
+    smac = bytes.fromhex(f"00000c07ac{p['group']:02x}") if state == 16 else _need_mac(s, fl["src"])
+    hello = bytes(dpkt.hsrp.HSRP(version=0, opcode=0, state=state, hello=3, hold=10, priority=p.get("priority", 100),
+                                 group=p["group"], rsvd=0, auth=b"cisco\x00\x00\x00", vip=_ip4(p["vip"])))
+    return [(ts, _eth(HSRP_MC, smac, _ETH_IP, _ipv4_udp(s["ip"], "224.0.0.2", 1985, 1985, hello, 1,
+                                                    ctx.ipid(fl["src"]))))
+            for ts in _periodic(fl, rng, t0, 5, 3)]
+
+
+def _dhcp(op: int, xid: int, chaddr: bytes, mtype: int, opts: list[tuple[int, bytes]], yiaddr: str = "0.0.0.0",
+          giaddr: str = "0.0.0.0") -> bytes:
+    return bytes(dpkt.dhcp.DHCP(op=op, xid=xid, chaddr=chaddr + b"\x00" * 10,
+                                yiaddr=int(ipaddress.IPv4Address(yiaddr)), giaddr=int(ipaddress.IPv4Address(giaddr)),
+                                opts=[(dpkt.dhcp.DHCP_OPT_MSGTYPE, bytes([mtype]))] + opts))
+
+
+def _dhcp_frames(ctx: _Ctx, fl: dict, rng: random.Random, t0: float) -> list[tuple[float, bytes]]:
+    p = fl["params"]
+    c, srv, relay = ctx.ep(fl["src"]), ctx.ep(fl["dst"]), ctx.ep(fl["via"])
+    cmac, rmac = _need_mac(c, fl["src"]), _need_mac(relay, fl["via"])
+    xid = rng.randrange(2**32)
+    cid = [(dpkt.dhcp.DHCP_OPT_CLIENT_ID, b"\x01" + cmac), (dpkt.dhcp.DHCP_OPT_PARAM_REQ, bytes([1, 3, 6, 15]))]
+
+    def bcast(mtype: int, extra: list[tuple[int, bytes]]) -> bytes:
+        body = _dhcp(dpkt.dhcp.DHCP_OP_REQUEST, xid, cmac, mtype, cid + extra)
+        return _eth(BCAST, cmac, _ETH_IP, _ipv4_udp("0.0.0.0", "255.255.255.255", 68, 67, body, 64, ctx.ipid(fl["src"])))
+
+    def reply(mtype: int) -> bytes:  # relayed back from the client VLAN's gateway
+        sid = [(dpkt.dhcp.DHCP_OPT_SERVER_ID, _ip4(srv["ip"]))]
+        body = _dhcp(dpkt.dhcp.DHCP_OP_REPLY, xid, cmac, mtype, sid, yiaddr=c["ip"], giaddr=relay["ip"])
+        return _eth(cmac, rmac, _ETH_IP, _ipv4_udp(relay["ip"], c["ip"], 67, 68, body, 255, ctx.ipid(fl["via"])))
+
+    if p["outcome"] == "no_offer":
+        base = [(t0 + 4.0 * i, bcast(dpkt.dhcp.DHCPDISCOVER, [])) for i in range(p.get("retries", 3) + 1)]
+    else:
+        t_off = t0 + rng.uniform(0.002, 0.020)
+        t_ack = t_off + 0.005 + rng.uniform(0.002, 0.020)
+        req = [(dpkt.dhcp.DHCP_OPT_REQ_IP, _ip4(c["ip"])), (dpkt.dhcp.DHCP_OPT_SERVER_ID, _ip4(srv["ip"]))]
+        base = [(t0, bcast(dpkt.dhcp.DHCPDISCOVER, [])), (t_off, reply(dpkt.dhcp.DHCPOFFER)),
+                (t_off + 0.005, bcast(dpkt.dhcp.DHCPREQUEST, req)), (t_ack, reply(dpkt.dhcp.DHCPACK))]
+    out = []
+    for ts, frame in base:  # a loop replays every frame within a couple of milliseconds
+        t = ts
+        for _ in range(p.get("copies", 1)):
+            out.append((t, frame))
+            t += rng.uniform(0.0002, 0.002)
+    return out
+
+
+_L2_BUILDERS = {"stp_bpdu": _stp_frames, "cdp": _cdp_frames, "hsrp_hello": _hsrp_frames, "dhcp": _dhcp_frames}
 
 
 def _noise_frames(ctx: _Ctx, cap: dict, lo: float, hi: float) -> list[_Frame]:
