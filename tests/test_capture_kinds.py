@@ -219,3 +219,12 @@ def test_peer_allowed_vlans_picks_the_monitored_stanza():
     s["config_diffs"][0]["after"] = ("interface GigabitEthernet1/0/1\n switchport trunk allowed vlan 1,10\n"
                                      "interface GigabitEthernet1/0/2\n switchport trunk allowed vlan 1,10,30\n")
     assert capture.peer_allowed_vlans(s, parse_utc("2026-10-21T14:05:00Z")) == {1, 10}
+
+
+def test_span_new_kinds():
+    stp = {"kind": "stp_bpdu", "params": {"outcome": "bpdu"}}
+    assert capture_kinds.span_s(stp) == 18.0
+    assert capture_kinds.span_s({"kind": "cdp", "params": {"outcome": "announce", "count": 3, "interval_s": 60}}) == 120.0
+    assert capture_kinds.span_s({"kind": "hsrp_hello", "params": {"outcome": "active"}}) == 12.0
+    assert capture_kinds.span_s({"kind": "dhcp", "params": {"outcome": "no_offer"}}) == 12.01
+    assert capture_kinds.span_s({"kind": "dhcp", "params": {"outcome": "ack"}}) == 0.1

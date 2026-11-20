@@ -18,6 +18,7 @@ from packetgen.topology import link_ends, short_if
 
 _DEAD, _ALIVE = "IOS:RADIUS-4-RADIUS_DEAD", "IOS:RADIUS-4-RADIUS_ALIVE"
 _DEAD_LEAD = timedelta(seconds=30)  # a switch marks a server dead ~30 s after the first unanswered request
+_MULTICAST_KINDS = {"arp", "stp_bpdu", "cdp", "hsrp_hello"}  # broadcast/multicast: no next-hop mac needed
 _UNSAFE = re.compile(r"[^A-Za-z0-9._-]")
 _MAC = re.compile(r"[0-9A-Fa-f]{2}([:-])(?:[0-9A-Fa-f]{2}\1){4}[0-9A-Fa-f]{2}|(?:[0-9A-Fa-f]{4}\.){2}[0-9A-Fa-f]{4}")
 
@@ -227,7 +228,15 @@ def _check_pk3(spec: dict, fl: dict, kind: dict) -> list[dict]:
         if ends.get(role) is not None:
             out += [finding("PK3", f"{fid}: {role} {fl[role]!r} has no {attr}", f"declare its {attr} in topology")
                     for attr in kind["needs"][role] if not ends[role][attr]]
-    if fl["kind"] != "arp":  # arp requests go to broadcast; everything else is unicast toward via/dst
+    if fl["kind"] == "dhcp":  # broadcast out, relayed back: the relay (gateway) is the far side
+        relay = ends.get("via")
+        if fl.get("via") is None or (relay is not None and not (relay["mac"] and relay["ip"])):
+            out.append(finding("PK3", f"{fid}: dhcp needs via, the relay with a mac and ip",
+                               "set via to the client VLAN's gateway (ip helper), e.g. HOST:Vlan20"))
+        if fl["params"].get("outcome") == "ack" and ends.get("src") is not None and not ends["src"]["ip"]:
+            out.append(finding("PK3", f"{fid}: an ack leases the src's ip, but {fl['src']!r} has none",
+                               "declare the client's ip in topology"))
+    elif fl["kind"] not in _MULTICAST_KINDS:  # unicast toward via/dst
         hop = "via" if fl.get("via") is not None else "dst"
         if ends.get(hop) is not None and not ends[hop]["mac"]:
             out.append(finding("PK3", f"{fid}: {hop} {fl[hop]!r} has no mac (frames toward dst need one)",
@@ -273,6 +282,8 @@ def _check_pk4(fl: dict, kind: dict) -> list[dict]:
         return out
     if fl["kind"] == "arp" and params["outcome"] == "gratuitous" and fl["dst"] != fl["src"]:
         out.append(finding("PK4", f"{fid}: gratuitous ARP must have dst == src", "set dst to the same endpoint as src"))
+    if fl["kind"] == "cdp" and fl.get("vlan", 1) != 1:
+        out.append(finding("PK4", f"{fid}: CDP rides VLAN 1", "drop the flow's vlan, or set it to 1"))
     if fl["kind"] == "dns_query" and params["outcome"] == "ok":
         if "answer" not in params:
             out.append(finding("PK4", f"{fid}: outcome ok needs an answer", "add params.answer"))

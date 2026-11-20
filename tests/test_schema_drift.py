@@ -33,3 +33,8 @@ def test_capture_methods_match_schema():
     cap = PROPS["capture"]["properties"]
     assert cap["method"]["enum"] == list(METHODS)
     assert cap["span"]["properties"]["encapsulation"]["enum"] == list(ENCAPS)
+
+
+def test_flow_kinds_match_schema():
+    from packetgen.capture_kinds import KINDS
+    assert PROPS["capture"]["properties"]["flows"]["items"]["properties"]["kind"]["enum"] == list(KINDS)

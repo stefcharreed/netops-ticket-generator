@@ -35,6 +35,12 @@ def frame_class(dst_mac: bytes) -> str | None:
 def flow_class(spec: dict, flow: dict) -> str:
     """'control_plane' when the capture device sends or is sent the flow (or it is link-local multicast), else 'data'."""
     from packetgen.capture import resolve_endpoint  # capture.py imports this module
+    from packetgen.capture_kinds import KINDS
+    kind = KINDS.get(flow["kind"], {})
+    if "l2_dst" in kind:  # a control protocol: classify by its destination MAC, as the noise frames are
+        return frame_class(bytes.fromhex(kind["l2_dst"])) or "data"
+    if "mcast_ip" in kind:
+        return "control_plane"
     dev = spec["capture"]["device"]
     if any(flow[r] == dev or flow[r].startswith(dev + ":") for r in ("src", "dst")):
         return "control_plane"

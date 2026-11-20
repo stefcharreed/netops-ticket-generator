@@ -105,3 +105,13 @@ def test_method_label():
     assert cv.method_label(spec("native")["capture"]) == "Local SPAN"
     assert cv.method_label(spec("replicate")["capture"]) == "Local SPAN (encapsulation replicate)"
     assert cv.method_label(spec("erspan")["capture"]) == "ERSPAN to analyzer-1"
+
+
+def test_flow_class_l2_kinds():
+    s = spec()
+    fl = dict(flow(s, "pk1"), kind="stp_bpdu", params={"outcome": "bpdu"})  # src is the capture device
+    assert cv.flow_class(s, fl) == "l2_control"
+    fl["kind"] = "cdp"
+    assert cv.flow_class(s, fl) == "l2_control"
+    fl = dict(flow(s, "pk3"), kind="hsrp_hello")  # pc-18 -> dns-1, but hellos go to 224.0.0.2
+    assert cv.flow_class(s, fl) == "control_plane"

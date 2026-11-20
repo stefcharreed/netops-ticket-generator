@@ -241,7 +241,7 @@
             "required": ["id", "kind", "t", "src", "dst", "params", "label", "caused_by"],
             "properties": {
               "id": {"type": "string", "pattern": "^pk\\d+$"},
-              "kind": {"enum": ["radius_request", "arp", "dns_query"]},
+              "kind": {"enum": ["radius_request", "arp", "dns_query", "stp_bpdu", "cdp", "hsrp_hello", "dhcp"]},
               "t": {"$ref": "#/$defs/utc"},
               "src": {"type": "string"},
               "dst": {"type": "string"},

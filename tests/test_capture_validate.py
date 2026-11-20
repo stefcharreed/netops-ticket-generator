@@ -377,3 +377,42 @@ def test_pk5_arp_edit_on_other_port_fails():
     for side in ("before", "after"):
         s["config_diffs"][0][side] = s["config_diffs"][0][side].replace("GigabitEthernet1/0/1\n", "GigabitEthernet1/0/2\n")
     assert "PK5" in errors(s)
+
+
+# --- phase 2 kinds: PK3/PK4/PK8 ---------------------------------------------------------------
+
+def add_flow(s: dict, **kw) -> dict:
+    fl = {"id": "pk9", "t": "2026-10-20T14:07:00Z", "via": None, "label": "noise", "caused_by": None, **kw}
+    s["capture"]["flows"].append(fl)
+    return fl
+
+
+def test_pk3_dhcp_needs_relay():
+    s = spec()
+    add_flow(s, kind="dhcp", src="pc-18", dst="dns-1", params={"outcome": "no_offer"})
+    assert "PK3" in errors(s)
+    s["capture"]["flows"][-1]["via"] = "DIST-SW1:Vlan100"
+    assert "PK3" not in errors(s)
+
+
+def test_pk3_dhcp_ack_needs_client_ip():
+    s = spec()
+    s["topology"]["entities"]["pc-new"] = {"mac": "00:00:5e:00:53:82"}
+    add_flow(s, kind="dhcp", src="pc-new", dst="dns-1", via="DIST-SW1:Vlan100", params={"outcome": "ack"})
+    assert "PK3" in errors(s)
+
+
+def test_pk4_cdp_vlan_must_be_1():
+    s = spec()
+    fl = add_flow(s, kind="cdp", src="DIST-SW1:Gi1/0/1", dst="ACC-SW1:Gi1/0/48",
+                  params={"outcome": "announce", "native_vlan": 1, "device_id": "DIST-SW1", "port_id": "Gi1/0/1"})
+    assert "PK4" not in errors(s)
+    fl["vlan"] = 10
+    assert "PK4" in errors(s)
+
+
+def test_pk8_bpdu_symptom_on_native_span():
+    s = spec()
+    add_flow(s, kind="stp_bpdu", src="DIST-SW1:Gi1/0/1", dst="ACC-SW1:Gi1/0/48", params={"outcome": "bpdu"},
+             label="symptom", caused_by="e1")
+    assert "PK8" in errors(s)
