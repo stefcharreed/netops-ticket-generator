@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from packetgen.capture_views import method_label
 from packetgen.timebase import parse_utc
 
 DELIVERABLE = """\
@@ -24,8 +25,9 @@ def render_brief(spec: dict, artifacts: list[str], out: Path) -> None:
         deliverable = deliverable.replace("minutes\n  and config diff lines.",
                                           "minutes,\n  config diff lines and capture frame numbers.")
         lo, hi = (parse_utc(cap[k]).strftime("%H:%M") for k in ("start", "end"))
-        section = (f"## Capture\nSPAN on {cap['device']} {cap['interface']} (toward {cap['peer']}), "
-                   f"both directions, {lo}–{hi} UTC.\n\n")
+        toward = f" (toward {cap['peer']})" if cap.get("peer") else ""
+        section = (f"## Capture\n{method_label(cap)} on {cap['device']} {cap['interface']}{toward}, "
+                   f"both directions, {lo}–{hi} UTC.\n{cap['reason']}\n\n")
     text = (f"# Incident packet {spec['meta']['id']}\n\n{spec['meta']['brief']}\n\n"
             f"## Files\n{files}\n\n{section}## Deliverable\n{deliverable}")
     (out / "BRIEF.md").write_text(text)

@@ -82,8 +82,26 @@ def test_brief_capture_line(tmp_path):
     s = load_spec(ROOT / "tests" / "fixtures" / "radius_capture.json")
     render_brief(s, ["logs.xlsx"], tmp_path)
     text = (tmp_path / "BRIEF.md").read_text()
-    assert "## Capture\nSPAN on ACC-SW1 Gi1/0/48 (toward DIST-SW1), both directions, 14:00–14:10 UTC.\n" in text
+    assert ("## Capture\nLocal SPAN on ACC-SW1 Gi1/0/48 (toward DIST-SW1), both directions, 14:00–14:10 UTC.\n"
+            + s["capture"]["reason"] + "\n\n## Deliverable") in text
     assert "config diff lines and capture frame numbers." in text
+
+
+def test_brief_erspan_label(tmp_path):
+    s = load_spec(ROOT / "tests" / "fixtures" / "radius_capture.json")
+    cap = s["capture"]
+    cap["method"] = "erspan"
+    del cap["span"]
+    cap["erspan"] = {"origin_ip": "10.10.100.2", "analyzer": "analyzer-1", "session": 1, "erspan_id": 100}
+    render_brief(s, ["logs.xlsx"], tmp_path)
+    assert "## Capture\nERSPAN to analyzer-1 on ACC-SW1 Gi1/0/48 (toward DIST-SW1)," in (tmp_path / "BRIEF.md").read_text()
+
+
+def test_brief_entity_peer_has_no_toward(tmp_path):
+    s = load_spec(ROOT / "tests" / "fixtures" / "radius_capture.json")
+    del s["capture"]["peer"]
+    render_brief(s, ["logs.xlsx"], tmp_path)
+    assert "## Capture\nLocal SPAN on ACC-SW1 Gi1/0/48, both directions" in (tmp_path / "BRIEF.md").read_text()
 
 
 TICKET = json.loads((ROOT / "tests" / "fixtures" / "ticket.json").read_text())

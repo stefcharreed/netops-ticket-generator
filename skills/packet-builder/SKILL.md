@@ -20,11 +20,15 @@ Schema: `<repo>/schema/scenario.schema.json`. Worked example (read it before wri
   (`root_cause|symptom|unrelated|noise`), `caused_by` (parent id or null), `signal` (`{series, op, value}` or null).
 - `telemetry[]`: `id` (`tm1`…), `device`, `metric`, `kind` (`gauge|rate|delta`), `unit`, `interval_s`, `points [[t, v]]`.
 - `config_diffs[]`: `id` (`cd1`…), `device`, `t_change`, `before`, `after`, `note`.
-- `capture` (optional synthetic SPAN capture; worked example `<repo>/tests/fixtures/radius_capture.json`):
-  `device`, `interface` (the SPAN port), `peer`, `peer_interface` (the linked device and port), `direction`
-  `both`, `start`, `end` (UTC, inside the window), `tagged` `false`, `noise` (`low|medium|high`), and `flows[]`
-  of `{id (pk1…), kind, t, src, dst, via, params, label (symptom|unrelated|noise), caused_by}`. Kinds:
-  `radius_request`, `arp`, `dns_query`; only `radius_request` can be a `symptom`. An endpoint is an entity
+- `capture` (optional synthetic capture; worked examples `<repo>/tests/fixtures/radius_capture.json` (native
+  SPAN) and `<repo>/tests/fixtures/trunk_pruned_capture.json` (replicate SPAN on a trunk)): `method`
+  (`span|erspan`), `reason` (the technician's why, naming `device`), `span {encapsulation native|replicate,
+  native_vlan?, trunk_vlans}` or `erspan {origin_ip, analyzer, session, erspan_id, via?}`, `device`,
+  `interface` (the monitored port), `peer` (the linked device, or an entity attached to that port),
+  `peer_interface` (required for a device peer), `direction` `both`, `start`, `end` (UTC, inside the window),
+  `noise` (`low|medium|high`), and `flows[]` of `{id (pk1…), kind, t, src, dst, via, vlan?, params, label
+  (symptom|unrelated|noise), caused_by}`. Kinds: `radius_request`, `arp`, `dns_query`; only `radius_request`
+  and `arp` (`no_reply`) can be a `symptom`. An endpoint is an entity
   name, `HOST:IF` (a declared interface, e.g. `ACC-SW1:Vlan100`) or a bare `HOST` with exactly one interface.
   `via` is the gateway MAC that frames toward `dst` use (null for same-subnet traffic). Flows are nodes in the
   causal graph like events, and rubric `evidence_refs` may cite a `pk` id.
@@ -59,8 +63,19 @@ Schema: `<repo>/schema/scenario.schema.json`. Worked example (read it before wri
 - **CPU series** must use the metric names `cpu_5s`, `cpu_1min`, `cpu_5min` exactly; other names skip S3.
 
 ## Writing a capture
+- Pick the method from the pattern hint's `methods` the way a technician would for this topology: a local SPAN
+  when the analyzer can sit on the switch, `encapsulation replicate` when tags or BPDUs matter (a trunk, an STP
+  fault), ERSPAN when the analyzer is a routed hop or more away. Then write `reason` like a tech's note in the
+  ticket: where, which method, and why that spot (e.g. "ERSPAN from ACC-SW1 Gi1/0/48: the analyzer sits in the
+  data center, a routed hop away, so a local SPAN can't reach it."). Name the device; never hint at the cause.
+- Add one rubric item about reading the frames that cites the symptom `pk` id (K4): what the candidate should
+  see in the capture (tags, the GRE-wrapped request, the unanswered retransmits), not the method's name.
 - Add a few noise flows (an accepted RADIUS request for another user, a DNS lookup, an ARP with no reply) so
-  the symptom is not the only conversation. The renderer adds BPDUs and background ARP on its own.
+  the symptom is not the only conversation. The renderer adds BPDUs (replicate SPAN only, one per trunk VLAN)
+  and background ARP on its own.
+- An `arp` symptom (an unanswered gateway ARP on a pruned VLAN) needs a config diff on `capture.peer` before the
+  flow whose `after` has a plain `switchport trunk allowed vlan 1,10` list without the flow's VLAN (PK5), and the
+  flow's VLAN in `span.trunk_vlans` (PK9). The renderer then stops that VLAN's BPDUs and ARP answers too.
 - Think like a SPAN port: it sits on `capture.interface`, so flows must plausibly cross that link. Put `via`
   on traffic that crosses the gateway; leave it null for same-subnet traffic.
 - A `no_response` RADIUS flow lasts `timeout_s * retries` seconds, all of which must fit before `capture.end`,
@@ -107,16 +122,16 @@ catalog first (filters: `--topic`, `--cert`, `--exclude ID...`; also `--file`, `
 | Check | Means | Fix |
 |---|---|---|
 | S0 | schema violation | match the schema; the message gives the JSON path |
-| P1–P7 | catalog (all errors): unknown registry id / id not verified / header_style not renderable (ios, nxos, asa, bsd, meraki only) / topic or cert missing or invalid / duplicate pattern id / required key missing (id, symptom, root_cause, registry_ids, red_herrings, topic, cert) / P7 capture hint invalid (needs `kinds`, `evidence_kind`, `evidence`; kinds in the flow catalog; evidence kind among them and with a symptom rule) | fix the entry in `scenarios/starter.yaml`; use a verified, renderable registry id |
+| P1–P7 | catalog (all errors): unknown registry id / id not verified / header_style not renderable (ios, nxos, asa, bsd, meraki only) / topic or cert missing or invalid / duplicate pattern id / required key missing (id, symptom, root_cause, registry_ids, red_herrings, topic, cert) / P7 capture hint invalid (needs `kinds`, `evidence_kind`, `evidence`, `methods`; kinds in the flow catalog; evidence kind among them and with a symptom rule; methods a non-empty list of `span`/`erspan`) | fix the entry in `scenarios/starter.yaml`; use a verified, renderable registry id |
 | R1–R5 | unknown id / unverified / missing or extra field / value breaks pattern / header style mismatch | see **log-formats** |
 | T1–T4 | naive time / outside window / effect before cause / change after first symptom | use `Z` times; reorder |
 | C1–C4 | root missing or doubled / chain can't reach root / noise has a parent / answer chain wrong | fix labels and `caused_by` |
 | C5 | an id is used more than once across events, telemetry, config diffs and capture flows | give each its own id |
 | S1–S4 | uneven points / error counter not rate or negative / CPU 5 min peak above 1 min / signal not visible | regenerate the series |
 | E1–E2 | unknown device / undeclared MAC or IP | declare it in `topology` |
-| K1–K3 | evidence ref unknown / duplicate rubric id / ref not rendered | point at real ids (`doc:<id>` rows count) |
+| K1–K4 | evidence ref unknown / duplicate rubric id / ref not rendered / a capture spec with no rubric item citing a symptom `pk` flow | point at real ids (`doc:<id>` rows count); add a rubric item about reading the frames |
 | D1–D4 | more than one documented override / override and `answer.doc_mismatch` don't match up / `attached.device` not in topology / `kind: cause` but the documented value isn't in the root cause | keep one override, point `doc_mismatch.ref` at its row, attach to a real device, put the documented value in the root cause or use `red_herring` |
-| L1 | a root-cause term leaks into id, brief, ticket text or a visible note | reword |
+| L1 | a root-cause term leaks into id, brief, ticket text, a visible note, `capture.reason` or a flow string param | reword |
 | N1 / Q1 | too little noise / root is the loudest line (warning) | add noise; quieter root evidence |
 | TK1 | ticket names a device, IP or interface not in topology | name only known devices/addresses; an end_user shouldn't name gear at all; tokens like O365/M365, W10 or room numbers (B204) trip TK1, so spell them out (Office 365, Windows 10, room 204) |
 | TK2 | end_user ticket quotes device output (show/traceroute/config) | describe what the user noticed |
@@ -124,11 +139,13 @@ catalog first (filters: `--topic`, `--cert`, `--exclude ID...`; also `--file`, `
 | TK4 | no misdirection planted (warning) | plant one true-but-misleading statement |
 | TK5 | ticket reuses 2+ word stems from `answer.fix`/`root_cause_terms` (warning); stems already in `meta.brief` or symptom-event fields do not count | describe the symptom, not the cause |
 | PK0 | capture extra (dpkt) not installed | `pip install -e '.[capture]'` in the repo's venv |
-| PK1 | capture device, peer or interface not in topology, or the pair isn't linked | declare the device, interface and link |
+| PK1 | capture device, peer or interface not in topology, the pair isn't linked, a device peer has no `peer_interface`, or an entity peer isn't attached to the monitored port | declare the device, interface and link; set the entity's `attached` |
 | PK2 | capture start not before end, outside the window, or a flow plus its span doesn't fit | move the flow or widen the capture inside the window |
 | PK3 | endpoint doesn't resolve or lacks the MAC/IP the kind needs, or an entity/interface MAC isn't a MAC or its IP isn't IPv4 (RADIUS client needs an entity with a MAC; DNS answer needs an IP) | declare it under `entities` or the device's `interfaces[]` |
 | PK4 | flow params break the kind's schema, gratuitous ARP with dst != src, DNS ok without answer, or AAAA ok | fix the params; AAAA answers are unsupported |
-| PK5 | symptom on a kind with no symptom rule, or a RADIUS flow whose outcome disagrees with the RADIUS_DEAD/ALIVE log events | label it noise or use `radius_request`; no_response: put it inside a dead period (DEAD at most 30 s after the request, or earlier with no ALIVE between); accept/reject: move it outside DEAD <= t < next ALIVE; a symptom flow caused by the DEAD event can't start before it (T3), so the 30 s lead needs an earlier cause |
+| PK5 | symptom on a kind with no symptom rule, an `arp` symptom that isn't `no_reply` or whose VLAN the peer's trunk still allows at `t`, or a RADIUS flow whose outcome disagrees with the RADIUS_DEAD/ALIVE log events | label it noise or use `radius_request`; no_response: put it inside a dead period (DEAD at most 30 s after the request, or earlier with no ALIVE between); accept/reject: move it outside DEAD <= t < next ALIVE; a symptom flow caused by the DEAD event can't start before it (T3), so the 30 s lead needs an earlier cause |
 | PK6 | tshark missing or older than 4.2, a filter/dump failure, malformed or expert-error frames, a symptom flow whose expected filter matches none of its frames; a warning "the tshark read-back was skipped" under `--no-tshark` | install tshark 4.2+; fix the flow params; rebuild without `--no-tshark` before handing out |
 | PK7 | capture over 5,000 frames | shorten `start..end` or lower `noise` |
+| PK8 | a symptom flow the capture method can't see | pick a method that sees it (replicate for BPDUs) |
+| PK9 | `reason` doesn't name `capture.device`; a flow VLAN not native and not in `trunk_vlans`; ERSPAN analyzer not an entity with mac+ip, `origin_ip` not on `device`, or `via` unresolved | fix the reason or the method block |
 | X1, Z1, Z2, B1 | xlsx date cell / non-doc IP / non-doc MAC / packet exists | build-side; B1 needs `--force` |

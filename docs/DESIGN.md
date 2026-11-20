@@ -37,7 +37,8 @@ Modules (`src/packetgen/`):
 - `validate.py` runs every spec rule; `ticket.py` holds the ticket rules; `patterns.py` checks the
   fault-pattern catalog.
 - `render/` writes each packet file and returns a manifest (spec id to row, file or line).
-- `capture.py` resolves capture endpoints and runs PK1-PK5; `capture_kinds.py` is the flow-kind catalog
+- `capture.py` resolves capture endpoints and runs PK1-PK5, PK8 and PK9; `capture_kinds.py` is the flow-kind catalog;
+  `capture_views.py` holds the per-method view rules (what each capture method sees, VLANs, BRIEF label)
   (param schemas, endpoint needs, display filters); `render/capture.py` writes the pcap (the only module
   that imports dpkt); `tshark.py` is the read-back.
 - `build.py` is the pipeline above; `sanitize.py` is the leak gate; `cli.py` is the only module that prints.
@@ -106,8 +107,8 @@ after the registry checks, because rules that compare times need parseable insta
 | C | `validate.py` | C1-C5 | an id used more than once across events, telemetry, config diffs and capture flows (C5, checked first; the rest is skipped); root id unknown or a second `root_cause` label; a symptom whose `caused_by` chain loops, dangles or stops short of the root; unrelated/noise with a parent; `answer.chain` not starting at the root, naming unknown ids or out of time order |
 | S | `validate.py` | S1-S4 | points not exactly `interval_s` apart; error/discard/CRC metrics not `rate`/`delta` or negative; `cpu_1min`/`cpu_5min` peaking above a shorter window on the same device; an event's `signal` not met within one interval of the event, or its series missing or on another device |
 | E | `validate.py` | E1-E2 | device not in topology; a field ending in `ip`/`mac` whose value is not a mgmt IP or declared entity |
-| K | `validate.py`, `build.py` | K1-K3 | rubric evidence id unknown; duplicate rubric id; evidence id not in any rendered file (post-render) |
-| L | `validate.py` | L1 | a `root_cause_terms` entry appears in `meta.id`, `meta.brief`, ticket text, or a diff note when notes are shown |
+| K | `validate.py`, `build.py` | K1-K4 | rubric evidence id unknown; duplicate rubric id; evidence id not in any rendered file (post-render); a capture spec with no rubric item citing a symptom `pk` flow |
+| L | `validate.py` | L1 | a `root_cause_terms` entry appears in `meta.id`, `meta.brief`, ticket text, a diff note when notes are shown, `capture.reason` or a flow string param |
 | N | `validate.py` | N1 | fewer unrelated/noise events than `min_noise` |
 | TK | `ticket.py` | TK1-TK5 | see Tickets |
 | Q | `validate.py` | Q1 | warning: the root cause is the single most severe line |
@@ -177,24 +178,38 @@ L1 also checks the ticket text against `root_cause_terms`.
 `packetgen patterns` runs `check_patterns()` before listing (all errors):
 P1 unknown registry id; P2 registry id not verified; P3 registry id's `header_style` not renderable;
 P4 `topic` or `cert` missing or not allowed; P5 duplicate pattern id; P6 required key missing;
-P7 the optional `capture` hint is invalid (not a mapping, missing `kinds`/`evidence_kind`/`evidence`, a kind
-not in the flow catalog, or an `evidence_kind` that is not among `kinds` or has no symptom rule).
+P7 the optional `capture` hint is invalid (not a mapping, missing `kinds`/`evidence_kind`/`evidence`/`methods`, a
+kind not in the flow catalog, an `evidence_kind` that is not among `kinds` or has no symptom rule, or `methods` not
+a non-empty list of capture methods). `methods` lists the methods a technician would pick for that fault; the
+interview-packet skill chooses from it (a spec doesn't record its pattern, so no check enforces the choice).
 The interview-packet skill filters with `--topic`/`--cert`, excludes the last 3 patterns from its
 history file, and picks one with a real random draw.
 
 ## Capture
-An optional synthetic SPAN capture, written as `capture_<device>_<interface>.pcap` (`/` and `:` in the
-interface become `-`). It is evidence the candidate reads in Wireshark; the spec stays the answer key.
+An optional synthetic capture, written as `capture_<device>_<interface>.pcap` (`/` and `:` in the interface
+become `-`), taken the way a technician would for that fault: a local SPAN (native, or `encapsulation replicate`
+to keep 802.1Q tags and BPDUs) or an ERSPAN type II session to a remote analyzer. It is evidence the candidate
+reads in Wireshark; the spec stays the answer key.
 Install the optional extra for it: `pip install -e '.[capture]'` (dpkt), plus tshark 4.2 or newer for the read-back.
 
-**Spec block** (`capture`, all keys required except `noise`):
-- `device`, `interface`: where the SPAN destination port sits. `peer`, `peer_interface`: the device and
-  port on the other end of the link (its MAC is the BPDU source). The pair must be in `topology.links`.
-- `direction`: `both` only. `tagged`: `false` only (no VLAN-tagged captures yet). Both are pinned by the schema.
+**Spec block** (`capture`; `noise`, `peer_interface` and the method block of the other method are optional):
+- `method`: `span` or `erspan`. `reason`: the technician's explanation of why this capture point and method,
+  20-300 printable characters, naming `capture.device` (PK9) and never the cause (L1). BRIEF prints it.
+- `span` (when `method: span`): `encapsulation` `native|replicate`, `native_vlan` (default 1), `trunk_vlans`
+  (required under replicate: the VLANs the monitored trunk carries).
+- `erspan` (when `method: erspan`): `origin_ip` (an ip on `device`), `analyzer` (an entity with a mac and ip),
+  `session` (1-66), `erspan_id` (1-1023), optional `via` (the gateway in front of the analyzer).
+- `device`, `interface`: the monitored port. `peer`: the device on the other end of that link (the pair must be
+  in `topology.links`, and `peer_interface` names its port, whose MAC sources the BPDUs), or an entity (a PC or
+  hub) whose `attached` device/interface is the monitored port. An entity peer sends no BPDUs.
+- `direction`: `both` only, pinned by the schema.
 - `start`, `end`: UTC bounds, inside `meta.window`. `noise`: `low|medium|high` (default `medium`).
 - `flows[]`: `id` (`pk1`...), `kind`, `t`, `src`, `dst`, `via` (optional, may be null), `params`, `label`
   (`symptom|unrelated|noise`), `caused_by`. Flows join the same causal graph as events: a symptom flow must trace
-  back to the root, and unrelated/noise flows have no parent. Rubric `evidence_refs` may cite a `pk` id.
+  back to the root, and unrelated/noise flows have no parent. Rubric `evidence_refs` may cite a `pk` id, and a
+  capture spec must have one that cites a symptom flow (K4): the item is about reading the frames. Optional
+  `vlan` sets the flow's VLAN; otherwise it is the `src` endpoint's (entity `attached.vlan` or interface `vlan`),
+  else the native VLAN.
 - Topology side: a device may declare `interfaces[]` (`name`, `mac`, optional `ip`, optional `vlan`).
 
 **Endpoint names.** An endpoint is a `topology.entities` name, `HOST:IFNAME` (a declared device interface), or
@@ -203,8 +218,24 @@ need the attributes the kind lists (MAC and IP for `src`, IP for `dst`). `via` i
 toward `dst` go to the `via` MAC and routed replies come back from it with TTL one lower; with no `via` they go
 straight to `dst`. `arp` ignores `via` (link-local broadcast).
 
-**Kinds and filters** (`capture_kinds.py`; only `radius_request` has a symptom rule, so only it can be labeled
-`symptom`). Filters are catalog constants keyed by `params.outcome`:
+**Methods and views.** The renderer builds every frame untagged with a VLAN and a class, then a per-method view
+(`capture_views.py`) keeps what that capture point can see and wraps it the way the gear would. Classes:
+`l2_control` (dst `01:80:c2:00:00:00`, `01:00:0c:cc:cc:cc` or `01:00:0c:cc:cc:cd`), `control_plane` (the
+capture device sends or is sent the flow, or it goes to 224.0.0.0/24), `data` (the rest).
+
+| Method | Keeps | On the wire |
+|---|---|---|
+| span native | data, control_plane | untagged (Cisco: "packets are sent in native form") |
+| span replicate | all | 802.1Q tag with the frame's VLAN, unless it is the native VLAN |
+| erspan | data, control_plane | outer Ethernet (via or origin MAC -> analyzer) / IPv4 proto 47, TTL 254 with `via` else 255 / GRE (S bit, seq +1 per frame, 0x88BE) / ERSPAN II (version 1, VLAN, COS 0, En 00, T 0, `erspan_id`) / the untagged frame |
+
+A symptom flow its method can't see is PK8. PK6 adds a constant suffix to the symptom's filter so tshark proves
+the encapsulation too: `&& vlan` for a tagged flow under replicate, `&& erspan` under ERSPAN. Filters are still
+never built from spec text. Assumed, not in Cisco's docs: ERSPAN copies no L2 control frames and sends the inner
+frame untagged with the VLAN in its header; routers can source ERSPAN.
+
+**Kinds and filters** (`capture_kinds.py`; `radius_request` and `arp` have symptom rules, so only they can be
+labeled `symptom`). Filters are catalog constants keyed by `params.outcome`:
 
 | Kind | Outcome | Display filter that must match |
 |---|---|---|
@@ -234,10 +265,15 @@ RADIUS flow lasts `timeout_s * retries` seconds (retransmits every `timeout_s`),
 milliseconds. The whole span must fit inside `capture.start..end` (PK2). Reply delays are seeded jitter.
 
 **Noise and SPAN realism.** The renderer adds background traffic so the symptom is not the only thing in the
-file: implicit noise is a spanning-tree BPDU from the peer every 2 s at `medium` and `high` (seeded phase offset
-under 2 s, +-5 ms jitter per frame, bridge priority 32769 = 32768 + VLAN 1), plus ARP request/reply pairs among
+file: implicit noise is Rapid-PVST+ BPDUs from a device peer every 2 s at `medium` and `high` (seeded phase
+offset under 2 s, +-5 ms jitter per tick): for the native VLAN an IEEE BPDU plus an untagged SSTP BPDU, for each
+other `trunk_vlans` entry one SSTP BPDU tagged with it (bridge priority 32768 + the VLAN, PVID TLV). Only a
+replicate SPAN sees them. A VLAN the peer's trunk no longer allows (its latest `switchport trunk allowed vlan`
+list in `config_diffs` at that time) gets no BPDUs. Ceiling: the near end never takes over as root for that VLAN.
+Noise also adds ARP request/reply pairs among
 declared hosts in the capture and peer subnets (about every 30, 10 or 3 s for `low`, `medium`, `high`, each
-tick jittered by up to +-40% and offset by a sub-second phase). Flows add their own explicit noise. Frames are untagged and zero-padded to 60 bytes, with
+tick jittered by up to +-40% and offset by a sub-second phase), skipping pairs in a VLAN the peer has pruned.
+Flows add their own explicit noise. Stage-1 frames are untagged and zero-padded to 60 bytes, with
 consistent source and destination MACs, TTLs (255 for switch-sourced, 64 for hosts) and per-sender IP ids.
 All randomness is seeded from `meta.id` and the flow id, so the same spec gives the same bytes.
 
@@ -247,7 +283,8 @@ The manifest also records `"tshark_checked"`: false under `--no-tshark`, or when
 
 **Checks.**
 - **PK0** (error): the capture extra (dpkt) is not installed, so the pcap cannot be rendered.
-- **PK1** (error): `capture.device`/`peer` or their interfaces are not in topology, or the pair is not linked.
+- **PK1** (error): `capture.device`/`peer` or their interfaces are not in topology, the pair is not linked, a
+  device peer has no `peer_interface`, or an entity peer is not attached to the monitored port.
 - **PK2** (error): `start` is not before `end`, the capture is outside `meta.window`, or a flow plus its span
   does not fit inside `start..end`.
 - **PK3** (error): `src`/`dst`/`via` does not resolve, lacks the MAC or IP the kind needs, or a RADIUS
@@ -266,11 +303,19 @@ The manifest also records `"tshark_checked"`: false under `--no-tshark`, or when
   `radius-server deadtime 0` (the default): the switch still tries the dead primary first on each new
   authentication, then fails over to the secondary, so an accept from the secondary should follow an
   unanswered attempt sequence to the primary. Not checked against gear.
+  An `arp` symptom must be `no_reply`, and its VLAN must be missing from the peer's `switchport trunk allowed
+  vlan` list in force at the flow's `t` (latest config diff on the peer with `t_change <= t` whose `after` has a
+  plain list such as `1,10` or `10-12,30`; `add`/`remove`/`all`/`none` forms are not read). The renderer keeps
+  that story whole: the pruned VLAN's BPDUs and ARP answers stop at the change.
 - **PK6** (error unless noted): the tshark read-back failed. tshark is missing or older than 4.2; a display
   filter or the `-V` dump failed or came back empty; tshark flags malformed or expert-error frames (any frame);
   tshark read a different frame count than the renderer wrote; or a symptom flow's expected filter matches
   none of its own frames. Under `--no-tshark` it is a warning, "the tshark read-back was skipped".
 - **PK7** (error): the capture has more than 5,000 frames.
+- **PK8** (error): a symptom flow the method can't see (see Methods and views).
+- **PK9** (error): `capture.reason` doesn't name `capture.device`; under replicate, a flow's VLAN is neither
+  native nor in `trunk_vlans`; under ERSPAN, the analyzer isn't an entity with a mac and ip, `origin_ip` isn't an
+  ip on `device`, or `via` doesn't resolve to an endpoint with a mac.
 
 ## Sanitize gate
 `sanitize.py` keeps real-looking identifiers out of packets and out of git.
@@ -323,7 +368,8 @@ tracked file, and `build.py` on rendered text (xlsx message column, `config_diff
 ## Known gaps
 - No verified VRRP or IOS NAT log ids yet.
 - PAN-OS ids are verified but not renderable (header style unsupported).
-- Capture flow kinds are `radius_request`, `arp` and `dns_query` only; no VLAN-tagged captures; AAAA answers unsupported.
+- Capture flow kinds are `radius_request`, `arp` and `dns_query` only; methods are local SPAN and ERSPAN II (no
+  RSPAN, EPC or ASA capture yet); AAAA answers unsupported.
 - Gear-validated: none.
 
 ## Verification status

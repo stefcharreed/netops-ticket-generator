@@ -79,8 +79,13 @@ The first `.venv/bin/pyright` run downloads Node and needs network access.
 
 ## Known gaps
 No verified VRRP or IOS NAT log ids yet; PAN-OS ids are verified but not renderable (header style
-unsupported). Capture flow kinds are `radius_request`, `arp` and `dns_query` only; no VLAN-tagged
-captures; AAAA answers are unsupported. Gear-validated: none.
+unsupported). Capture flow kinds are `radius_request`, `arp` and `dns_query` only; capture methods are
+local SPAN (native or `encapsulation replicate`) and ERSPAN type II (no RSPAN, EPC or ASA capture yet); AAAA
+answers are unsupported. Gear-validated: none.
+
+Capture behavior assumed, not confirmed in Cisco's docs: an ERSPAN session copies no BPDU/CDP frames and
+sends the inner frame untagged with its VLAN in the ERSPAN header; ISR/ASR routers can source ERSPAN; a
+native SPAN drops BPDUs (the docs only say `encapsulation replicate` adds them).
 
 ## Docs
 - [Design](docs/DESIGN.md)

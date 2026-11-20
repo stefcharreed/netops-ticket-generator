@@ -52,8 +52,11 @@ tell the user the key will show in the transcript and ask before going on.
    users see) that doesn't name the cause, ≥ `min_noise` unrelated/noise events, the root cause as quiet as the story allows. Also a `ticket`
    (end_user persona, ≥1 misdirection with claims copied exactly from its text) and one rubric item for spotting
    the misdirection, with `evidence_refs` to events that disprove it. With a capture, write the `capture` block
-   per the hint (see **packet-builder**); it is answer-adjacent, so the subagent writes it into the spec like
-   everything else, and the main conversation sees it only as a file in the list.
+   per the hint (see **packet-builder**): pick a `method` from the hint's `methods` the way a technician would
+   for this topology, write `reason` as that technician's one-line why (naming the capture device, never the
+   cause), and add one rubric item about reading the frames that cites the symptom `pk` id (K4). It is
+   answer-adjacent, so the subagent writes it into the spec like everything else, and the main conversation
+   sees it only as a file in the list.
 4. Run `build "<spec>" --out "<interview_prep_dir>"` (for a capture, without `--no-tshark`). On error findings,
    fix the spec and rerun, except **PK0, or a PK6 saying tshark is missing or too old**: those are environment errors, so
    stop at once and report the install step (`pip install -e '.[capture]'` for PK0; install Wireshark 4.2+ for PK6)

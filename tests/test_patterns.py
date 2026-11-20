@@ -178,3 +178,22 @@ def test_p7_bad_field_types_never_raise():
         p = pats()
         radius(p)["capture"][field] = bad
         assert any(text in m for m in p7_msgs(p)), (field, bad)
+
+
+def test_p7_methods_missing():
+    p = pats()
+    del radius(p)["capture"]["methods"]
+    assert "P7" in checks(p)
+
+
+def test_p7_methods_unknown():
+    p = pats()
+    radius(p)["capture"]["methods"] = ["span", "rspan"]
+    assert "P7" in checks(p)
+    radius(p)["capture"]["methods"] = []
+    assert "P7" in checks(p)
+
+
+def test_trunk_pruned_hint():
+    hint = capture_hint(pats(), "trunk-allowed-vlan-pruned")
+    assert hint is not None and hint["evidence_kind"] == "arp" and hint["methods"] == ["span"]

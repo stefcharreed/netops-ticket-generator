@@ -6,6 +6,7 @@ from pathlib import Path
 import yaml
 
 from .capture_kinds import KINDS
+from .capture_views import METHODS
 from .findings import finding
 from .timebase import STYLES
 
@@ -55,10 +56,10 @@ def check_patterns(patterns: list[dict], registry: dict[str, dict]) -> list[dict
 
 
 def _check_capture(pid: str, cap: object) -> list[dict]:
-    fix = "use capture: {kinds: [...], evidence_kind: ..., evidence: ...}"
+    fix = "use capture: {kinds: [...], evidence_kind: ..., evidence: ..., methods: [...]}"
     if not isinstance(cap, dict):
         return [finding("P7", f"pattern {pid}: capture must be a mapping", fix)]
-    missing = [k for k in ("kinds", "evidence_kind", "evidence") if k not in cap]
+    missing = [k for k in ("kinds", "evidence_kind", "evidence", "methods") if k not in cap]
     if missing:
         return [finding("P7", f"pattern {pid}: capture missing {', '.join(missing)}", fix)]
     out: list[dict] = []
@@ -71,6 +72,10 @@ def _check_capture(pid: str, cap: object) -> list[dict]:
         ek = None
     if not (isinstance(ev, str) and ev.strip()):
         out.append(finding("P7", f"pattern {pid}: capture evidence must be a non-empty string", fix))
+    methods = cap["methods"]
+    if not (isinstance(methods, list) and methods and all(m in METHODS for m in methods)):
+        out.append(finding("P7", f"pattern {pid}: capture methods must be a non-empty list from {', '.join(METHODS)}",
+                           fix))
     for k in kinds:
         if k not in KINDS:
             out.append(finding("P7", f"pattern {pid}: capture kind {k!r} not in the flow catalog",

@@ -14,6 +14,11 @@
   root_cause: A `switchport trunk allowed vlan` edit (missing `add`) removed a VLAN from an uplink trunk.
   registry_ids: [IOS:SYS-5-CONFIG_I, IOS:SPANTREE-5-ROOTCHANGE, ISCDHCPD:DHCPDISCOVER]
   red_herrings: [a link flap on an unrelated port, CPU noise on the core, an NTP resync]
+  capture:
+    kinds: [arp, dns_query]
+    evidence_kind: arp
+    evidence: Gateway ARPs from the pruned VLAN leave the access uplink tagged and go unanswered; that VLAN's BPDUs from the far end stop
+    methods: [span]
 - id: asa-acl-shadowed-after-reorder
   topic: acl
   cert: ENCOR
@@ -32,6 +37,7 @@
     kinds: [radius_request, arp, dns_query]
     evidence_kind: radius_request
     evidence: Access-Requests from the access switch to the primary server go unanswered and are retransmitted
+    methods: [span, erspan]
 - id: ntp-unsynced-log-skew
   topic: ntp
   cert: ENCOR
