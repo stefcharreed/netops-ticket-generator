@@ -234,8 +234,8 @@ the encapsulation too: `&& vlan` for a tagged flow under replicate, `&& erspan` 
 never built from spec text. Assumed, not in Cisco's docs: ERSPAN copies no L2 control frames and sends the inner
 frame untagged with the VLAN in its header; routers can source ERSPAN.
 
-**Kinds and filters** (`capture_kinds.py`; `radius_request` and `arp` have symptom rules, so only they can be
-labeled `symptom`). Filters are catalog constants keyed by `params.outcome`:
+**Kinds and filters** (`capture_kinds.py`; every kind except `dns_query` has a symptom rule, so only those can
+be labeled `symptom`). Filters are catalog constants keyed by `params.outcome`:
 
 | Kind | Outcome | Display filter that must match |
 |---|---|---|
@@ -249,6 +249,12 @@ labeled `symptom`). Filters are catalog constants keyed by `params.outcome`:
 | `dns_query` | `nxdomain` | `dns.flags.rcode == 3` |
 | `dns_query` | `servfail` | `dns.flags.rcode == 2` |
 | `dns_query` | `timeout` | `dns.flags.response == 0 && !dns.response_in` |
+| `stp_bpdu` | `bpdu` | `stp` |
+| `stp_bpdu` | `topology_change` | `stp.flags.tc == 1` |
+| `cdp` | `announce` | `cdp.native_vlan` |
+| `hsrp_hello` | `active` / `standby` / `speak` | `hsrp.state == 16` / `== 8` / `== 4` |
+| `dhcp` | `ack` | `dhcp.option.dhcp == 5` |
+| `dhcp` | `no_offer` | `dhcp.option.dhcp == 1` |
 
 RADIUS frames are 802.1X-shaped (RFC 2865/3579/3580): the Access-Request carries Service-Type Framed,
 Framed-MTU 1485, a seeded NAS-Port, an EAP-Response/Identity (the username) and a Message-Authenticator;
@@ -259,6 +265,21 @@ Params are validated per kind (PK4). `radius_request` needs `outcome`, `username
 MAC, sent as Calling-Station-Id) and `nas_port`, with optional `retries`, `timeout_s`, `auth_port`.
 `dns_query` needs `outcome` and `name` (`.test` or under example.com/net/org); `ok` also needs `answer`.
 AAAA answers are not supported yet. A gratuitous `arp` needs `dst == src`.
+
+Layer 2 kinds (`dst` must resolve but needs no address; it names the receiving port or host):
+- `stp_bpdu`: `outcome`, optional `proto` (`ieee` 802.3/LLC to `01:80:c2:00:00:00`, or `pvst` SSTP), `count`,
+  `interval_s` (2). Bridge and root id are 32768 + the flow's VLAN plus the src MAC; `topology_change` sets TC.
+  Class `l2_control`, so only a replicate SPAN sees it (PK8).
+- `cdp`: `outcome` `announce`, `native_vlan`, `device_id`, `port_id`, `count`, `interval_s` (60). Version 2,
+  TTL 180, TLVs Device ID, Port ID, Capabilities, Native VLAN, RFC 1071 checksum. CDP rides VLAN 1 (a flow
+  `vlan` other than 1 is PK4), so it is tagged 1 when the sender's native VLAN isn't 1.
+- `hsrp_hello`: HSRPv1 to 224.0.0.2 UDP 1985, TTL 1: `outcome` (state), `group`, `vip`, `priority`, `count`,
+  `interval_s` (3). The Active router sends from the virtual MAC `00:00:0c:07:ac:GG`; Standby and Speak from
+  their own MAC. Class `control_plane`.
+- `dhcp`: `outcome` `ack|no_offer`, `retries` (3), `copies` (1). `via` is the relay (the client VLAN's gateway)
+  and needs a MAC and IP (PK3); `ack` leases the src's IP, so the src needs one. DISCOVER and REQUEST are
+  broadcasts from 0.0.0.0; OFFER and ACK come back from the relay. `no_offer` retransmits every 4 s. `copies`
+  repeats every frame within 0.2-2 ms each, the way a loop replays broadcasts.
 
 **Timing.** Each flow starts at its `t`; its span (`span_s`) is the time to its last frame: a `no_response`
 RADIUS flow lasts `timeout_s * retries` seconds (retransmits every `timeout_s`), a replied flow tens of
@@ -273,6 +294,16 @@ list in `config_diffs` at that time) gets no BPDUs. Ceiling: the near end never 
 Noise also adds ARP request/reply pairs among
 declared hosts in the capture and peer subnets (about every 30, 10 or 3 s for `low`, `medium`, `high`, each
 tick jittered by up to +-40% and offset by a sub-second phase), skipping pairs in a VLAN the peer has pruned.
+On an access port (an entity peer) the requests still flood to the port but a reply only reaches it when the
+requester is attached to that port. Once the monitored port is err-disabled (an `IOS:PM-4-ERR_DISABLE` event
+for it on `capture.device`) nothing more is captured, flows and noise alike.
+
+**Native VLANs.** Each frame carries its sender's native VLAN, and under replicate it is tagged unless it is in
+that VLAN. A flow from `capture.peer` uses the far end's native VLAN (the newest `switchport trunk native vlan`
+in its `peer_interface` stanza at the flow's time; 1 when a diff drops the line), everything else the near
+end's (`span.native_vlan`). PVST+ noise follows the far end too: its IEEE BPDU and the SSTP for its native
+VLAN go untagged, every other VLAN's SSTP tagged. So after a native-VLAN change on one end, the capture shows
+that end's untagged BPDUs carrying the new PVID. Community-sourced, not in Cisco's docs: CDP stays on VLAN 1.
 Flows add their own explicit noise. Stage-1 frames are untagged and zero-padded to 60 bytes, with
 consistent source and destination MACs, TTLs (255 for switch-sourced, 64 for hosts) and per-sender IP ids.
 All randomness is seeded from `meta.id` and the flow id, so the same spec gives the same bytes.
@@ -310,12 +341,25 @@ The manifest also records `"tshark_checked"`: false under `--no-tshark`, or when
   restore), and `add`/`remove`/`all`/`none` forms count as unknown, so neither satisfies PK5. Diffs on other
   ports don't count. The renderer keeps the story whole: the pruned VLAN's BPDUs and ARP answers stop at the
   change and come back if a later diff restores it.
+  An `arp` symptom also passes as port-security evidence (any outcome): its src is an entity attached to the
+  monitored port, and an `IOS:PORT_SECURITY-2-PSECURE_VIOLATION` on `capture.device` names that MAC and port
+  within 5 s after the flow.
+  Layer 2 symptoms (MACs compared by value, interfaces by short name, group and VLAN fields as strings):
+  - `stp_bpdu`: the newest diff on `capture.device` whose `capture.interface` stanza has a `spanning-tree
+    bpdufilter|bpduguard` line in before or after has `spanning-tree bpdufilter enable` in its after.
+  - `dhcp`: outcome `no_offer`, and an `ISCDHCPD:no-free-leases` for the client MAC within the flow's span + 30 s,
+    or the port-security evidence above.
+  - `cdp`: `native_vlan` differs from the near end's, and an `IOS:CDP-4-NATIVE_VLAN_MISMATCH` on
+    `capture.device` within 60 s has `neighbor_vlan` = that VLAN and `local_vlan` = the near end's.
+  - `hsrp_hello`: the sender's latest `IOS:HSRP-5-STATECHANGE` for that interface and group at or before `t`
+    has `new_state` = the hello's state.
 - **PK6** (error unless noted): the tshark read-back failed. tshark is missing or older than 4.2; a display
   filter or the `-V` dump failed or came back empty; tshark flags malformed or expert-error frames (any frame);
   tshark read a different frame count than the renderer wrote; or a symptom flow's expected filter matches
   none of its own frames. Under `--no-tshark` it is a warning, "the tshark read-back was skipped".
 - **PK7** (error): the capture has more than 5,000 frames.
-- **PK8** (error): a symptom flow the method can't see (see Methods and views).
+- **PK8** (error): a symptom flow the method can't see (see Methods and views), or one that starts after the
+  monitored port went err-disabled.
 - **PK9** (error): `capture.reason` doesn't name `capture.device`; under replicate, a flow's VLAN is neither
   native nor in `trunk_vlans`; under ERSPAN, the analyzer isn't an entity with a mac and ip, `origin_ip` isn't an
   ip on `device`, or `via` doesn't resolve to an endpoint with a mac.
@@ -371,8 +415,8 @@ tracked file, and `build.py` on rendered text (xlsx message column, `config_diff
 ## Known gaps
 - No verified VRRP or IOS NAT log ids yet.
 - PAN-OS ids are verified but not renderable (header style unsupported).
-- Capture flow kinds are `radius_request`, `arp` and `dns_query` only; methods are local SPAN and ERSPAN II (no
-  RSPAN, EPC or ASA capture yet); AAAA answers unsupported.
+- Capture flow kinds are `radius_request`, `arp`, `dns_query`, `stp_bpdu`, `cdp`, `hsrp_hello` and `dhcp`
+  (HSRPv1 only); methods are local SPAN and ERSPAN II (no RSPAN, EPC or ASA capture yet); AAAA answers unsupported.
 - Gear-validated: none.
 
 ## Verification status

@@ -27,8 +27,10 @@ Schema: `<repo>/schema/scenario.schema.json`. Worked example (read it before wri
   `interface` (the monitored port), `peer` (the linked device, or an entity attached to that port),
   `peer_interface` (required for a device peer), `direction` `both`, `start`, `end` (UTC, inside the window),
   `noise` (`low|medium|high`), and `flows[]` of `{id (pk1…), kind, t, src, dst, via, vlan?, params, label
-  (symptom|unrelated|noise), caused_by}`. Kinds: `radius_request`, `arp`, `dns_query`; only `radius_request`
-  and `arp` (`no_reply`) can be a `symptom`. An endpoint is an entity
+  (symptom|unrelated|noise), caused_by}`. Kinds: `radius_request`, `arp`, `dns_query`, `stp_bpdu`, `cdp`,
+  `hsrp_hello`, `dhcp`; all but `dns_query` can be a `symptom` (each needs its PK5 evidence). Worked Layer 2
+  examples: `<repo>/tests/fixtures/{loop_bpdufilter,port_security,native_vlan,hsrp_flap}_capture.json`.
+  An endpoint is an entity
   name, `HOST:IF` (a declared interface, e.g. `ACC-SW1:Vlan100`) or a bare `HOST` with exactly one interface.
   `via` is the gateway MAC that frames toward `dst` use (null for same-subnet traffic). Flows are nodes in the
   causal graph like events, and rubric `evidence_refs` may cite a `pk` id.
@@ -73,6 +75,20 @@ Schema: `<repo>/schema/scenario.schema.json`. Worked example (read it before wri
 - Add a few noise flows (an accepted RADIUS request for another user, a DNS lookup, an ARP with no reply) so
   the symptom is not the only conversation. The renderer adds BPDUs (replicate SPAN only, one per trunk VLAN)
   and background ARP on its own.
+- `stp_bpdu` (loop): only a replicate SPAN sees BPDUs (PK8). The classic evidence is the switch's own BPDU
+  coming back in on the edge port (src `HOST:<another port>`, dst the monitored port); PK5 wants the
+  guard-to-filter edit on the monitored port in `config_diffs` before it.
+- `dhcp`: set `via` to the client VLAN's gateway (the relay). A `no_offer` symptom needs an
+  `ISCDHCPD:no-free-leases` event for the client MAC within the flow's span + 30 s; `copies` shows a loop
+  replaying each DISCOVER. Watch the 5,000-frame cap.
+- `cdp`: `native_vlan` is what the sender announces; CDP rides VLAN 1. A symptom needs a
+  `CDP-4-NATIVE_VLAN_MISMATCH` on `capture.device` within 60 s with matching VLAN fields. Put the native-VLAN
+  edit on `capture.peer`'s `peer_interface` stanza so the far end's BPDUs and CDP tag the way the gear would.
+- `hsrp_hello`: one flow per router per period, `outcome` = its state then; each symptom hello needs the
+  sender's latest `HSRP-5-STATECHANGE` for that interface and group to say the same state.
+- Port security: capture the desk port with an entity `peer`, attach the second device to the same port, and
+  log `PSECURE_VIOLATION` for its MAC (Cisco-dotted, as declared, so E2 matches) within 5 s of its first
+  frame, then `PM-4-ERR_DISABLE` for the port: the capture stops there, and a symptom after it is PK8.
 - An `arp` symptom (an unanswered gateway ARP on a pruned VLAN) needs a config diff on `capture.peer` before the
   flow whose `interface <peer_interface>` stanza has, in `after`, a plain `switchport trunk allowed vlan 1,10` list
   without the flow's VLAN, and no later diff on that port that restores it (PK5), and the
@@ -144,9 +160,9 @@ catalog first (filters: `--topic`, `--cert`, `--exclude ID...`; also `--file`, `
 | PK2 | capture start not before end, outside the window, or a flow plus its span doesn't fit | move the flow or widen the capture inside the window |
 | PK3 | endpoint doesn't resolve or lacks the MAC/IP the kind needs, or an entity/interface MAC isn't a MAC or its IP isn't IPv4 (RADIUS client needs an entity with a MAC; DNS answer needs an IP) | declare it under `entities` or the device's `interfaces[]` |
 | PK4 | flow params break the kind's schema, gratuitous ARP with dst != src, DNS ok without answer, or AAAA ok | fix the params; AAAA answers are unsupported |
-| PK5 | symptom on a kind with no symptom rule, an `arp` symptom that isn't `no_reply` or whose VLAN the peer's trunk still allows at `t`, or a RADIUS flow whose outcome disagrees with the RADIUS_DEAD/ALIVE log events | label it noise or use `radius_request`; no_response: put it inside a dead period (DEAD at most 30 s after the request, or earlier with no ALIVE between); accept/reject: move it outside DEAD <= t < next ALIVE; a symptom flow caused by the DEAD event can't start before it (T3), so the 30 s lead needs an earlier cause |
+| PK5 | symptom on a kind with no symptom rule; an `arp` symptom that is neither the port-security violator nor an unanswered request on a VLAN the peer pruned; an `stp_bpdu`/`dhcp`/`cdp`/`hsrp_hello` symptom without its log or config evidence (bpdufilter edit / no-free-leases or violation / NATIVE_VLAN_MISMATCH / matching STATECHANGE); or a RADIUS flow whose outcome disagrees with the RADIUS_DEAD/ALIVE log events | label it noise or use `radius_request`; no_response: put it inside a dead period (DEAD at most 30 s after the request, or earlier with no ALIVE between); accept/reject: move it outside DEAD <= t < next ALIVE; a symptom flow caused by the DEAD event can't start before it (T3), so the 30 s lead needs an earlier cause |
 | PK6 | tshark missing or older than 4.2, a filter/dump failure, malformed or expert-error frames, a symptom flow whose expected filter matches none of its frames; a warning "the tshark read-back was skipped" under `--no-tshark` | install tshark 4.2+; fix the flow params; rebuild without `--no-tshark` before handing out |
 | PK7 | capture over 5,000 frames | shorten `start..end` or lower `noise` |
-| PK8 | a symptom flow the capture method can't see | pick a method that sees it (replicate for BPDUs) |
+| PK8 | a symptom flow the capture method can't see, or one after the monitored port's err-disable | pick a method that sees it (replicate for BPDUs/CDP); move the flow before the err-disable |
 | PK9 | `reason` doesn't name `capture.device`; a flow VLAN not native and not in `trunk_vlans`; ERSPAN analyzer not an entity with mac+ip, `origin_ip` not on `device`, or `via` unresolved | fix the reason or the method block |
 | X1, Z1, Z2, B1 | xlsx date cell / non-doc IP / non-doc MAC / packet exists | build-side; B1 needs `--force` |

@@ -197,3 +197,14 @@ def test_p7_methods_unknown():
 def test_trunk_pruned_hint():
     hint = capture_hint(pats(), "trunk-allowed-vlan-pruned")
     assert hint is not None and hint["evidence_kind"] == "arp" and hint["methods"] == ["span"]
+
+
+def test_l2_hints():
+    want = {"loop-after-guard-removed": ("stp_bpdu", ["span"]),
+            "port-security-err-disable": ("arp", ["span"]),
+            "native-vlan-mismatch-trunk": ("cdp", ["span"]),
+            "hsrp-track-failover-flap": ("hsrp_hello", ["span", "erspan"])}
+    for pid, (ek, methods) in want.items():
+        hint = capture_hint(pats(), pid)
+        assert hint is not None, pid
+        assert (hint["evidence_kind"], hint["methods"]) == (ek, methods) and ek in hint["kinds"]

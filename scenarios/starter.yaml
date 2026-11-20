@@ -7,6 +7,11 @@
   root_cause: An access port's BPDU guard was replaced (bpdufilter / guard removed) and a downstream switch closed a loop.
   registry_ids: [IOS:SYS-5-CONFIG_I, IOS:SPANTREE-5-TOPOTRAP, IOS:SYS-1-CPURISINGTHRESHOLD, ISCDHCPD:no-free-leases]
   red_herrings: [an NTP peer unreachable, a user port flapping, normal DHCPDISCOVERs]
+  capture:
+    kinds: [stp_bpdu, dhcp, arp]
+    evidence_kind: stp_bpdu
+    evidence: The switch's own BPDUs arrive back on an edge port; DHCP DISCOVERs repeat within milliseconds and get no offer
+    methods: [span]
 - id: trunk-allowed-vlan-pruned
   topic: trunk
   cert: ENCOR
@@ -73,6 +78,11 @@
   root_cause: A flapping tracked uplink combined with `preempt` and no delay makes the HSRP active router flip back and forth repeatedly.
   registry_ids: [IOS:TRACK-6-STATE, IOS:HSRP-5-STATECHANGE, IOS:LINEPROTO-5-UPDOWN, IOS:SYS-5-CONFIG_I]
   red_herrings: [a link flap on an unrelated access port, CPU noise on the core, an NTP resync]
+  capture:
+    kinds: [hsrp_hello, arp]
+    evidence_kind: hsrp_hello
+    evidence: HSRP hellos change which router claims Active, back and forth
+    methods: [span, erspan]
 - id: port-security-err-disable
   topic: port-security
   cert: none
@@ -80,6 +90,11 @@
   root_cause: A desk hub or dock added a second MAC address on a `maximum 1` port-security port, so the port was err-disabled.
   registry_ids: [IOS:PORT_SECURITY-2-PSECURE_VIOLATION, IOS:PM-4-ERR_DISABLE, IOS:LINEPROTO-5-UPDOWN]
   red_herrings: [another user port flapping at logoff, normal DHCP traffic, a config save]
+  capture:
+    kinds: [arp, dhcp, dns_query]
+    evidence_kind: arp
+    evidence: Frames from a second source MAC on a single-host port, then nothing
+    methods: [span]
 - id: native-vlan-mismatch-trunk
   topic: trunk
   cert: ENCOR
@@ -87,3 +102,8 @@
   root_cause: The native VLAN was changed on one end of a trunk, so spanning tree put the port in PVID-inconsistent state, blocking both native VLANs (not just one) on that trunk.
   registry_ids: [IOS:SYS-5-CONFIG_I, IOS:CDP-4-NATIVE_VLAN_MISMATCH, IOS:SPANTREE-2-RECV_PVID_ERR, IOS:SPANTREE-2-BLOCK_PVID_LOCAL]
   red_herrings: [a link flap on an unrelated port, CPU noise on the core, an NTP resync]
+  capture:
+    kinds: [cdp, arp]
+    evidence_kind: cdp
+    evidence: The far end's CDP announces a different native VLAN; its untagged BPDUs carry that VLAN's PVID
+    methods: [span]
