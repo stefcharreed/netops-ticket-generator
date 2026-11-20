@@ -194,8 +194,38 @@
     },
     "capture": {
       "type": "object", "additionalProperties": false,
-      "required": ["device", "interface", "peer", "peer_interface", "direction", "start", "end", "tagged", "flows"],
+      "required": ["method", "reason", "device", "interface", "peer", "direction", "start", "end", "flows"],
+      "allOf": [
+        {"if": {"properties": {"method": {"const": "span"}}, "required": ["method"]},
+         "then": {"required": ["span"], "not": {"required": ["erspan"]}}},
+        {"if": {"properties": {"method": {"const": "erspan"}}, "required": ["method"]},
+         "then": {"required": ["erspan"], "not": {"required": ["span"]}}}
+      ],
       "properties": {
+        "method": {"enum": ["span", "erspan"]},
+        "reason": {"type": "string", "pattern": "^[ -~]{20,300}$"},
+        "span": {
+          "type": "object", "additionalProperties": false, "required": ["encapsulation"],
+          "properties": {
+            "encapsulation": {"enum": ["native", "replicate"]},
+            "native_vlan": {"type": "integer", "minimum": 1, "maximum": 4094, "default": 1},
+            "trunk_vlans": {"type": "array", "uniqueItems": true, "minItems": 1,
+                            "items": {"type": "integer", "minimum": 1, "maximum": 4094}}
+          },
+          "if": {"properties": {"encapsulation": {"const": "replicate"}}},
+          "then": {"required": ["trunk_vlans"]}
+        },
+        "erspan": {
+          "type": "object", "additionalProperties": false,
+          "required": ["origin_ip", "analyzer", "session", "erspan_id"],
+          "properties": {
+            "origin_ip": {"type": "string"},
+            "analyzer": {"type": "string"},
+            "session": {"type": "integer", "minimum": 1, "maximum": 66},
+            "erspan_id": {"type": "integer", "minimum": 1, "maximum": 1023},
+            "via": {"type": "string"}
+          }
+        },
         "device": {"type": "string"},
         "interface": {"type": "string"},
         "peer": {"type": "string"},
@@ -203,7 +233,6 @@
         "direction": {"enum": ["both"]},
         "start": {"$ref": "#/$defs/utc"},
         "end": {"$ref": "#/$defs/utc"},
-        "tagged": {"enum": [false]},
         "noise": {"enum": ["low", "medium", "high"], "default": "medium"},
         "flows": {
           "type": "array",
@@ -217,6 +246,7 @@
               "src": {"type": "string"},
               "dst": {"type": "string"},
               "via": {"type": ["string", "null"]},
+              "vlan": {"type": "integer", "minimum": 1, "maximum": 4094},
               "params": {"type": "object"},
               "label": {"enum": ["symptom", "unrelated", "noise"]},
               "caused_by": {"oneOf": [{"$ref": "#/$defs/ref"}, {"type": "null"}]}

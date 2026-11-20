@@ -26,3 +26,10 @@ def test_header_styles_match_schema():
 def test_icon_kinds_match_schema():
     defs = json.loads((Path(__file__).parents[1] / "schema" / "scenario.schema.json").read_text())["$defs"]
     assert defs["icon_kind"]["enum"] == list(KINDS)
+
+
+def test_capture_methods_match_schema():
+    from packetgen.capture_views import ENCAPS, METHODS
+    cap = PROPS["capture"]["properties"]
+    assert cap["method"]["enum"] == list(METHODS)
+    assert cap["span"]["properties"]["encapsulation"]["enum"] == list(ENCAPS)

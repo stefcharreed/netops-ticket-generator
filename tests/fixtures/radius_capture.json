@@ -54,6 +54,9 @@
   "telemetry": [],
   "config_diffs": [],
   "capture": {
+    "method": "span",
+    "reason": "Local SPAN on ACC-SW1 Gi1/0/48: the uplink carries everything the switch sends toward the data center, so one port shows both sides.",
+    "span": {"encapsulation": "native"},
     "device": "ACC-SW1",
     "interface": "Gi1/0/48",
     "peer": "DIST-SW1",
@@ -61,7 +64,6 @@
     "direction": "both",
     "start": "2026-10-20T14:00:00Z",
     "end": "2026-10-20T14:10:00Z",
-    "tagged": false,
     "noise": "medium",
     "flows": [
       {"id": "pk1", "kind": "radius_request", "t": "2026-10-20T14:02:30Z",

@@ -67,3 +67,46 @@ def test_flow_root_label_rejected():
 
 def test_existing_fixture_still_clean():
     assert "S0" not in [f["check"] for f in schema_findings(fixture())]
+
+
+def _msgs(spec: dict) -> str:
+    return "\n".join(f["message"] for f in schema_findings(spec))
+
+
+def test_old_tagged_spec_rejected():
+    s = capture_fixture()
+    cap = s["capture"]
+    for k in ("method", "reason", "span"):
+        cap.pop(k, None)
+    cap["tagged"] = False
+    msgs = _msgs(s)
+    assert "'tagged'" in msgs
+    assert "'method' is a required property" in msgs
+
+
+def test_span_method_requires_span_block():
+    s = capture_fixture()
+    del s["capture"]["span"]
+    assert schema_findings(s)
+
+
+def test_erspan_block_forbidden_under_span():
+    s = capture_fixture()
+    s["capture"]["erspan"] = {"origin_ip": "10.10.100.2", "analyzer": "analyzer-1", "session": 1, "erspan_id": 100}
+    assert schema_findings(s)
+
+
+def test_replicate_requires_trunk_vlans():
+    s = capture_fixture()
+    s["capture"]["span"] = {"encapsulation": "replicate"}
+    assert schema_findings(s)
+    s["capture"]["span"]["trunk_vlans"] = [1, 30]
+    assert schema_findings(s) == []
+
+
+def test_reason_bounds():
+    s = capture_fixture()
+    s["capture"]["reason"] = "ACC-SW1 short reason"[:19]
+    assert schema_findings(s)
+    s["capture"]["reason"] = "ACC-SW1 uplink SPAN,\nboth sides of the conversation"
+    assert schema_findings(s)
