@@ -37,8 +37,9 @@ _IPV6 = re.compile(r"(?<![0-9A-Fa-f:])(?<!\d\.)(?=[0-9A-Fa-f:]*[0-9A-Fa-f])(?:[0
 _IPV4 = re.compile(r"(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?!\.?\d)")
 _MAC = re.compile(r"(?<![0-9a-f:.-])(?:(?:[0-9a-f]{2}[:-]){5}[0-9a-f]{2}|"
                   r"[0-9a-f]{4}\.[0-9a-f]{4}\.[0-9a-f]{4})(?![0-9a-f:.-])", re.IGNORECASE)
-# RFC 7042 doc range, STP/LLDP multicast, IPv4 multicast, broadcast, all-zero placeholder.
-_ALLOWED_MAC_PREFIXES = ("00005e0053", "0180c20000", "01005e", "ffffffffffff", "000000000000")
+# RFC 7042 doc range, STP/LLDP multicast, Cisco CDP/VTP/DTP + PVST+ SSTP multicast (01:00:0c:cc:cc:cX),
+# IPv4 multicast, broadcast, all-zero placeholder. All are protocol constants, never a device's identity.
+_ALLOWED_MAC_PREFIXES = ("00005e0053", "0180c20000", "01000ccccc", "01005e", "ffffffffffff", "000000000000")
 # macOS, Linux and Windows home directories (bare, `\\`-escaped too); "~/" paths and URLs are fine.
 _STOP = r"[^/\\\s`'\")\]]+"
 _HOME_PATH = re.compile(

@@ -373,3 +373,15 @@ def test_entity_peer_no_bpdus(spec):
     del spec["capture"]["peer_interface"]
     frames, _ = build_frames(spec)
     assert not any(b[:6] in (STP, SSTP) for _, b in frames)
+
+
+TRUNK = Path(__file__).parent / "fixtures" / "trunk_pruned_capture.json"
+
+
+def test_noise_arp_respects_pruned_vlan():
+    spec = json.loads(TRUNK.read_text())
+    spec["capture"]["noise"] = "high"
+    cut = parse_utc("2026-10-21T14:03:00Z").timestamp()
+    gw30 = bytes.fromhex("00005e005303")
+    frames, _ = build_frames(spec)
+    assert not any(ts >= cut and b[6:12] == gw30 for ts, b in frames)

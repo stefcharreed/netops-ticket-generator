@@ -235,3 +235,10 @@ def test_blocks_images_so_cisco_icons_never_reach_the_repo(tmp_path):
         path = tmp_path / name
         path.write_bytes(b"x")
         assert [f["check"] for f in file_findings(path)] == ["Z3"], name
+
+
+def test_allows_cisco_l2_control_multicast():
+    # CDP/VTP/DTP (01:00:0c:cc:cc:cc) and PVST+ SSTP (01:00:0c:cc:cc:cd) are protocol constants, not devices.
+    assert sanitize_findings("dst 01:00:0c:cc:cc:cc and 01:00:0c:cc:cc:cd", "t") == []
+    other = ":".join(["01", "00", "0c", "12", "34", "56"])  # assembled so this file passes the gate
+    assert sanitize_findings(f"src {other}", "t") != []  # only the cc:cc:cX control groups

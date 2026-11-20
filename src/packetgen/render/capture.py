@@ -251,6 +251,9 @@ def _noise_frames(ctx: _Ctx, cap: dict, lo: float, hi: float) -> list[_Frame]:
         k += 1
         if t >= hi - 0.01:  # jitter pushed it past the window end: skip this tick
             continue
+        allowed = peer_allowed_vlans(ctx.spec, datetime.fromtimestamp(t, timezone.utc))
+        if allowed is not None and {_host_vlan(a) or native, _host_vlan(b) or native} - allowed:
+            continue  # a VLAN the far end pruned can't carry a request and its answer across the trunk
         out.append((t, _eth(BCAST, am, _ETH_ARP, _arp(dpkt.arp.ARP_OP_REQUEST, am, a["ip"], b"\x00" * 6, b["ip"])),
                     vlan, "data"))
         out.append((t + rng.uniform(0.0005, 0.005),

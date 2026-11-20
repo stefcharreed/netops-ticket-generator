@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "meta": {
+    "id": "pkt-7a31c4",
+    "style": "multi-source",
+    "window": {"start": "2026-10-21T13:55:00Z", "end": "2026-10-21T14:25:00Z"},
+    "difficulty": {"min_noise": 2, "show_diff_notes": false, "shuffle_rows": 0},
+    "allow_unverified": false,
+    "brief": "Synthetic reference scenario. After a short maintenance window, users on one floor say nothing off their subnet works, while colleagues on the same switch are fine. You have the syslog export, the change record and a SPAN capture from the access uplink. Find what happened."
+  },
+  "topology": {
+    "devices": [
+      {"hostname": "ACC-SW1", "role": "access-switch", "header_style": "ios", "mgmt_ip": "10.0.0.11",
+       "tz_offset_min": 0, "clock": "ntp",
+       "interfaces": [
+         {"name": "Vlan10", "ip": "10.10.10.2", "mac": "00:00:5e:00:53:01", "vlan": 10},
+         {"name": "Gi1/0/48", "mac": "00:00:5e:00:53:11"}
+       ]},
+      {"hostname": "DIST-SW1", "role": "distribution-switch", "header_style": "ios", "mgmt_ip": "10.0.0.1",
+       "tz_offset_min": 0, "clock": "ntp",
+       "interfaces": [
+         {"name": "Vlan10", "ip": "10.10.10.1", "mac": "00:00:5e:00:53:02", "vlan": 10},
+         {"name": "Vlan30", "ip": "10.10.30.1", "mac": "00:00:5e:00:53:03", "vlan": 30},
+         {"name": "Gi1/0/1", "mac": "00:00:5e:00:53:12"}
+       ]}
+    ],
+    "links": [["ACC-SW1", "DIST-SW1"]],
+    "entities": {
+      "pc-10": {"ip": "10.10.10.50", "mac": "00:00:5e:00:53:80",
+                "attached": {"device": "ACC-SW1", "interface": "Gi1/0/10", "vlan": 10}},
+      "pc-31": {"ip": "10.10.30.51", "mac": "00:00:5e:00:53:81",
+                "attached": {"device": "ACC-SW1", "interface": "Gi1/0/31", "vlan": 30}}
+    }
+  },
+  "events": [
+    {"id": "e1", "t": "2026-10-21T14:03:02Z", "device": "DIST-SW1", "format_id": "IOS:SYS-5-CONFIG_I",
+     "fields": {"source": "console", "who": "vty0 (192.0.2.50)"},
+     "label": "symptom", "caused_by": "cd1", "signal": null},
+    {"id": "e2", "t": "2026-10-21T14:01:30Z", "device": "ACC-SW1", "format_id": "IOS:LINK-3-UPDOWN",
+     "fields": {"interface": "GigabitEthernet1/0/7", "state": "down"},
+     "label": "noise", "caused_by": null, "signal": null},
+    {"id": "e3", "t": "2026-10-21T14:01:31Z", "device": "ACC-SW1", "format_id": "IOS:LINEPROTO-5-UPDOWN",
+     "fields": {"interface": "GigabitEthernet1/0/7", "state": "down"},
+     "label": "noise", "caused_by": null, "signal": null}
+  ],
+  "telemetry": [],
+  "config_diffs": [
+    {"id": "cd1", "device": "DIST-SW1", "t_change": "2026-10-21T14:03:00Z",
+     "before": "interface GigabitEthernet1/0/1\n switchport mode trunk\n switchport trunk allowed vlan 1,10,30\n",
+     "after": "interface GigabitEthernet1/0/1\n switchport mode trunk\n switchport trunk allowed vlan 1,10\n",
+     "note": "Cleanup: trim the uplink trunk to the VLANs in use."}
+  ],
+  "capture": {
+    "method": "span",
+    "reason": "Local SPAN with encapsulation replicate on ACC-SW1 Gi1/0/48: tags are kept so each VLAN's traffic on the uplink can be told apart.",
+    "span": {"encapsulation": "replicate", "trunk_vlans": [1, 10, 30]},
+    "device": "ACC-SW1",
+    "interface": "Gi1/0/48",
+    "peer": "DIST-SW1",
+    "peer_interface": "Gi1/0/1",
+    "direction": "both",
+    "start": "2026-10-21T14:00:00Z",
+    "end": "2026-10-21T14:10:00Z",
+    "noise": "medium",
+    "flows": [
+      {"id": "pk1", "kind": "arp", "t": "2026-10-21T14:05:00Z", "src": "pc-31", "dst": "DIST-SW1:Vlan30",
+       "via": null, "params": {"outcome": "no_reply", "retries": 2}, "label": "symptom", "caused_by": "cd1"},
+      {"id": "pk2", "kind": "arp", "t": "2026-10-21T14:06:00Z", "src": "pc-10", "dst": "DIST-SW1:Vlan10",
+       "via": null, "params": {"outcome": "reply"}, "label": "noise", "caused_by": null}
+    ]
+  },
+  "answer": {
+    "root_cause_id": "cd1",
+    "chain": ["cd1", "pk1"],
+    "fix": "Put VLAN 30 back on DIST-SW1 Gi1/0/1 with 'switchport trunk allowed vlan add 30', then confirm with 'show interfaces trunk' on both ends.",
+    "root_cause_terms": ["allowed vlan"],
+    "rubric": [
+      {"id": "r1", "weight": 4,
+       "criterion": "Names the trunk edit on DIST-SW1 Gi1/0/1 (cd1, logged by e1) that dropped VLAN 30 as the root cause",
+       "evidence_refs": ["cd1", "e1"]},
+      {"id": "r2", "weight": 3,
+       "criterion": "Reads the uplink SPAN: VLAN 30 ARP requests for the gateway leave tagged and get no reply while VLAN 10 is answered, and VLAN 30 BPDUs from DIST-SW1 stop at 14:03",
+       "evidence_refs": ["pk1", "pk2"]},
+      {"id": "r3", "weight": 1,
+       "criterion": "Treats the Gi1/0/7 link flap as unrelated",
+       "evidence_refs": ["e2", "e3"]}
+    ]
+  }
+}

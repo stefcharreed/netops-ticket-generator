@@ -17,6 +17,7 @@ from openpyxl.cell.cell import Cell
 
 from packetgen import capture_kinds, tshark
 from packetgen.capture import capture_filename, capture_text
+from packetgen.capture_views import filter_suffix
 from packetgen.findings import finding, has_errors
 from packetgen.icons import icons_dir
 from packetgen.registry import load_registry
@@ -85,7 +86,8 @@ def _capture_checks(spec: dict, tmp: Path, manifest: dict, use_tshark: bool) -> 
         return [finding("PK6", f"tshark {have}: read-back needs tshark >= {need}",
                         f"install Wireshark/tshark {need}+, or build with --no-tshark")], False
     symptoms = {fl["id"]: fl for fl in spec["capture"]["flows"] if fl["label"] == "symptom"}
-    rb = tshark.read_back(pcap, {fid: capture_kinds.expected_filter(fl) for fid, fl in symptoms.items()})
+    rb = tshark.read_back(pcap, {fid: f"({capture_kinds.expected_filter(fl)}){filter_suffix(spec, fl)}"
+                                 for fid, fl in symptoms.items()})
     out = [finding("PK6", f"{name}: filter {k}: {msg}", "fix the catalog display filter")
            for k, msg in rb["filter_errors"].items()]
     if rb["bad_frames"]:

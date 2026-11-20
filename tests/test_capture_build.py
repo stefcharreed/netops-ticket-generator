@@ -218,3 +218,63 @@ def test_no_tshark_sanitizes_flow_string_params(tmp_path):
     out, spec_path = setup(tmp_path, spec)
     result = build_packet(spec_path, out, ROOT / "registry", DAY, use_tshark=False)
     assert not result["ok"] and "Z1" in checks(result), result["findings"]
+
+
+TRUNK = ROOT / "tests" / "fixtures" / "trunk_pruned_capture.json"
+
+
+def test_trunk_pruned_fixture_validates_clean():
+    from packetgen.registry import load_registry
+    from packetgen.validate import validate
+    spec = json.loads(TRUNK.read_text())
+    assert [f for f in validate(spec, load_registry(ROOT / "registry")) if f["severity"] == "error"] == []
+
+
+def test_build_trunk_pruned_tshark(tmp_path, need_tshark):
+    out, spec_path = setup(tmp_path, json.loads(TRUNK.read_text()))
+    result = build_packet(spec_path, out, ROOT / "registry", DAY)
+    assert result["ok"], result["findings"]
+    assert "PK6" not in checks(result)
+    pcap = next((out).glob("*/capture_ACC-SW1_Gi1-0-48.pcap"))
+    manifest = json.loads(spec_path.with_suffix(".manifest.json").read_text())
+    rb = tshark.read_back(pcap, {"pk1": "(arp.opcode == 1) && vlan.id == 30"})
+    assert set(manifest[pcap.name]["pk1"]) <= set(rb["matches"]["pk1"])  # earlier VLAN-30 noise ARPs match too
+
+
+def _radius_erspan() -> dict:
+    spec = json.loads(FIXTURE.read_text())
+    spec["topology"]["entities"]["analyzer-1"] = {"ip": "10.30.0.5", "mac": "00:00:5e:00:53:30"}
+    cap = spec["capture"]
+    cap["method"] = "erspan"
+    del cap["span"]
+    cap["erspan"] = {"origin_ip": "10.10.100.2", "analyzer": "analyzer-1", "session": 1, "erspan_id": 100,
+                     "via": "DIST-SW1:Vlan100"}
+    cap["reason"] = ("ERSPAN from ACC-SW1 Gi1/0/48: the analyzer sits in the data center, a routed hop away, "
+                     "so a local SPAN can't reach it.")
+    return spec
+
+
+def test_build_radius_erspan_tshark(tmp_path, need_tshark):
+    out, spec_path = setup(tmp_path, _radius_erspan())
+    result = build_packet(spec_path, out, ROOT / "registry", DAY)
+    assert result["ok"], result["findings"]
+    assert "PK6" not in checks(result)
+    pcap = next(out.glob(f"*/{PCAP}"))
+    manifest = json.loads(spec_path.with_suffix(".manifest.json").read_text())
+    rb = tshark.read_back(pcap, {"pk1": "(radius.code == 1 && !radius.rspframe) && erspan"})
+    assert rb["bad_frames"] == [] and set(rb["matches"]["pk1"]) == set(manifest[PCAP]["pk1"])
+    assert len(manifest[PCAP]["pk1"]) == 4
+
+
+def test_pk6_filter_gets_encapsulation_suffix(tmp_path, monkeypatch, need_tshark):
+    seen = {}
+    real = tshark.read_back
+
+    def spy(pcap, filters):
+        seen.update(filters)
+        return real(pcap, filters)
+
+    monkeypatch.setattr(tshark, "read_back", spy)
+    out, spec_path = setup(tmp_path, _radius_erspan())
+    build_packet(spec_path, out, ROOT / "registry", DAY)
+    assert seen["pk1"] == "(radius.code == 1 && !radius.rspframe) && erspan"
