@@ -324,3 +324,52 @@ def test_pk_map_counts_kept_frames_only(spec):
     for n in pk["pk1"]:
         _, ip, udp = _udp(frames[n - 1][1])
         assert udp.dport == 1812
+
+
+SSTP = bytes.fromhex("01000ccccccd")
+SNAP = bytes.fromhex("aaaa0300000c010b")
+
+
+def _pvst(spec, vlans):
+    spec["capture"]["span"] = {"encapsulation": "replicate", "trunk_vlans": vlans}
+    return spec
+
+
+def _sstp_vlan(buf):
+    """(802.1Q VLAN or None, PVID TLV VLAN) of an SSTP BPDU frame."""
+    tag = int.from_bytes(buf[14:16], "big") & 0xFFF if buf[12:14] == b"\x81\x00" else None
+    body = buf[18:] if tag is not None else buf[14:]
+    assert body[:8] == SNAP
+    tlv = body[8 + 36:8 + 36 + 6]
+    assert tlv[:4] == bytes.fromhex("00000002")
+    return tag, int.from_bytes(tlv[4:6], "big")
+
+
+def test_pvst_bpdus_per_vlan(spec):
+    frames, _ = build_frames(_pvst(spec, [1, 10, 30]))
+    ieee = [ts for ts, b in frames if b[:6] == STP]
+    sstp = [(ts, _sstp_vlan(b)) for ts, b in frames if b[:6] == SSTP]
+    t0 = ieee[0]
+    tick = {v for ts, v in sstp if ts == t0}
+    assert tick == {(None, 1), (10, 10), (30, 30)}
+    assert len(sstp) == 3 * len(ieee)
+
+
+def test_pruned_vlan_bpdus_stop(spec):
+    spec = _pvst(spec, [1, 10, 30])
+    spec["config_diffs"] = [{"id": "cd1", "device": "DIST-SW1", "t_change": "2026-10-20T14:04:00Z",
+                             "before": " switchport trunk allowed vlan 1,10,30",
+                             "after": " switchport trunk allowed vlan 1,10", "note": None}]
+    cut = parse_utc("2026-10-20T14:04:00Z").timestamp()
+    v30 = [ts for ts, b in build_frames(spec)[0] if b[:6] == SSTP and _sstp_vlan(b)[1] == 30]
+    assert v30 and all(ts < cut for ts in v30)
+    v10 = [ts for ts, b in build_frames(spec)[0] if b[:6] == SSTP and _sstp_vlan(b)[1] == 10]
+    assert any(ts >= cut for ts in v10)
+
+
+def test_entity_peer_no_bpdus(spec):
+    spec = _pvst(spec, [1, 10])
+    spec["capture"]["peer"] = "pc-18"
+    del spec["capture"]["peer_interface"]
+    frames, _ = build_frames(spec)
+    assert not any(b[:6] in (STP, SSTP) for _, b in frames)

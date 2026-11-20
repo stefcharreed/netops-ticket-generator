@@ -152,3 +152,30 @@ def test_resolve_vlan_from_attached_and_interface():
     s["topology"]["devices"][0]["interfaces"][0]["vlan"] = 100
     assert capture.resolve_endpoint(s, "pc-18")["vlan"] == 100
     assert capture.resolve_endpoint(s, "ACC-SW1:Vlan100")["vlan"] == 100
+
+
+@pytest.mark.parametrize("text,want", [
+    ("interface Gi1/0/1\n switchport trunk allowed vlan 10,20,40\n", {10, 20, 40}),
+    (" switchport trunk allowed vlan 10-12,30", {10, 11, 12, 30}),
+    (" switchport trunk allowed vlan add 30", None),
+    (" switchport trunk allowed vlan remove 30", None),
+    (" switchport trunk allowed vlan all", None),
+    (" switchport trunk allowed vlan none", None),
+    ("interface Gi1/0/1\n switchport mode trunk\n", None),
+    (" switchport trunk allowed vlan 1,10\n switchport trunk allowed vlan 1,30\n", {1, 30}),
+])
+def test_parse_allowed_forms(text, want):
+    assert capture.parse_allowed_vlans(text) == want
+
+
+def test_peer_allowed_vlans_time():
+    from packetgen.timebase import parse_utc
+    s = copy.deepcopy(SPEC)
+    s["config_diffs"] = [{"id": "cd1", "device": "DIST-SW1", "t_change": "2026-10-20T14:04:00Z",
+                          "before": " switchport trunk allowed vlan 1,10,30",
+                          "after": " switchport trunk allowed vlan 1,10", "note": None}]
+    assert capture.peer_allowed_vlans(s, parse_utc("2026-10-20T14:03:59Z")) is None
+    assert capture.peer_allowed_vlans(s, parse_utc("2026-10-20T14:04:00Z")) == {1, 10}
+    assert capture.peer_allowed_vlans(s, parse_utc("2026-10-20T14:05:00Z")) == {1, 10}
+    s["config_diffs"][0]["device"] = "ACC-SW1"  # not the peer
+    assert capture.peer_allowed_vlans(s, parse_utc("2026-10-20T14:05:00Z")) is None

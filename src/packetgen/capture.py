@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import ipaddress
 import re
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from jsonschema import Draft202012Validator
 
@@ -64,6 +64,37 @@ def capture_filename(spec: dict) -> str:
     """e.g. capture_ACC-SW1_Gi1-0-48.pcap ('/' and ':' in the interface become '-')."""
     cap = spec["capture"]
     return f"capture_{_UNSAFE.sub('-', cap['device'])}_{_UNSAFE.sub('-', cap['interface'])}.pcap"
+
+
+_ALLOWED = re.compile(r"^\s*switchport trunk allowed vlan\s+(.+?)\s*$", re.MULTILINE)
+_VLAN_LIST = re.compile(r"\d+(-\d+)?(,\d+(-\d+)?)*")
+
+
+def parse_allowed_vlans(text: str) -> set[int] | None:
+    """VLANs from the last `switchport trunk allowed vlan <list>` line, or None (no line, or add/remove/all/...).
+
+    Ceiling: assumes one interface stanza per config diff.
+    """
+    lines = _ALLOWED.findall(text)
+    if not lines or not _VLAN_LIST.fullmatch(lines[-1].replace(" ", "")):
+        return None
+    out: set[int] = set()
+    for part in lines[-1].replace(" ", "").split(","):
+        lo, _, hi = part.partition("-")
+        out |= set(range(int(lo), int(hi or lo) + 1))
+    return out
+
+
+def peer_allowed_vlans(spec: dict, t: datetime) -> set[int] | None:
+    """The capture peer's trunk allowed list in force at t (latest parseable diff at or before t), or None."""
+    peer = spec["capture"].get("peer")
+    diffs = sorted((parse_utc(c["t_change"]), c["after"]) for c in spec.get("config_diffs", [])
+                   if c["device"] == peer and parse_utc(c["t_change"]) <= t)
+    for _, after in reversed(diffs):
+        vlans = parse_allowed_vlans(after)
+        if vlans is not None:
+            return vlans
+    return None
 
 
 # --- validation (PK1-PK5) -----------------------------------------------------------------

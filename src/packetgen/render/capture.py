@@ -8,17 +8,20 @@ from __future__ import annotations
 import ipaddress
 import random
 import struct
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import NamedTuple
 
 import dpkt
 
-from packetgen.capture import capture_filename, parse_mac, resolve_endpoint
+from packetgen.capture import capture_filename, parse_mac, peer_allowed_vlans, resolve_endpoint
 from packetgen.capture_views import flow_class, flow_vlan, keeps, tagged
 from packetgen.timebase import parse_utc
 
 BCAST = b"\xff" * 6
 STP_MC = bytes.fromhex("0180c2000000")
+SSTP_MC = bytes.fromhex("01000ccccccd")  # Cisco PVST+ shared spanning tree protocol
+_SNAP_PVST = bytes.fromhex("aaaa0300000c010b")
 _ETH_IP, _ETH_ARP = 0x0800, 0x0806
 _MIN_FRAME = 60
 _NOISE_ARP_S = {"low": 30.0, "medium": 10.0, "high": 3.0}
@@ -185,17 +188,27 @@ def _flow_frames(ctx: _Ctx, fl: dict, idx: int) -> list[_Frame]:
     return [_Frame(ts, (0, idx, n), buf, fl["id"], vlan, fclass) for n, (ts, buf) in enumerate(out)]
 
 
-def _bridge_id(mac: bytes) -> bytes:
+def _bridge_id(mac: bytes, vlan: int = 1) -> bytes:
     # Ceiling: real bridges use their base MAC; the peer_interface MAC stands in for it.
-    return struct.pack(">H", 0x8000 + 1) + mac  # priority 32768 + sys-id-ext (VLAN 1)
+    return struct.pack(">H", 0x8000 + vlan) + mac  # priority 32768 + sys-id-ext (the VLAN)
+
+
+def _rstp_body(mac: bytes, vlan: int) -> bytes:
+    """RSTP BPDU body, version 2, root = this bridge."""
+    return struct.pack(">HBBB8sI8sHHHHH", 0, 2, 2, 0x3C, _bridge_id(mac, vlan), 0, _bridge_id(mac, vlan),
+                       0x8001, 0, 20 * 256, 2 * 256, 15 * 256) + b"\x00"
 
 
 def _bpdu(mac: bytes) -> bytes:
-    """RSTP BPDU in 802.3 + LLC (42 42 03), version 2, root = this bridge."""
-    body = struct.pack(">HBBB8sI8sHHHHH", 0, 2, 2, 0x3C, _bridge_id(mac), 0, _bridge_id(mac),
-                       0x8001, 0, 20 * 256, 2 * 256, 15 * 256) + b"\x00"
-    llc = b"\x42\x42\x03" + body
+    """IEEE RSTP BPDU in 802.3 + LLC (42 42 03): the native VLAN's untagged copy."""
+    llc = b"\x42\x42\x03" + _rstp_body(mac, 1)
     return _pad(STP_MC + mac + struct.pack(">H", len(llc)) + llc)
+
+
+def _sstp(mac: bytes, vlan: int) -> bytes:
+    """Rapid-PVST+ SSTP BPDU: 802.3 + LLC/SNAP (Cisco, PID 0x010b), RSTP body, PVID TLV."""
+    llc = _SNAP_PVST + _rstp_body(mac, vlan) + struct.pack(">HHH", 0, 2, vlan)
+    return _pad(SSTP_MC + mac + struct.pack(">H", len(llc)) + llc)
 
 
 def _noise_frames(ctx: _Ctx, cap: dict, lo: float, hi: float) -> list[_Frame]:
@@ -204,12 +217,22 @@ def _noise_frames(ctx: _Ctx, cap: dict, lo: float, hi: float) -> list[_Frame]:
     native = cap.get("span", {}).get("native_vlan", 1)
     out: list[tuple[float, bytes, int, str]] = []  # (ts, frame, vlan, fclass)
     topo = ctx.spec["topology"]
-    if level in ("medium", "high"):
-        peer = next(d for d in topo["devices"] if d["hostname"] == cap["peer"])
+    peer = next((d for d in topo["devices"] if d["hostname"] == cap["peer"]), None)
+    if level in ("medium", "high") and peer is not None:  # an entity peer (a PC, a hub) sends no BPDUs
         pmac = mac_bytes(next(i for i in peer["interfaces"] if i["name"] == cap["peer_interface"])["mac"])
+        vlans = cap.get("span", {}).get("trunk_vlans", [native])
         phase, k = rng.uniform(0.0, 2.0), 0
+        # Rapid-PVST+: per tick, the native VLAN's IEEE + SSTP pair, then one tagged SSTP per other trunk VLAN.
+        # Ceiling: the near end never takes over as root for a VLAN the peer pruned.
         while lo + phase + 2.0 * k < hi - 0.01:  # margin keeps the +-5 ms jitter inside the window
-            out.append((max(lo, lo + phase + 2.0 * k + rng.uniform(-0.005, 0.005)), _bpdu(pmac), native, "l2_control"))
+            t = max(lo, lo + phase + 2.0 * k + rng.uniform(-0.005, 0.005))
+            allowed = peer_allowed_vlans(ctx.spec, datetime.fromtimestamp(t, timezone.utc))
+            for v in vlans:
+                if allowed is not None and v not in allowed:
+                    continue
+                if v == native:
+                    out.append((t, _bpdu(pmac), v, "l2_control"))
+                out.append((t, _sstp(pmac, v), v, "l2_control"))
             k += 1
     # ARP pairs among declared hosts in a /24 that the capture device or its peer sits in.
     # Ceiling: the pair choice ignores which side of the SPAN port each host sits on.
